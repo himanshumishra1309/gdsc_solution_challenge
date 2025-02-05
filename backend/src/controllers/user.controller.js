@@ -9,10 +9,16 @@ import jwt from 'jsonwebtoken'
 const generateAccessAndRefreshToken = async(userId) => {
     try {
       const user = await  User.findById(userId)
-      const accessToken = user.generateAccessToken()
-      const refreshToken = user.generateRefreshToken()
+ 
 
       //we save refresh token in db
+          // If no teacher is found, throw an error
+    if (!user) {
+        throw new ApiError(404, "User not found");
+      }
+  
+      const accessToken = user.generateAccessToken()
+      const refreshToken = user.generateRefreshToken()
 
       user.refreshToken = refreshToken
       //this is used if it is something other than password wich doesnt need to validate
@@ -20,6 +26,8 @@ const generateAccessAndRefreshToken = async(userId) => {
 
       return{refreshToken, accessToken}
     } catch (error) {
+            console.error("Error generating tokens:", error); // Optional: for debugging purposes
+
         throw new ApiError(500, "Something went wrong while generating tokens")
     }
 }
@@ -185,9 +193,18 @@ select("-refreshToken -password")
 const logoutUser = asyncHandler( async(req,res) => {
     await User.findByIdAndUpdate(
         req.user._id,
-        {
-            $set: {refreshToken : undefined}
+        // {
+        //     $set: {refreshToken : undefined}
+        // },
+         // {
+    //   refreshToken: undefined
+    // }, dont use this approach, this dosent work well
+
+    {
+        $unset: {
+          teacherRefreshToken: 1, // this removes the field from the document
         },
+      },
         {
             new: true
         }
