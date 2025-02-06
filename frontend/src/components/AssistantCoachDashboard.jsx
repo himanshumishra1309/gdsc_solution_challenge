@@ -23,7 +23,7 @@ function AssistantCoachDashboard() {
   return (
     <CLayout userType="AssistantCoach" navItems={navItems}>
       <Routes>
-        <Route path="team" element={<Team/>} />
+        <Route path="/" element={<Team/>} />
         <Route path="monitoring" element={<PerformanceMonitor />} />
         <Route path="training" element={<Training />} />
         <Route path="injury" element={<InjuryRecords />} />

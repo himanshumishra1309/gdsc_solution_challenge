@@ -22,7 +22,7 @@ function MedicalStaffDashboard() {
     <MLayout userType="MedicalStaff" navItems={navItems}>
       <Routes>
        <Route path="diet" element={<Diet />} />
-       <Route path="viewplayers" element={<ViewPlayers />} />
+       <Route path="/" element={<ViewPlayers />} />
        <Route path="injurylogs" element={<InjuryLogs />} />
        <Route path="announcements" element={<Announcements/>} />
        <Route path="medicalrecords" element={<MedicalRecords />} />

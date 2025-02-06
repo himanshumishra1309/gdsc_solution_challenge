@@ -24,7 +24,7 @@ function CoachDashboard() {
   return (
     <Layout userType="Coach" navItems={navItems}>
       <Routes>
-        <Route path="teammanagement" element={<TeamManagement />} />
+        <Route path="/" element={<TeamManagement />} />
         <Route path="performance" element={<PerformanceMonitoring />} />
         <Route path="training" element={<TrainingPlans />} />
         <Route path="injury" element={<InjuryManagementC />} />

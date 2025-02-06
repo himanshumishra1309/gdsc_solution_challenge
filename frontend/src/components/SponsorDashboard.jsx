@@ -21,7 +21,7 @@ function SponsorDashboard() {
   return (
     <SLayout userType="Sponsor" navItems={navItems}>
       <Routes>
-       <Route path="viewmetrics" element={<ViewMetrics />} />
+       <Route path="/" element={<ViewMetrics />} />
        <Route path="analytics" element={<Analytics />} />
        <Route path="events" element={<Events />} />
        <Route path="contact" element={<Contact/>} />
