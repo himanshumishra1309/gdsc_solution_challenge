@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react"; 
 import { useNavigate, useLocation } from "react-router-dom";
@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 function Layout({ userType, navItems, children }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { coachName } = useParams(); // Get the coach name from URL
 
   const handleSignOut = () => {
     localStorage.removeItem("userType");
@@ -23,16 +24,20 @@ function Layout({ userType, navItems, children }) {
               className="w-full h-full object-cover"
             />
           </div>
-          <h2 className="text-2xl font-semibold text-white">Arjun Patel</h2>
+          <h2 className="text-2xl font-semibold text-white">
+            {coachName ? coachName : "Coach"}
+          </h2>
           <p className="text-sm text-gray-200">Coach</p>
         </div>
 
         <nav className="flex-1 p-4">
           {navItems.map((item, index) => {
-            const isActive = location.pathname.includes(item.path);
+            const isActive = 
+              location.pathname.endsWith(item.path) || 
+              (location.pathname === '/' && item.path === 'team'); // Highlight team when on '/'
 
             return (
-              <Link key={index} to={`/coach-dashboard/${item.path}`}>
+              <Link key={index} to={`/coach-dashboard/${coachName}/${item.path}`}>
                 <Button
                   variant="ghost"
                   className={`w-full justify-start text-lg font-medium text-white hover:bg-green-600 hover:text-gray-100 rounded-lg py-3 transition-colors mb-2 ${isActive ? "bg-green-600 text-gray-100" : ""}`}

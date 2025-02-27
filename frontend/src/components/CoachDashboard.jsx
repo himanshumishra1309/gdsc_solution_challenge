@@ -1,4 +1,4 @@
-import { Users, LineChart, Calendar, Activity, MessageSquare, BarChart } from "lucide-react"; // Add this import statement
+import { Users, LineChart, Calendar, Activity, MessageSquare, BarChart } from "lucide-react"; 
 
 import { Routes, Route } from "react-router-dom";
 import TeamManagement from "./CoachDashboardPages/TeamManagement";
@@ -7,17 +7,18 @@ import TrainingPlans from "./CoachDashboardPages/TrainingPlans";
 import Communication from "./CoachDashboardPages/Communication";
 import ReportAnalytics from "./CoachDashboardPages/ReportAnalytics";
 import InjuryManagementC from "./CoachDashboardPages/InjuryManagementC";
-
+import CoachProfile from "./CoachDashboardPages/CoachProfile";
 import Layout from "./CoachDashboardPages/Layout";
 
 
 const navItems = [
-  { label: "Team Management", icon: Users, path: "teammanagement" },
+  { label: "Team Management", icon: Users, path: "/" },
   { label: "Performance Monitoring", icon: LineChart, path: "performance" },
   { label: "Training Plans", icon: Calendar, path: "training" },
   { label: "Injury Management", icon: Activity, path: "injury" },
   { label: "Communication", icon: MessageSquare, path: "communication" },
   { label: "Reports and Analytics", icon: BarChart, path: "reports" },
+  { label: "Profile", icon: Users, path: "coach-profile" },
 ];
 
 function CoachDashboard() {
@@ -30,6 +31,7 @@ function CoachDashboard() {
         <Route path="injury" element={<InjuryManagementC />} />
         <Route path="communication" element={<Communication />} />
         <Route path="reports" element={<ReportAnalytics />} />
+        <Route path="coach-profile" element={<CoachProfile />} />
       </Routes>
     </Layout>
   );

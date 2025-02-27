@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 function Medical() {
@@ -13,6 +14,13 @@ function Medical() {
   ]);
 
   const [newInjury, setNewInjury] = useState({ date: "", type: "", status: "" });
+  const [rpe, setRpe] = useState(0);
+  const [rpeHistory, setRpeHistory] = useState([]);
+
+  const rpeDescriptions = [
+    "No exertion (Resting)", "Very light", "Light", "Moderate", "Somewhat hard",
+    "Hard", "Very hard", "Very, very hard", "Near maximal", "Maximal exertion"
+  ];
 
   const addInjury = () => {
     if (newInjury.date && newInjury.type && newInjury.status) {
@@ -21,10 +29,18 @@ function Medical() {
     }
   };
 
+  const submitRpe = () => {
+    if (rpe >= 0) {
+      setRpeHistory([...rpeHistory, { date: new Date().toISOString().split("T")[0], value: rpe }]);
+    }
+  };
+
   return (
     <div className="space-y-12 px-6 w-full">
       <h1 className="text-5xl font-bold text-center">Medical Records</h1>
+      
       <div className="grid gap-8 md:grid-cols-2">
+        {/* Injury Tracking Section */}
         <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-3xl">Injury Tracking</CardTitle>
@@ -51,6 +67,8 @@ function Medical() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Add New Injury Section */}
         <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-3xl">Add New Injury</CardTitle>
@@ -92,6 +110,8 @@ function Medical() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Medical Report Section */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-3xl">Medical Report</CardTitle>
@@ -105,9 +125,43 @@ function Medical() {
           <Button className="mt-6 w-full text-xl py-3">Save Report</Button>
         </CardContent>
       </Card>
+
+      {/* RPE Tracking Section */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-3xl">Rate of Perceived Exertion (RPE)</CardTitle>
+          <CardDescription className="text-xl">
+            Select your exertion level based on the Modified Borg CR10 Scale.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <Label className="text-2xl">Select RPE Level</Label>
+            <Slider
+              min={0}
+              max={10}
+              step={1}
+              value={[rpe]}
+              onValueChange={(val) => setRpe(val[0])}
+              className="w-full"
+            />
+            <p className="text-lg font-semibold text-center">{rpe} - {rpeDescriptions[rpe]}</p>
+            <Button onClick={submitRpe} className="w-full text-xl py-3">Submit RPE</Button>
+          </div>
+          <div className="mt-6">
+            <h3 className="text-2xl font-semibold">RPE History</h3>
+            <ul className="mt-3 space-y-2">
+              {rpeHistory.map((entry, index) => (
+                <li key={index} className="text-lg">
+                  {entry.date}: RPE {entry.value} - {rpeDescriptions[entry.value]}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
 
 export default Medical;

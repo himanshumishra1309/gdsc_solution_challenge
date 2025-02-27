@@ -7,7 +7,7 @@ import Medical from "./AthleteDashboardPages/Medical";
 import Nutrition from "./AthleteDashboardPages/Nutrition";
 import Finance from "./AthleteDashboardPages/Finance";
 import Profile from "./AthleteDashboardPages/Profile";
-import Home from "./AthleteDashboardPages/Home"; // Import the Home Component
+import Home from "./AthleteDashboardPages/Home"; 
 
 const navItems = [
   { name: "Performance", icon: BarChart, path: "performance" },
