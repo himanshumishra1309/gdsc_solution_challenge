@@ -1,0 +1,55 @@
+{
+    "players": {
+      "Cricket": [
+        {
+          "profileImage": "assets/images/player1.png",
+          "name": "John Doe",
+          "role": "Batsman"
+        },
+        {
+          "profileImage": "assets/images/player2.jpg",
+          "name": "Michael Clarke",
+          "role": "Bowler"
+        },
+        {
+          "profileImage": "assets/images/player3.jpg",
+          "name": "Steve Smith",
+          "role": "All-rounder"
+        }
+      ],
+      "Football": [
+        {
+          "profileImage": "assets/images/player4.png",
+          "name": "Jane Smith",
+          "role": "Goalkeeper"
+        },
+        {
+          "profileImage": "assets/images/player2.jpg",
+          "name": "David Beckham",
+          "role": "Midfielder"
+        },
+        {
+          "profileImage": "assets/images/player3.jpg",
+          "name": "Cristiano Ronaldo",
+          "role": "Forward"
+        }
+      ],
+      "Badminton": [
+        {
+          "profileImage": "assets/images/player6.png",
+          "name": "Alice Johnson",
+          "role": "Shuttler"
+        },
+        {
+          "profileImage": "assets/images/player2.jpg",
+          "name": "Lin Dan",
+          "role": "Shuttler"
+        },
+        {
+          "profileImage": "assets/images/player3.jpg",
+          "name": "PV Sindhu",
+          "role": "Shuttler"
+        }
+      ]
+    }
+  }
