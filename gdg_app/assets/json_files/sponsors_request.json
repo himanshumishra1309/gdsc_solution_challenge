@@ -1,0 +1,16 @@
+[
+    {
+      "name": "Sponsor C",
+      "email": "sponsorC@example.com",
+      "sports": ["Football", "Basketball"],
+      "details": "Sponsor C specializes in sports equipment...",
+      "profilePhoto": "assets/sponsor_c.jpg"
+    },
+    {
+      "name": "Sponsor D",
+      "email": "sponsorD@example.com",
+      "sports": ["Cricket", "Tennis"],
+      "details": "Sponsor D is known for its contributions to sports events...",
+      "profilePhoto": "assets/sponsor_d.jpg"
+    }
+  ]

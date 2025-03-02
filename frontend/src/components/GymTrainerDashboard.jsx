@@ -28,6 +28,7 @@ function GymTrainerDashboard() {
         <Route path="medicalreports" element={<MedicalReports />} />
         <Route path="rpe" element={<RPEManagement/>} />
         <Route path="/" element={<View />} />
+        <Route path="view" element={<View />} />
         <Route path="workout" element={<WorkoutPlans />} />
       </Routes>
     </GLayout>

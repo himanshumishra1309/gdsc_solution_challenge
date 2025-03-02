@@ -2,32 +2,43 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+
+// Function to map RPE value to description
+const getRpeDescription = (rpe) => {
+  if (rpe === 0) return "Rest";
+  if (rpe >= 1 && rpe <= 2) return "Very Light";
+  if (rpe >= 3 && rpe <= 4) return "Moderate";
+  if (rpe >= 5 && rpe <= 6) return "Somewhat Hard";
+  if (rpe >= 7 && rpe <= 8) return "Hard";
+  if (rpe === 9) return "Very Hard";
+  if (rpe === 10) return "Max Effort";
+  return "Unknown";
+};
+
+// Sample performance data
+const data = [
+  { name: "Jan", speed: 4000, strength: 2400, endurance: 2400 },
+  { name: "Feb", speed: 3000, strength: 1398, endurance: 2210 },
+  { name: "Mar", speed: 2000, strength: 9800, endurance: 2290 },
+  { name: "Apr", speed: 2780, strength: 3908, endurance: 2000 },
+  { name: "May", speed: 1890, strength: 4800, endurance: 2181 },
+  { name: "Jun", speed: 2390, strength: 3800, endurance: 2500 },
+];
+
+// Sample athlete data with Today's RPE
+const athleteData = [
+  { name: "Ravi Kumar", sport: "Kabaddi", speed: 4000, strength: 2400, endurance: 2300, rpe: 7 },
+  { name: "Pooja Sharma", sport: "Cricket", speed: 3000, strength: 2200, endurance: 2400, rpe: 5 },
+  { name: "Amit Singh", sport: "Hockey", speed: 2000, strength: 2100, endurance: 2000, rpe: 3 },
+  { name: "Raj Singh", sport: "Football", speed: 2500, strength: 2300, endurance: 2100, rpe: 9 },
+];
 
 const PerformanceMonitoring = () => {
-  // Sample data
-  const data = [
-    { name: "Jan", speed: 4000, strength: 2400, endurance: 2400 },
-    { name: "Feb", speed: 3000, strength: 1398, endurance: 2210 },
-    { name: "Mar", speed: 2000, strength: 9800, endurance: 2290 },
-    { name: "Apr", speed: 2780, strength: 3908, endurance: 2000 },
-    { name: "May", speed: 1890, strength: 4800, endurance: 2181 },
-    { name: "Jun", speed: 2390, strength: 3800, endurance: 2500 },
-  ];
-
-
-  const athleteData = [
-    { name: "Ravi Kumar", sport: "Kabaddi", speed: 4000, strength: 2400, endurance: 2300 },
-    { name: "Pooja Sharma", sport: "Cricket", speed: 3000, strength: 2200, endurance: 2400 },
-    { name: "Amit Singh", sport: "Hockey", speed: 2000, strength: 2100, endurance: 2000 },
-    { name: "Raj Singh", sport: "Football", speed: 2500, strength: 2300, endurance: 2100 },
-  ];
-
   const [selectedSport, setSelectedSport] = useState("All");
   const [selectedAthlete, setSelectedAthlete] = useState("All");
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("All");
 
-  
+  // Filtering based on selected sport and athlete
   const filteredAthleteData = athleteData.filter((athlete) => {
     const isSportMatch = selectedSport === "All" || athlete.sport === selectedSport;
     const isAthleteMatch = selectedAthlete === "All" || athlete.name === selectedAthlete;
@@ -42,7 +53,7 @@ const PerformanceMonitoring = () => {
       <CardContent>
         
         <div className="mb-4 flex space-x-4">
-          
+          {/* Sport Filter */}
           <Select onValueChange={setSelectedSport}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Filter by Sport" />
@@ -56,7 +67,7 @@ const PerformanceMonitoring = () => {
             </SelectContent>
           </Select>
 
-          
+          {/* Athlete Filter */}
           <Select onValueChange={setSelectedAthlete}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Filter by Athlete" />
@@ -71,7 +82,7 @@ const PerformanceMonitoring = () => {
             </SelectContent>
           </Select>
 
-          
+          {/* Time Period Filter */}
           <Select onValueChange={setSelectedTimePeriod}>
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Filter by Time Period" />
@@ -84,7 +95,7 @@ const PerformanceMonitoring = () => {
           </Select>
         </div>
 
-        
+        {/* Performance Chart */}
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -98,7 +109,7 @@ const PerformanceMonitoring = () => {
           </LineChart>
         </ResponsiveContainer>
 
-        
+        {/* Progress Reports Table */}
         <div className="mt-6">
           <h3 className="text-lg font-semibold mb-4">Athlete Progress Reports</h3>
           <div className="overflow-x-auto">
@@ -110,6 +121,7 @@ const PerformanceMonitoring = () => {
                   <th className="px-4 py-2 border">Speed</th>
                   <th className="px-4 py-2 border">Strength</th>
                   <th className="px-4 py-2 border">Endurance</th>
+                  <th className="px-4 py-2 border">Today's RPE</th>
                 </tr>
               </thead>
               <tbody>
@@ -120,6 +132,9 @@ const PerformanceMonitoring = () => {
                     <td className="px-4 py-2 border">{athlete.speed}</td>
                     <td className="px-4 py-2 border">{athlete.strength}</td>
                     <td className="px-4 py-2 border">{athlete.endurance}</td>
+                    <td className="px-4 py-2 border font-semibold">
+                      {athlete.rpe} - {getRpeDescription(athlete.rpe)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

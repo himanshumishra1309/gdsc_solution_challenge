@@ -1,0 +1,18 @@
+{
+    "individuals": [
+      {"name": "John Doe", "username": "johndoe", "image": "assets/images/player1.png"},
+      {"name": "Jane Smith", "username": "janesmith", "image": "assets/images/player2.jpg"},
+      {"name": "Alice Johnson", "username": "alicejohnson", "image": "assets/images/player3.jpg"},
+      {"name": "Bob Brown", "username": "bobbrown", "image": "assets/images/player4.png"},
+      {"name": "Charlie Davis", "username": "charliedavis", "image": "assets/images/player5.jpg"},
+      {"name": "Diana Evans", "username": "dianaevans", "image": "assets/images/player6.png"}
+    ],
+    "organizations": [
+      {"name": "Org A", "username": "orga", "image": "assets/images/player1.png"},
+      {"name": "Org B", "username": "orgb", "image": "assets/images/player2.jpg"},
+      {"name": "Org C", "username": "orgc", "image": "assets/images/player3.jpg"},
+      {"name": "Org D", "username": "orgd", "image": "assets/images/player4.png"},
+      {"name": "Org E", "username": "orge", "image": "assets/images/player5.jpg"},
+      {"name": "Org F", "username": "orgf", "image": "assets/images/player6.png"}
+    ]
+}
