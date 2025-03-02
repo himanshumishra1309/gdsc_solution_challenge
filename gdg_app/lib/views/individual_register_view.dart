@@ -5,7 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:gdg_app/views/login_view.dart';
 import 'package:intl/intl.dart';
-import '../landing_page_view.dart'; // Import the landing page view
+import 'landing_page_view.dart'; // Import the landing page view
 
 class IndividualRegisterView extends StatefulWidget {
   const IndividualRegisterView({super.key});

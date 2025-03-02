@@ -217,6 +217,7 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
           DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
           DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
           DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
+      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
         ],
       ),
       body: Padding(

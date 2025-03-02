@@ -53,6 +53,7 @@ class _IndividualGymPlanViewState extends State<IndividualGymPlanView> {
       DrawerItem(icon: Icons.contact_mail, title: 'View and Contact Sponsor', route: viewContactSponsorRoute),
       DrawerItem(icon: Icons.fastfood, title: 'Daily Diet Plan', route: individualDailyDietRoute),
       DrawerItem(icon: Icons.fitness_center, title: 'Gym Plan', route: individualGymPlanRoute),
+      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: individualFinancesRoute),
     ];
 
     return Scaffold(
