@@ -8,4 +8,4 @@ const AnnoncementSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model('Announcement', AnnouncementSchema);
+export const Announcement = mongoose.model('Announcement', AnnouncementSchema);

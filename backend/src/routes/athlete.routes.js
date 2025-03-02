@@ -1,16 +1,18 @@
 import { Router } from "express";
-import {upload} from "../middlewares/multer.middleware.js"
-import { 
-    loginUser, 
-    logoutUser, 
-    refreshAccessToken,
-} from "../controllers/user.controller.js";
-import {verifyAthleteJWT} from "../middlewares/athlete.middleware.js"
+import {
+    getAthletes,
+    // loginAthlete,
+    // logoutAthlete
+} from "../controllers/athlete.controllers.js";
+
+import {verifyJWTAthlete} from "../middlewares/auth.middleware.js"
 
 
 const router = Router()
 
 
+router.get("/", verifyJWTAthlete, getAthletes); // Fetch all athletes with filters
+// router.post("/login", loginAthlete);
+// router.post("/logout", verifyAthleteJWT, logoutAthlete);
 
-router.post("/login", loginAthlete);
-router.post("/logout", verifyAthleteJWT, logoutAthlete);
+export default router;

@@ -1,9 +1,11 @@
 import mongoose, {Schema} from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 
 const adminSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   password: { type: String, required: [true, "Password is Required"]},
   avatar: {
     type: String,
@@ -15,7 +17,10 @@ const adminSchema = new mongoose.Schema({
     required: true,
 
   },
-  isAdmin: { type: Boolean, default: false },
+  role : {
+    type: String, 
+    default: "admin"
+  },
   refreshToken: {
     type: "String"
   }
@@ -40,7 +45,7 @@ adminSchema.methods.generateAccessToken = function (){
       process.env.ACCESS_TOKEN_SECRET,
       {
           expiresIn: process.env.ACCESS_TOKEN_EXPIRY
-      },
+      }
   )
 }
 
@@ -57,4 +62,4 @@ adminSchema.methods.generateRefreshToken = function (){
   )
 }
 
-module.exports = mongoose.model('Admin', AdminSchema);
+export const Admin = mongoose.model('Admin', adminSchema);

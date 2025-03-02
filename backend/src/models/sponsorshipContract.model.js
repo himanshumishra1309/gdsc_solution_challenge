@@ -11,4 +11,4 @@ const sponsorshipContractSchema = new mongoose.Schema({
   paymentSchedule: []
 }, { timestamps: true });
 
-module.exports = mongoose.model('SponsorshipContract', sponsorshipContractSchema);
+export const SponsorshipContract = mongoose.model('SponsorshipContract', sponsorshipContractSchema);

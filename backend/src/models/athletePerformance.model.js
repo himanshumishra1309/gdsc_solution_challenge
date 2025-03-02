@@ -8,4 +8,4 @@ const athletePerformanceSchema = new mongoose.Schema({
   
 }, { timestamps: true });
 
-module.exports = mongoose.model('Athlete', athletePerformanceSchema);
+export const AthletePerformance = mongoose.model('AthletePerformance', athletePerformanceSchema);

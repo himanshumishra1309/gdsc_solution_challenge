@@ -10,4 +10,4 @@ const performanceMetricsSchema = new mongoose.Schema({
   createdBy: {type: Schema.Types.ObjectId, ref: 'Admin'}
 }, { timestamps: true });
 
-module.exports = mongoose.model('PerformanceMetrics', performanceMetricsSchema);
+export const PerformanceMetrics = mongoose.model('PerformanceMetrics', performanceMetricsSchema);

@@ -18,4 +18,4 @@ athlete_id: { type: Schema.Types.ObjectId, ref: "Athlete", required: true},
 
 }, { timestamps: true });
 
-module.exports = mongoose.model('MedicalRecord', medicalRecordSchema);
+export const MedicalRecord = mongoose.model('MedicalRecord', medicalRecordSchema);

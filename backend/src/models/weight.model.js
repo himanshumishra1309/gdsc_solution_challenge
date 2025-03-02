@@ -12,4 +12,4 @@ const WeightSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model('Weight', WeightSchema);
+export const Weight = mongoose.model('Weight', WeightSchema);

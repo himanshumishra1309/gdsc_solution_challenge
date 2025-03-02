@@ -25,4 +25,4 @@ const menstrualTrackingSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model('MenstrualTracking', menstrualTrackingSchema);
+export const MenstrualTracking = mongoose.model('MenstrualTracking', menstrualTrackingSchema);

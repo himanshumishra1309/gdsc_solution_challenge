@@ -54,4 +54,4 @@ sponsorSchema.methods.generateRefreshToken = function (){
   )
 }
 
-module.exports = mongoose.model('Sponsor',sponsorSchema);
+export const Sponsor = mongoose.model('Sponsor',sponsorSchema);

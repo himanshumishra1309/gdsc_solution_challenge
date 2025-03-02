@@ -1,4 +1,7 @@
 import mongoose, {Schema} from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
 
 const coachSchema = new mongoose.Schema(
   {
@@ -13,7 +16,7 @@ const coachSchema = new mongoose.Schema(
     password: { type: String,
        required: [true, "Password is required"]
        },
-    avatar: { type: String, required: true },
+    avatar: { type: String, required: false },
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
@@ -40,7 +43,7 @@ const coachSchema = new mongoose.Schema(
         "Training and Conditioning Staff",
       ],
     },
-    sport: { type: String, enum: ["Cricket", "Basketball"] },
+    sport: { type: String },
     specialization: { type: String },
     qualification: [{ type: String }],
     certifications: [{type: String}],
@@ -49,7 +52,7 @@ const coachSchema = new mongoose.Schema(
       enum: ["District", "State", "National"],
     },
 
-    assignedAthlete:[{ type: Schema.Types.ObjectId, ref: "Athlete" }],
+    assignedAthletes:[{ type: mongoose.Schema.Types.ObjectId,ref: "Athlete" }],
     refreshToken: {
       type: "String",
     },
@@ -93,4 +96,4 @@ coachSchema.methods.generateRefreshToken = function (){
   )
 }
 
-module.exports = mongoose.model("Coach", coachSchema);
+export const Coach = mongoose.model("Coach", coachSchema);

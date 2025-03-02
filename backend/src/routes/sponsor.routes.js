@@ -12,3 +12,5 @@ const router = Router()
 
 router.post("/login", loginSponsor);
 router.post("/logout", verifySponsorJWT, logoutSponsor);
+
+export default router;

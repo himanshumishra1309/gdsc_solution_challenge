@@ -8,4 +8,4 @@ const rpeSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model('User', UserSchema);
+export const RPE = mongoose.model('RPE', rpeSchema);

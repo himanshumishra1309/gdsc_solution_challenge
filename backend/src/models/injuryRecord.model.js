@@ -14,4 +14,4 @@ const injuryRecordSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model('InjuryRecord', injuryRecordSchema);
+export const InjuryRecord = mongoose.model('InjuryRecord', injuryRecordSchema);

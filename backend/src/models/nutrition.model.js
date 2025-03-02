@@ -8,4 +8,4 @@ const nutritionSchema = new mongoose.Schema({
   isAdmin: { type: Boolean, default: false }
 }, { timestamps: true });
 
-module.exports = mongoose.model('User', nutritionSchema);
+ export const Nutrition = mongoose.model('Nutriton', nutritionSchema);

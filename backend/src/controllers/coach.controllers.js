@@ -1,4 +1,4 @@
-import asyncHandler from "../utils/asyncHandler";
+import asyncHandler from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
 import jwt from 'jsonwebtoken'
 
@@ -6,90 +6,9 @@ import jwt from 'jsonwebtoken'
 import {Coach} from "../models/coach.model.js"
 
 
-const generateAccessAndRefreshToken = async(userId) => {
-    try {
-      const coach = await  Coach.findById(userId)
- 
 
-      //we save refresh token in db
-          // If no teacher is found, throw an error
-    if (!user) {
-        throw new ApiError(404, "User not found");
-      }
-  
-      const coachAccessToken = user.generateAccessToken()
-      const coachRefreshToken = user.generateRefreshToken()
 
-      coach.refreshToken = coachRefreshToken
-      //this is used if it is something other than password wich doesnt need to validate
-      await coach.save({validateBeforeSave: false})
 
-      return{coachRefreshToken, coachAccessToken}
-    } catch (error) {
-        console.error("Error generating tokens:", error); // Optional: for debugging purposes
-
-        throw new ApiError(500, "Something went wrong while generating tokens")
-    }
-}
-
-const loginUser = asyncHandler(async (req,res) => {
-    /*
-    TO DO:
-    req body -> data
-    check if the user is created
-    req.file match the password or username ,
-    Access and refresh token
-    Send them through  secured cookies
-    check if expired if yes then match refresh token
-    */
-    
-    const {email, password} = req.body
-    
-    if(!email){
-        throw new ApiError(400, "Email is required")
-    
-    }
-    
-    //alternative id you want to check both in the frontend !(username)
-    
-    const user = await Coach.findOne({email})
-    
-    if(!user){
-        throw new ApiError(400, "Coach doesn't not exist")
-    }
-    
-      // we are not using 'User' rather we will use 'user' which is returned above, because 'User' is an instance of the moongoose of mongoDB and user is the data returned from the data base which signifies a single user and user.models.js file contain all the methods which can be accessed here such as isPasswordCorrect or refreshToken or accessToken
-    const isPasswordValid = await user.isPasswordCorrect(password);
-    
-    if(!isPasswordValid){
-        throw new ApiError(401, "Invalid User Credentials")
-    }
-    
-    const {coachRefreshToken, coachAccessToken}= await generateAccessAndRefreshToken(user._id)
-    
-    const loggedInUser = await Coach.findById(user._id).
-    select("-refreshToken -password")
-    
-     const options = {
-        // now the cookies can only be accessed and changed from the server and not the frontend
-            httpOnly: true,
-            secure: true
-     }
-    
-     //(key,value,options)
-     return res.
-     status(200)
-     .cookie("coachAccessToken", coachAccessToken, options)
-     .cookie("coachRefreshToken", coachRefreshToken, options)
-     .json(
-        new ApiResponse(
-            200,{
-                user:loggedInUser, coachAccessToken, coachRefreshToken
-            },
-            "Coach logged in Successfully"
-        )
-     )
-    })
 
 const logoutUser = asyncHandler( async(req,res) => {
         await Coach.findByIdAndUpdate(
@@ -219,23 +138,6 @@ const registerUser = asyncHandler(async(req,res) =>{
 
 })
 
-
-const logRpe = asyncHandler(async(req, res) => {
-    const { athleteId, sessionId, rpe, notes } = req.body;
-
-    try {
-
-        const athlete = await Athlete.findById(athleteId)
-        
-    } catch (error) {
-
-            throw new ApiError(500,error?.message || "Error logging Rpe");
-        
-        
-    }
-})
-
-
 const getCoachProfile = asyncHandler(async(req,res) => {
     const coach = await Coach.findById(req.coach._id).select(
         "-password -refreshToken"
@@ -247,5 +149,76 @@ const getCoachProfile = asyncHandler(async(req,res) => {
     
       return res.status(200).json(new ApiResponse(200, teacher, "Coah profile fetched successfully"));
 })
+
+const logRpe = asyncHandler(async (req, res) => {
+    const { athleteId, sessionId, rpe, notes } = req.body;
+    const coachId = req.user._id; // Coach ID from authenticated user
+  
+    try {
+      // Check if the coach is Training and Conditioning Staff
+      const coach = await Coach.findById(coachId);
+      if (!coach || coach.designation !== 'training_staff') {
+        return res.status(403).json({ message: 'Access denied. Only Training and Conditioning Staff can log RPE.' });
+      }
+  
+      // Check if the athlete is assigned to the coach
+      if (!coach.assignedAthletes.includes(athleteId)) {
+        return res.status(403).json({ message: 'Access denied. Athlete is not assigned to you.' });
+      }
+  
+      // Check if the athlete belongs to the coach's organization
+      const athlete = await Athlete.findById(athleteId);
+      if (!athlete || athlete.organization.toString() !== coach.organization.toString()) {
+        return res.status(403).json({ message: 'Access denied. Athlete does not belong to your organization.' });
+      }
+  
+      const rpeRecord = new RPE({
+        athleteId,
+        sessionId,
+        rpe,
+        notes,
+        recordedBy: coachId, // Track which coach logged the RPE
+      });
+  
+      await rpeRecord.save();
+      res.status(201).json(rpeRecord);
+    } catch (error) {
+        throw new ApiError(500,error?.message || "Error logging Rpe");
+    }
+})
+
+const getCoaches = asyncHandler(async (req, res) => {
+    const { organization } = req.user;
+    const { designation, search } = req.query;
+  
+    let query = { organization };
+  
+    if (designation) query.designation = designation;
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } }
+      ];
+    }
+  
+    const coaches = await Coach.find(query).select("-password");
+  
+    res.status(200).json({
+      success: true,
+      coaches,
+    });
+  });
+
+
+
+export{
+    logoutUser,
+    registerUser,
+    getCoachProfile,
+    getCoaches,
+
+    
+
+}
 
 

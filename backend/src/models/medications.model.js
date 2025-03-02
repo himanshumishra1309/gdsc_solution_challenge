@@ -15,4 +15,4 @@ const medicationSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
-module.exports = mongoose.model('Medication', medicationSchema);
+export const Medication = mongoose.model('Medication', medicationSchema);

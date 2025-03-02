@@ -6,28 +6,72 @@ import {Coach} from "../models/coach.model.js"
 
 //here no need of rs so we put _
 
-export const verifyCoachJWT = asyncHandler( async (req, _, next) => {
-    // request has cookie parser by injecting middleware in app.js
-    // maybe cookies are sent by custom header
-  try {
-      const token =
-      req.cookies?.coachAccessToken || req.header("Authorization")?.replace("Bearer ", "")
-  
-      if(!token){
-          throw new ApiError(401, "Unauthorized request")
-      }
-  
-      const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
-      const coach = await Coach.findById(decodedToken?._id).select("-password -refreshToken")
-  
-      if(!coach){
-          //ToDO: Discuss about Frontend
-          throw new ApiError(401, "Invalid Access Token")
-      }
-  
-      req.coach = coach;
-      next()
-  } catch (error) {
-    throw new ApiError(401, error?.messge || "Invalid access token")
+
+const isTrainingStaffMiddleware = (req, res, next) => {
+  if (req.user.designation === 'training_staff') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied. Only Training and Conditioning Staff can perform this action.' });
   }
-})
+};
+
+const isCoachMiddleware = (req, res, next) => {
+  if (req.user.designation === 'head_coach' || req.user.designation === 'assistant_coach' || req.user.designation === 'training_staff') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied. Only coaches can perform this action.' });
+  }
+};
+
+const isAssignedAthleteMiddleware = async (req, res, next) => {
+  const { athleteId } = req.params;
+  const coachId = req.user._id;
+
+  try {
+    const coach = await Coach.findById(coachId);
+    if (!coach || !coach.assignedAthletes.includes(athleteId)) {
+      return res.status(403).json({ message: 'Access denied. Athlete is not assigned to you.' });
+    }
+
+    next();
+  } catch (error) {
+    res.status(500).json({ message: 'Error checking athlete assignment', error });
+  }
+};
+
+const validateRpeInputMiddleware = (req, res, next) => {
+  const { rpe, athleteId } = req.body;
+
+  if (!rpe || rpe < 1 || rpe > 10) {
+    return res.status(400).json({ message: 'Invalid RPE value. RPE must be between 1 and 10.' });
+  }
+
+  if (!athleteId) {
+    return res.status(400).json({ message: 'Athlete ID is required.' });
+  }
+
+  next();
+};
+
+const isOrganizationMemberMiddleware = (req, res, next) => {
+  const requestedOrganizationId = req.params.organizationId || req.body.organizationId;
+
+  if (req.user.organization.toString() === requestedOrganizationId) {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied. You do not belong to this organization.' });
+  }
+};
+
+
+
+
+
+export{
+  verifyCoachJWT,
+  isTrainingStaffMiddleware,
+  isCoachMiddleware,
+  isAssignedAthleteMiddleware,
+  validateRpeInputMiddleware,
+  isOrganizationMemberMiddleware
+}
