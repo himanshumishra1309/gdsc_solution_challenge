@@ -36,7 +36,7 @@ const CoachManagement = () => {
     setFilteredCoaches(sport === "All" ? coaches : coaches.filter((coach) => coach.sport === sport));
   };
 
-  // Navigate to Coach Dashboard
+  
   const handleViewProfile = (coachName) => {
     navigate(`/coach-dashboard/${coachName}`);
   };
@@ -177,7 +177,7 @@ const CoachManagement = () => {
             </div>
           </div>
 
-          {/* Modal Footer with Action Button */}
+          
           <DialogFooter className="mt-6">
             <Button className="w-full py-4" onClick={handleAddCoach}>
               Register Coach

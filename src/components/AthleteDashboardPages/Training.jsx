@@ -60,7 +60,7 @@ function Training() {
   const handleSendMessage = () => {
     if (message.trim()) {
       setChatMessages([...chatMessages, { from: "You", text: message }]);
-      setMessage(""); // Clear the message input field
+      setMessage(""); 
     }
   };
 

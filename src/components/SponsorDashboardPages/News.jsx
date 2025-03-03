@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
-// Sample news articles with sport categories
+// Sample news
 const newsArticles = [
   {
     title: 'India Clinches T20 Series Against Australia',
@@ -38,7 +38,7 @@ const newsArticles = [
 const News = () => {
   const [selectedSport, setSelectedSport] = useState('All');
   
-  // Function to filter news based on selected sport
+  
   const filteredNews = selectedSport === 'All' 
     ? newsArticles 
     : newsArticles.filter(article => article.sport === selectedSport);

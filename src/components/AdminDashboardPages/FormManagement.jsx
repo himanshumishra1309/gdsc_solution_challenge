@@ -3,7 +3,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-// Form types
+
 const formTypes = ["Injury Report", "Training Feedback", "Diet Plan"];
 
 const FormManagement = () => {
@@ -42,7 +42,7 @@ const FormManagement = () => {
 
   const handleSubmit = () => {
     if (selectedFormType === "Injury Report") {
-      // Validate required fields for Injury Report
+      // Validate required fields
       if (!formData.injuryDetails.injuryDetails.trim()) {
         setMessage("⚠️ Injury details cannot be empty.");
         return;
@@ -354,7 +354,7 @@ const FormManagement = () => {
         </div>
       )}
 
-      {/* Add Details for Training Feedback */}
+      {/* Training Feedback */}
       {selectedFormType === "Training Feedback" && (
         <div className="border p-4 rounded-lg shadow-sm space-y-4 bg-gray-100">
           <h3 className="text-xl font-semibold">Training Feedback</h3>
@@ -368,7 +368,7 @@ const FormManagement = () => {
         </div>
       )}
 
-      {/* Add Details for Diet Plan */}
+      {/* Diet Plan */}
       {selectedFormType === "Diet Plan" && (
         <div className="border p-4 rounded-lg shadow-sm space-y-4 bg-gray-100">
           <h3 className="text-xl font-semibold">Diet Plan</h3>

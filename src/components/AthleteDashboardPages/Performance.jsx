@@ -125,7 +125,7 @@ function Performance() {
                 </ResponsiveContainer>
               </div>
 
-              {/* RPE vs RP Comparison Line Graph and Radar Graph */}
+              {/* RPE vs RP Line Graph & Radar Graph */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={performanceData[selectedMonth][selectedWeek]}>

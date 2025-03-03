@@ -14,7 +14,7 @@ const AdminManagement = () => {
   const [admins, setAdmins] = useState(initialAdmins);
   const [newAdmin, setNewAdmin] = useState({ name: "", email: "", password: "" });
   const [editAdmin, setEditAdmin] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false); // To control dialog visibility
+  const [dialogOpen, setDialogOpen] = useState(false); 
 
   // Handle input change
   const handleInputChange = (e, type) => {
@@ -28,8 +28,8 @@ const AdminManagement = () => {
     if (newAdmin.name && newAdmin.email && newAdmin.password) {
       const newAdminWithId = { id: admins.length + 1, ...newAdmin };
       setAdmins([...admins, newAdminWithId]);
-      setNewAdmin({ name: "", email: "", password: "" }); // Reset the form
-      setDialogOpen(false); // Close the dialog after adding
+      setNewAdmin({ name: "", email: "", password: "" }); 
+      setDialogOpen(false); 
     }
   };
 

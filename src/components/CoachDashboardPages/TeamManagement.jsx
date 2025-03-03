@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, PlusCircle } from "lucide-react";
 
-// Define the positions for each sport
+
 const playerPositions = {
   Cricket: [
     "Batsman", "Bowler", "All-rounder", "Wicketkeeper"
@@ -89,7 +89,7 @@ const TeamManagement = () => {
         { name: newAthlete, position: playerPositions[selectedSport][0] },
       ],
     }));
-    setNewAthlete(""); // Clear input field
+    setNewAthlete(""); 
   };
 
   // Function to remove an athlete

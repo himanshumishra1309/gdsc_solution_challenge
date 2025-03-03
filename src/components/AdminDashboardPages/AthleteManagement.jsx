@@ -49,7 +49,7 @@ const AthleteManagement = () => {
     setFilteredAthletes(sport === "All" ? athletes : athletes.filter((a) => a.primarySport === sport || a.secondarySport === sport));
   };
 
-  // Navigate to Athlete Dashboard
+  
   const handleViewProfile = (athleteName) => {
     navigate(`/athlete-dashboard/${athleteName}`);
   };
@@ -197,7 +197,7 @@ const AthleteManagement = () => {
               />
             </div>
 
-            {/* Organization and ID Information */}
+            {/* Organization Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <input
                 type="text"

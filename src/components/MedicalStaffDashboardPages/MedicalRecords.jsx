@@ -41,9 +41,9 @@ const mockMedicalRecords = [
 
 // Function to calculate BMI
 const calculateBMI = (height, weight) => {
-  const heightInMeters = parseInt(height) / 100; // Convert height from cm to meters
-  const weightInKg = parseInt(weight); // Convert weight to kg
-  return (weightInKg / (heightInMeters * heightInMeters)).toFixed(2); // BMI formula
+  const heightInMeters = parseInt(height) / 100; 
+  const weightInKg = parseInt(weight); 
+  return (weightInKg / (heightInMeters * heightInMeters)).toFixed(2); 
 };
 
 function MedicalRecords() {
