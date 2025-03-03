@@ -1,0 +1,16 @@
+[
+    {
+      "name": "Sponsor A",
+      "email": "sponsorA@example.com",
+      "message": "We are interested in sponsoring your team.",
+      "details": "Sponsor A is a leading company in the sports industry...",
+      "profilePhoto": "assets/sponsor_a.jpg"
+    },
+    {
+      "name": "Sponsor B",
+      "email": "sponsorB@example.com",
+      "message": "We would like to discuss sponsorship opportunities.",
+      "details": "Sponsor B has been supporting sports teams for over a decade...",
+      "profilePhoto": "assets/sponsor_b.jpg"
+    }
+  ]

@@ -1,0 +1,17 @@
+[
+    {
+      "name": "Jane Smith",
+      "email": "jane.smith@example.com",
+      "dob": "01/01/1980",
+      "gender": "Female",
+      "nationality": "American",
+      "phone": "+1 234 567 891",
+      "country": "USA",
+      "state": "California",
+      "address": "456 Main St, Los Angeles, CA",
+      "experience": 10,
+      "certifications": "Certified Professional Coach",
+      "previousOrganizations": "XYZ Sports Club, ABC Academy",
+      "profilePhoto": "assets/images/player3.jpg"
+    }
+  ]
