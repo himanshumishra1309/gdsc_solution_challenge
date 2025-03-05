@@ -18,6 +18,8 @@ const athleteSchema = new mongoose.Schema(
     sex: { type: String, enum: ["Male", "Female", "Other"] },
     joined_date: { type: Date },
     sport: { type: String, enum: ["Cricket", "Basketball", "Football"] },
+    isIndependent: { type: Boolean, default: false }, // ✅ Flag for individual athletes
+
     currentLevel: {
       type: String,
       enum: ["Club", "District", "State", "National", "International"],
