@@ -25,7 +25,7 @@ import 'package:gdg_app/views/coach/coach_profile.dart';
 import 'package:gdg_app/views/player/fill_injury_form_view.dart';
 import 'package:gdg_app/views/player/medical_report_view.dart';
 import 'package:gdg_app/views/player/player_financial_view.dart';
-import 'package:gdg_app/views/player/player_profile.dart';
+import 'package:gdg_app/views/player/player_home.dart';
 import 'package:gdg_app/views/player/players_view_announcement.dart';
 import 'package:gdg_app/views/sponsor/find_profile_view.dart';
 import 'package:gdg_app/views/individual_register_view.dart';

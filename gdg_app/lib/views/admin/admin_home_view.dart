@@ -25,7 +25,7 @@ class AdminHomeView extends StatelessWidget {
     );
 
     if (shouldLogout) {
-      Navigator.pushReplacementNamed(context, '/home'); // Replace with your home route
+      Navigator.pushReplacementNamed(context, coachAdminPlayerRoute); // Replace with your home route
     }
 
     return shouldLogout;

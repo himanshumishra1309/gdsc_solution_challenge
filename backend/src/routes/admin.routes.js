@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { registerOrganizationAthlete, registerCoach, getAllUsers } from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
-import {verifyJWTCoach} from "../middlewares/auth.middleware.js"
-import { verifyAdmin } from "../middlewares/admin.middleware.js";
+// import {verifyJWTCoach} from "../middlewares/auth.middleware.js"
+// import { verifyAdmin } from "../middlewares/admin.middleware.js";
 
 
 const router = Router()

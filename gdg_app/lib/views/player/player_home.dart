@@ -22,7 +22,33 @@ class _PlayerProfileState extends State<PlayerProfile> {
       _selectedDrawerItem = item;
     });
     Navigator.pop(context); // Close the drawer
-    Navigator.pushReplacementNamed(context, item);// Handle navigation based on the selected item
+    Navigator.pushReplacementNamed(context, item); // Handle navigation based on the selected item
+  }
+
+  Future<bool> _onWillPop(BuildContext context) async {
+    bool shouldLogout = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Do you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout) {
+      Navigator.pushReplacementNamed(context, coachAdminPlayerRoute); // Replace with your home route
+    }
+
+    return shouldLogout;
   }
 
   @override
@@ -40,99 +66,102 @@ class _PlayerProfileState extends State<PlayerProfile> {
       DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Player Profile'),
-        backgroundColor: Colors.deepPurple,
-        iconTheme: const IconThemeData(
-          color: Colors.white,
+    return WillPopScope(
+      onWillPop: () => _onWillPop(context),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Player Home'),
+          backgroundColor: Colors.deepPurple,
+          iconTheme: const IconThemeData(
+            color: Colors.white,
+          ),
+          titleTextStyle: const TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+          toolbarHeight: 65.0,
         ),
-        titleTextStyle: const TextStyle(
-          fontSize: 20,
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
+        drawer: CustomDrawer(
+          selectedDrawerItem: _selectedDrawerItem,
+          onSelectDrawerItem: (route) {
+            Navigator.pop(context); // Close the drawer
+            if (ModalRoute.of(context)?.settings.name != route) {
+              Navigator.pushNamed(context, route);
+            }
+          },
+          drawerItems: drawerItems,
         ),
-        toolbarHeight: 65.0,
-      ),
-      drawer: CustomDrawer(
-        selectedDrawerItem: _selectedDrawerItem,
-        onSelectDrawerItem: (route) {
-          Navigator.pop(context); // Close the drawer
-          if (ModalRoute.of(context)?.settings.name != route) {
-            Navigator.pushNamed(context, route);
-          }
-        },
-        drawerItems: drawerItems,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // First Row: Graph and Week Dropdowns
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDropdown(
-                    value: _selectedGraph,
-                    items: ['RPE Line Graph', 'Spider Graph', 'Comparative RPE and RP Graph'],
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedGraph = newValue!;
-                      });
-                    },
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              // First Row: Graph and Week Dropdowns
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildDropdown(
+                      value: _selectedGraph,
+                      items: ['RPE Line Graph', 'Spider Graph', 'Comparative RPE and RP Graph'],
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedGraph = newValue!;
+                        });
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildDropdown(
-                    value: _selectedWeek,
-                    items: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedWeek = newValue!;
-                      });
-                    },
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildDropdown(
+                      value: _selectedWeek,
+                      items: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedWeek = newValue!;
+                        });
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Second Row: Month and Year Dropdowns
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDropdown(
-                    value: _selectedMonth,
-                    items: [
-                      'January', 'February', 'March', 'April', 'May', 'June',
-                      'July', 'August', 'September', 'October', 'November', 'December'
-                    ],
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedMonth = newValue!;
-                      });
-                    },
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Second Row: Month and Year Dropdowns
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildDropdown(
+                      value: _selectedMonth,
+                      items: [
+                        'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'
+                      ],
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedMonth = newValue!;
+                        });
+                      },
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildDropdown(
-                    value: _selectedYear,
-                    items: ['2023', '2024', '2025', '2026'],
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedYear = newValue!;
-                      });
-                    },
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildDropdown(
+                      value: _selectedYear,
+                      items: ['2023', '2024', '2025', '2026'],
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _selectedYear = newValue!;
+                        });
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: _buildGraph(),
-            ),
-          ],
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: _buildGraph(),
+              ),
+            ],
+          ),
         ),
       ),
     );

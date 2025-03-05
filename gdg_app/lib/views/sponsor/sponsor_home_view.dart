@@ -19,6 +19,32 @@ class _SponsorHomeViewState extends State<SponsorHomeView> {
   String _selectedDrawerItem = sponsorHomeViewRoute;
   String _searchQuery = '';
 
+  Future<bool> _onWillPop(BuildContext context) async {
+    bool shouldLogout = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Do you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout) {
+      Navigator.pushReplacementNamed(context, landingPageRoute); // Replace with your home route
+    }
+
+    return shouldLogout;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -83,146 +109,149 @@ class _SponsorHomeViewState extends State<SponsorHomeView> {
       DrawerItem(icon: Icons.search, title: 'Find Organization or Players', route: findOrganizationOrPlayersRoute),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sponsor Home'),
-        backgroundColor: Colors.deepPurple,
-        iconTheme: IconThemeData(
-          color: Colors.white, // Change this to the desired color
+    return WillPopScope(
+      onWillPop: () => _onWillPop(context),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Sponsor Home'),
+          backgroundColor: Colors.deepPurple,
+          iconTheme: IconThemeData(
+            color: Colors.white, // Change this to the desired color
+          ),
+          titleTextStyle: TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+          ),
+          toolbarHeight: 65.0,
         ),
-        titleTextStyle: TextStyle(
-          fontSize: 20,
-          color: Colors.white,
+        drawer: CustomDrawer(
+          selectedDrawerItem: _selectedDrawerItem,
+          onSelectDrawerItem: (route) {
+            Navigator.pop(context); // Close the drawer
+            if (ModalRoute.of(context)?.settings.name != route) {
+              Navigator.pushNamed(context, route);
+            }
+          },
+          drawerItems: drawerItems,
         ),
-        toolbarHeight: 65.0,
-      ),
-      drawer: CustomDrawer(
-        selectedDrawerItem: _selectedDrawerItem,
-        onSelectDrawerItem: (route) {
-          Navigator.pop(context); // Close the drawer
-          if (ModalRoute.of(context)?.settings.name != route) {
-            Navigator.pushNamed(context, route);
-          }
-        },
-        drawerItems: drawerItems,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: _filterNews,
-                    decoration: InputDecoration(
-                      labelText: 'Search',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 16),
-                DropdownButton<String>(
-                  value: _selectedSport,
-                  onChanged: _onSportChanged,
-                  items: <String>['cricket', 'football', 'badminton']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value.capitalize()),
-                    );
-                  }).toList(),
-                  style: TextStyle(color: Colors.deepPurple, fontSize: 18),
-                  dropdownColor: Colors.white,
-                  iconEnabledColor: Colors.deepPurple,
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                  childAspectRatio: 2 / 3,
-                ),
-                itemCount: currentNews.length,
-                itemBuilder: (context, index) {
-                  final news = currentNews[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: 120,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            image: DecorationImage(
-                              image: AssetImage(news['image']),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            news['title'],
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            news['description'],
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Row(
                 children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back),
-                    onPressed: _currentPage > 1 ? () => _onPageChanged(_currentPage - 1) : null,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.deepPurple),
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                    child: Text(
-                      'Page $_currentPage of $totalPages',
-                      style: TextStyle(
-                        color: Colors.deepPurple,
-                        fontSize: 16,
+                  Expanded(
+                    child: TextField(
+                      onChanged: _filterNews,
+                      decoration: InputDecoration(
+                        labelText: 'Search',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.search),
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.arrow_forward),
-                    onPressed: _currentPage < totalPages ? () => _onPageChanged(_currentPage + 1) : null,
+                  SizedBox(width: 16),
+                  DropdownButton<String>(
+                    value: _selectedSport,
+                    onChanged: _onSportChanged,
+                    items: <String>['cricket', 'football', 'badminton']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value.capitalize()),
+                      );
+                    }).toList(),
+                    style: TextStyle(color: Colors.deepPurple, fontSize: 18),
+                    dropdownColor: Colors.white,
+                    iconEnabledColor: Colors.deepPurple,
                   ),
                 ],
               ),
-            ),
-          ],
+              SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16.0,
+                    mainAxisSpacing: 16.0,
+                    childAspectRatio: 2 / 3,
+                  ),
+                  itemCount: currentNews.length,
+                  itemBuilder: (context, index) {
+                    final news = currentNews[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 120,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              image: DecorationImage(
+                                image: AssetImage(news['image']),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              news['title'],
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              news['description'],
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.arrow_back),
+                      onPressed: _currentPage > 1 ? () => _onPageChanged(_currentPage - 1) : null,
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.deepPurple),
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: Text(
+                        'Page $_currentPage of $totalPages',
+                        style: TextStyle(
+                          color: Colors.deepPurple,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.arrow_forward),
+                      onPressed: _currentPage < totalPages ? () => _onPageChanged(_currentPage + 1) : null,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
