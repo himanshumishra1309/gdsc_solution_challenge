@@ -204,8 +204,10 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
       drawer: CustomDrawer(
         selectedDrawerItem: '/fill-injury-form',
         onSelectDrawerItem: (route) {
-          Navigator.pop(context);
-          Navigator.pushReplacementNamed(context, route);
+          Navigator.pop(context); // Close the drawer
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
         },
         drawerItems: [
           DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerProfileRoute),

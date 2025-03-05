@@ -108,8 +108,10 @@ class _NutritionPlanState extends State<NutritionPlan> {
       drawer: CustomDrawer(
         selectedDrawerItem: '/nutritional-plan',
         onSelectDrawerItem: (route) {
-          Navigator.pop(context);
-          Navigator.pushReplacementNamed(context, route);
+          Navigator.pop(context); // Close the drawer
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
         },
         drawerItems: [
           DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerProfileRoute),
@@ -121,7 +123,7 @@ class _NutritionPlanState extends State<NutritionPlan> {
           DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
           DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
           DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+          DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
         ],
       ),
       body: Padding(

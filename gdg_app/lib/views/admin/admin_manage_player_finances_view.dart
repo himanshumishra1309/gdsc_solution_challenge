@@ -19,7 +19,6 @@ class _AdminFinancialViewState extends State<AdminFinancialView> {
     {'name': 'Player 1', 'image': 'assets/player1.png'},
     {'name': 'Player 2', 'image': 'assets/player2.png'},
     {'name': 'Player 3', 'image': 'assets/player3.png'},
-    // Add more players as needed
   ];
 
   Map<String, double> _financeData = {
@@ -193,8 +192,13 @@ class _AdminFinancialViewState extends State<AdminFinancialView> {
         toolbarHeight: 65.0,
       ),
       drawer: CustomDrawer(
-        selectedDrawerItem: _selectedDrawerItem,
-        onSelectDrawerItem: _onSelectDrawerItem,
+        selectedDrawerItem: viewAllCoachesRoute,
+        onSelectDrawerItem: (route) {
+          Navigator.pop(context); // Close the drawer
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
+        },
         drawerItems: drawerItems,
       ),
       body: Padding(

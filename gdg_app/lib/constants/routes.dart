@@ -35,3 +35,6 @@ const gameVideosRoute = '/game-videos';
 const viewContactSponsorRoute = '/view-contact-sponsor';
 const individualDailyDietRoute = '/individual-daily-diet';
 const individualGymPlanRoute = '/individual-gym-plan';
+const individualFinancesRoute = '/individual-finances';
+const playerFinancialViewRoute = '/player-financial-view';
+const adminManagePlayerFinancesRoute = '/admin-manage-player-finances';

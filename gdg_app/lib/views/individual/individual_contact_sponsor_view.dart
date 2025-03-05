@@ -66,7 +66,12 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       ),
       drawer: CustomDrawer(
         selectedDrawerItem: _selectedDrawerItem,
-        onSelectDrawerItem: _onSelectDrawerItem,
+        onSelectDrawerItem: (route) {
+          Navigator.pop(context); // Close the drawer
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
+        },
         drawerItems: drawerItems,
       ),
       body: Padding(
