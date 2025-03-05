@@ -181,8 +181,13 @@ const loginAthlete = asyncHandler(async (req,res) => {
      .cookie("athleteRefreshToken", athleteRefreshToken, options)
      .json(
         new ApiResponse(
-            200,{
-                user:loggedInUser, athleteAccessToken, athleteRefreshToken
+            200,
+                {
+                    user: {
+                      ...loggedInUser.toObject(),
+                      isIndependent: user.isIndependent, // ✅ Add flag for frontend
+                      organization: user.organization ? user.organization : null, // ✅ Ensure null for independent athletes
+                    }, athleteAccessToken, athleteRefreshToken
             },
             "Athlete logged in Successfully"
         )

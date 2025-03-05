@@ -19,8 +19,13 @@ import jwt from 'jsonwebtoken'
 
 
 
-const registerAthlete = asyncHandler(async (req, res) => {
+const registerOrganizationAthlete = asyncHandler(async (req, res) => {
   const { name, email, password, organizationId, sport } = req.body;
+
+    // 1️⃣ Ensure organization ID is provided
+    if (!organizationId) {
+      throw new ApiError(400, "Organization ID is required for organization athletes");
+    }
 
   // ✅ Check if athlete already exists
   const existingAthlete = await Athlete.findOne({ email });
@@ -28,9 +33,9 @@ const registerAthlete = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Athlete with this email already exists");
   }
 
-  // ✅ Verify if Organization exists
-  const organization = await Organization.findById(organizationId);
-  if (!organization) {
+  // 2️⃣ Validate if the organization exists
+  const organizationExists = await Organization.exists({ _id: organizationId });
+  if (!organizationExists) {
     throw new ApiError(404, "Organization not found");
   }
 
@@ -39,8 +44,9 @@ const registerAthlete = asyncHandler(async (req, res) => {
     name,
     email,
     password, // Will be hashed automatically in the model
-    organization: organizationId,
     sport,
+    isIndependent: false, // ✅ Automatically set for organization athletes
+    organization: organizationId, // ✅ Assign valid organization
   });
 
   // ✅ Send Email with Login Credentials
@@ -63,6 +69,7 @@ const registerAthlete = asyncHandler(async (req, res) => {
       name: athlete.name,
       email: athlete.email,
       sportType: organization.sportType, // Get sport from organization
+      isIndependent: false, // ✅ Ensures frontend understands athlete belongs to an organization
       organization: organizationId,
     },
   });
@@ -299,7 +306,7 @@ const getRpeInsights = asyncHandler(async (req, res) => {
   
   
   export {
-    registerAthlete,
+    registerOrganizationAthlete,
     registerCoach,
     getAllUsers,
     generateAccessAndRefreshToken,

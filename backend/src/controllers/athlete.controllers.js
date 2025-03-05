@@ -102,6 +102,88 @@ const getAthletes = asyncHandler(async (req, res) => {
     });
   });
 
+const registerIndependentAthlete = asyncHandler(async (req, res) => {
+    const { name, email, password, sportType } = req.body;
+  
+    // Check if athlete already exists
+    const existingAthlete = await Athlete.findOne({ email });
+    if (existingAthlete) {
+      throw new ApiError(400, "An athlete with this email already exists");
+    }
+  
+    // Create Independent Athlete
+    const athlete = await Athlete.create({
+      name,
+      email,
+      password,
+      sportType,
+      isIndependent: true, // ✅ Automatically set for independent athletes
+      organization: null, // ✅ No organization assigned
+    });
+  
+    res.status(201).json({
+      success: true,
+      message: "Independent athlete registered successfully",
+      athlete: {
+        _id: athlete._id,
+        name: athlete.name,
+        email: athlete.email,
+        sportType: athlete.sportType,
+        isIndependent: true,
+        organization: null,
+      },
+    });
+  });
+
+  const loginIndependentAthlete = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+  
+    if (!email || !password) {
+      throw new ApiError(400, "Email and password are required");
+    }
+  
+    // Find independent athlete
+    const user = await Athlete.findOne({ email, isIndependent: true });
+  
+    if (!user) {
+      throw new ApiError(400, "Independent athlete doesn't exist");
+    }
+  
+    // Validate password
+    const isPasswordValid = await user.isPasswordCorrect(password);
+    if (!isPasswordValid) {
+      throw new ApiError(401, "Invalid credentials");
+    }
+  
+    // Generate JWT tokens
+    const { athleteRefreshToken, athleteAccessToken } = await generateAccessAndRefreshToken(user._id, Athlete);
+  
+    const options = { httpOnly: true, secure: true };
+  
+    return res
+      .status(200)
+      .cookie("athleteAccessToken", athleteAccessToken, options)
+      .cookie("athleteRefreshToken", athleteRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            user: {
+              _id: user._id,
+              name: user.name,
+              email: user.email,
+              sportType: user.sportType, // ✅ Include sport
+              isIndependent: true, // ✅ Ensures this is an individual
+              organization: null,
+            },
+            athleteAccessToken,
+            athleteRefreshToken,
+          },
+          "Independent athlete logged in successfully"
+        )
+      );
+  });
+  
 
 
 
@@ -109,5 +191,7 @@ export{
     generateAccessAndRefreshToken,
     logoutUser,
     getAthleteProfile,
-    getAthletes
+    getAthletes,
+    registerIndependentAthlete,
+    loginIndependentAthlete
 }

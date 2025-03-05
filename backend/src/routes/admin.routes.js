@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerAthlete, registerCoach, getAllUsers } from "../controllers/admin.controllers.js";
+import { registerOrganizationAthlete, registerCoach, getAllUsers } from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
 import {verifyJWTCoach} from "../middlewares/auth.middleware.js"
 import { verifyAdmin } from "../middlewares/admin.middleware.js";
@@ -9,7 +9,7 @@ const router = Router()
 
 
 
-router.post("/register-athlete",verifyJWTAdmin, registerAthlete);
+router.post("/register-athlete",verifyJWTAdmin, registerOrganizationAthlete);
 router.post("/register-coach",verifyJWTAdmin, registerCoach);
 
 
