@@ -18,6 +18,32 @@ class _CoachHomePageState extends State<CoachHomePage> {
   String _searchQuery = '';
   String _selectedDrawerItem = coachHomeRoute; // Use route for selection
 
+  Future<bool> _onWillPop(BuildContext context) async {
+    bool shouldLogout = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Do you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout) {
+      Navigator.pushReplacementNamed(context, coachAdminPlayerRoute); // Replace with your home route
+    }
+
+    return shouldLogout;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -60,76 +86,79 @@ class _CoachHomePageState extends State<CoachHomePage> {
       DrawerItem(icon: Icons.person, title: 'View Profile', route: coachProfileRoute),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Coach Home Page'),
-        backgroundColor: Colors.deepPurple,
-        iconTheme: IconThemeData(color: Colors.white),
-        titleTextStyle: TextStyle(fontSize: 20, color: Colors.white),
-        toolbarHeight: 65.0,
-      ),
-      drawer: CustomDrawer(
-        selectedDrawerItem: _selectedDrawerItem,
-        onSelectDrawerItem: _onSelectDrawerItem,
-        drawerItems: drawerItems,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (value) {
-                      _searchQuery = value;
-                      _filterPlayers();
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Search',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.search),
+    return WillPopScope(
+      onWillPop: () => _onWillPop(context),
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Coach Home Page'),
+          backgroundColor: Colors.deepPurple,
+          iconTheme: IconThemeData(color: Colors.white),
+          titleTextStyle: TextStyle(fontSize: 20, color: Colors.white),
+          toolbarHeight: 65.0,
+        ),
+        drawer: CustomDrawer(
+          selectedDrawerItem: _selectedDrawerItem,
+          onSelectDrawerItem: _onSelectDrawerItem,
+          drawerItems: drawerItems,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      onChanged: (value) {
+                        _searchQuery = value;
+                        _filterPlayers();
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Search',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.search),
+                      ),
                     ),
                   ),
-                ),
-                SizedBox(width: 16),
-                DropdownButton<String>(
-                  value: _selectedSport,
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedSport = newValue!;
-                      _filterPlayers();
-                    });
-                  },
-                  items: <String>['Cricket', 'Football', 'Badminton']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _filteredPlayers.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: AssetImage(_filteredPlayers[index]['profileImage']),
-                    ),
-                    title: Text(
-                      _filteredPlayers[index]['name'],
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(_filteredPlayers[index]['role']),
-                  );
-                },
+                  SizedBox(width: 16),
+                  DropdownButton<String>(
+                    value: _selectedSport,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _selectedSport = newValue!;
+                        _filterPlayers();
+                      });
+                    },
+                    items: <String>['Cricket', 'Football', 'Badminton']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ],
               ),
-            ),
-          ],
+              SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _filteredPlayers.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundImage: AssetImage(_filteredPlayers[index]['profileImage']),
+                      ),
+                      title: Text(
+                        _filteredPlayers[index]['name'],
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(_filteredPlayers[index]['role']),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

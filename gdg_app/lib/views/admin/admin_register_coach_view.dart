@@ -24,7 +24,20 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
   final _certificationsController = TextEditingController();
   final _previousOrganizationsController = TextEditingController();
 
-  // Success popup
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != DateTime.now()) {
+      setState(() {
+        _dobController.text = "${picked.toLocal()}".split(' ')[0];
+      });
+    }
+  }
+
   void _showSuccessPopup() {
     showDialog(
       context: context,
@@ -46,12 +59,12 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
     );
   }
 
-  // Reusable form field widget
   Widget _buildFormField({
     required TextEditingController controller,
     required String labelText,
     required String? Function(String?) validator,
     IconData? icon,
+    bool isDateField = false,
   }) {
     return Card(
       elevation: 2,
@@ -69,6 +82,8 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
             icon: icon != null ? Icon(icon, color: Colors.deepPurple) : null,
           ),
           validator: validator,
+          readOnly: isDateField,
+          onTap: isDateField ? () => _selectDate(context) : null,
         ),
       ),
     );
@@ -78,25 +93,23 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Register Coach', style: TextStyle(color: Colors.white)),
+        title: const Text('Register Coach'),
         backgroundColor: Colors.deepPurple,
         iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurple, Colors.purpleAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+        titleTextStyle: const TextStyle(
+          fontSize: 20,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
         ),
+        toolbarHeight: 65.0,
       ),
       drawer: CustomDrawer(
         selectedDrawerItem: registerCoachRoute,
         onSelectDrawerItem: (route) {
-          Navigator.pop(context);
-          Navigator.pushReplacementNamed(context, route);
+          Navigator.pop(context); // Close the drawer
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
         },
         drawerItems: [
           DrawerItem(icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
@@ -108,101 +121,130 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
           DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
           DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
           DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
+          DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
         ],
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _nameController,
-                labelText: 'Full Name',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the full name' : null,
-                icon: Icons.person,
+        child: Column(
+          children: [
+            // Fixed Box with Scrollable Content
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.5),
+                      spreadRadius: 2,
+                      blurRadius: 5,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      children: [
+                        _buildFormField(
+                          controller: _nameController,
+                          labelText: 'Full Name',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the full name' : null,
+                          icon: Icons.person,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _emailController,
+                          labelText: 'Email Address',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the email address' : null,
+                          icon: Icons.email,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _dobController,
+                          labelText: 'Date of Birth',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the date of birth' : null,
+                          icon: Icons.calendar_today,
+                          isDateField: true,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _genderController,
+                          labelText: 'Gender',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the gender' : null,
+                          icon: Icons.transgender,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _nationalityController,
+                          labelText: 'Nationality',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the nationality' : null,
+                          icon: Icons.flag,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _phoneController,
+                          labelText: 'Phone Number',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the phone number' : null,
+                          icon: Icons.phone,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _countryController,
+                          labelText: 'Country',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the country' : null,
+                          icon: Icons.location_on,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _stateController,
+                          labelText: 'State',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the state' : null,
+                          icon: Icons.location_city,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _addressController,
+                          labelText: 'Address',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the address' : null,
+                          icon: Icons.home,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _experienceController,
+                          labelText: 'Years of Experience',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the years of experience' : null,
+                          icon: Icons.work,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _certificationsController,
+                          labelText: 'Certifications & Licenses',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the certifications & licenses' : null,
+                          icon: Icons.assignment,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildFormField(
+                          controller: _previousOrganizationsController,
+                          labelText: 'Previous Coaching Organizations',
+                          validator: (value) => value?.isEmpty ?? true ? 'Please enter the previous coaching organizations' : null,
+                          icon: Icons.business,
+                        ),
+                        const SizedBox(height: 16), // Space for the fixed button
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _emailController,
-                labelText: 'Email Address',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the email address' : null,
-                icon: Icons.email,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _dobController,
-                labelText: 'Date of Birth',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the date of birth' : null,
-                icon: Icons.calendar_today,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _genderController,
-                labelText: 'Gender',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the gender' : null,
-                icon: Icons.transgender,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _nationalityController,
-                labelText: 'Nationality',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the nationality' : null,
-                icon: Icons.flag,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _phoneController,
-                labelText: 'Phone Number',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the phone number' : null,
-                icon: Icons.phone,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _countryController,
-                labelText: 'Country',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the country' : null,
-                icon: Icons.location_on,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _stateController,
-                labelText: 'State',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the state' : null,
-                icon: Icons.location_city,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _addressController,
-                labelText: 'Address',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the address' : null,
-                icon: Icons.home,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _experienceController,
-                labelText: 'Years of Experience',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the years of experience' : null,
-                icon: Icons.work,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _certificationsController,
-                labelText: 'Certifications & Licenses',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the certifications & licenses' : null,
-                icon: Icons.assignment,
-              ),
-              const SizedBox(height: 16),
-              _buildFormField(
-                controller: _previousOrganizationsController,
-                labelText: 'Previous Coaching Organizations',
-                validator: (value) => value?.isEmpty ?? true ? 'Please enter the previous coaching organizations' : null,
-                icon: Icons.business,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
+            ),
+            // Fixed Register Button at the Bottom of the Box
+            Container(
+              margin: const EdgeInsets.only(top: 16),
+              width: double.infinity,
+              child: ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     _showSuccessPopup();
@@ -210,15 +252,15 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: const Text('Register', style: TextStyle(color: Colors.white, fontSize: 18)),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

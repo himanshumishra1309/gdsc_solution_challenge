@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:gdg_app/popups/alert_message.dart';
@@ -15,7 +17,6 @@ class _AdminRegisterAdminViewState extends State<AdminRegisterAdminView> {
   final List<Map<String, String>> _admins = [
     {'name': 'John Doe', 'email': 'john.doe@example.com'},
     {'name': 'Jane Smith', 'email': 'jane.smith@example.com'},
-    // Add more admins here...
   ];
 
   List<Map<String, String>> get _filteredAdmins {
@@ -37,9 +38,9 @@ class _AdminRegisterAdminViewState extends State<AdminRegisterAdminView> {
       context: context,
       builder: (BuildContext context) {
         return RegisterAdminForm(
-          onRegister: (name, email) {
+          onRegister: (name, email, avatar) {
             setState(() {
-              _admins.add({'name': name, 'email': email});
+              _admins.add({'name': name, 'email': email, 'avatar': avatar});
             });
           },
         );
@@ -47,89 +48,109 @@ class _AdminRegisterAdminViewState extends State<AdminRegisterAdminView> {
     );
   }
 
+  Future<bool> _onWillPop() async {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return Future.value(false); // Prevents default behavior
+    }
+    return Future.value(true); // Allows popping if no pages left
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register Admin'),
-        backgroundColor: Colors.deepPurple,
-        iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: const TextStyle(
-          fontSize: 20,
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
+    return WillPopScope(
+      onWillPop: _onWillPop,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Register Admin'),
+          backgroundColor: Colors.deepPurple,
+          iconTheme: const IconThemeData(color: Colors.white),
+          titleTextStyle: const TextStyle(
+            fontSize: 20,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+          toolbarHeight: 65.0,
         ),
-        toolbarHeight: 65.0,
-      ),
-      drawer: CustomDrawer(
-        selectedDrawerItem: registerAdminRoute,
-        onSelectDrawerItem: (route) {
-          Navigator.pop(context);
-          Navigator.pushReplacementNamed(context, route);
-        },
-        drawerItems: [
-          DrawerItem(icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Admin', route: registerAdminRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Coach', route: registerCoachRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Player', route: registerPlayerRoute),
-          DrawerItem(icon: Icons.people, title: 'View All Players', route: viewAllPlayersRoute),
-          DrawerItem(icon: Icons.people, title: 'View All Coaches', route: viewAllCoachesRoute),
-          DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
-          DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
-          DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              onChanged: _onSearchChanged,
-              decoration: InputDecoration(
-                labelText: 'Search',
-                prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.deepPurple),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _filteredAdmins.length,
-                itemBuilder: (context, index) {
-                  final admin = _filteredAdmins[index];
-                  return Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: ListTile(
-                      title: Text(admin['name']!),
-                      subtitle: Text(admin['email']!),
-                    ),
-                  );
-                },
-              ),
-            ),
+        drawer: CustomDrawer(
+          selectedDrawerItem: registerAdminRoute,
+          onSelectDrawerItem: (route) {
+            Navigator.pop(context); // Close the drawer
+            if (ModalRoute.of(context)?.settings.name != route) {
+              Navigator.pushNamed(context, route);
+            }
+          },
+          drawerItems: [
+            DrawerItem(icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
+            DrawerItem(icon: Icons.person_add, title: 'Register Admin', route: registerAdminRoute),
+            DrawerItem(icon: Icons.person_add, title: 'Register Coach', route: registerCoachRoute),
+            DrawerItem(icon: Icons.person_add, title: 'Register Player', route: registerPlayerRoute),
+            DrawerItem(icon: Icons.people, title: 'View All Players', route: viewAllPlayersRoute),
+            DrawerItem(icon: Icons.people, title: 'View All Coaches', route: viewAllCoachesRoute),
+            DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
+            DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
+            DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
+            DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showRegisterAdminForm,
-        backgroundColor: Colors.deepPurple,
-        child: const Icon(Icons.add, color: Colors.white),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              TextField(
+                onChanged: _onSearchChanged,
+                decoration: InputDecoration(
+                  labelText: 'Search',
+                  prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.deepPurple),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _filteredAdmins.length,
+                  itemBuilder: (context, index) {
+                    final admin = _filteredAdmins[index];
+                    return Card(
+                      elevation: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: ListTile(
+                        leading: admin['avatar'] != null
+                            ? CircleAvatar(
+                                backgroundImage: FileImage(File(admin['avatar']!)),
+                              )
+                            : const CircleAvatar(
+                                child: Icon(Icons.person),
+                              ),
+                        title: Text(admin['name']!),
+                        subtitle: Text(admin['email']!),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _showRegisterAdminForm,
+          backgroundColor: Colors.deepPurple,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }
 }
 
 class RegisterAdminForm extends StatefulWidget {
-  final Function(String, String) onRegister;
+  final Function(String, String, String) onRegister;
 
   const RegisterAdminForm({required this.onRegister, super.key});
 
@@ -142,6 +163,19 @@ class _RegisterAdminFormState extends State<RegisterAdminForm> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  String? _avatarPath;
+
+  Future<void> _pickImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+    );
+
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _avatarPath = result.files.single.path!;
+      });
+    }
+  }
 
   void _showConfirmationDialog() {
     AlertMessage.showAlert(
@@ -151,7 +185,7 @@ class _RegisterAdminFormState extends State<RegisterAdminForm> {
         AlertOption(
           label: 'Yes',
           onPressed: () {
-            widget.onRegister(_nameController.text, _emailController.text);
+            widget.onRegister(_nameController.text, _emailController.text, _avatarPath ?? '');
             Navigator.of(context).pop(); // Close the confirmation dialog
           },
         ),
@@ -207,6 +241,29 @@ class _RegisterAdminFormState extends State<RegisterAdminForm> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  _avatarPath != null
+                      ? CircleAvatar(
+                          backgroundImage: FileImage(File(_avatarPath!)),
+                          radius: 30,
+                        )
+                      : const CircleAvatar(
+                          radius: 30,
+                          child: Icon(Icons.person),
+                        ),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    onPressed: _pickImage,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Text('Upload Avatar', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
               ),
             ],
           ),

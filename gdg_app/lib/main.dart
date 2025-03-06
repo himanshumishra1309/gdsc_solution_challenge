@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:gdg_app/views/admin/admin_access_form.dart';
 import 'package:gdg_app/views/admin/admin_home_view.dart';
-import 'package:gdg_app/views/admin/admin_player_coach_option.dart';
+import 'package:gdg_app/views/admin/admin_manage_player_finances_view.dart';
+import 'package:gdg_app/views/admin_player_coach_option.dart';
 import 'package:gdg_app/views/admin/admin_register_admin_view.dart';
 import 'package:gdg_app/views/admin/admin_register_coach_view.dart';
 import 'package:gdg_app/views/admin/admin_register_player_view.dart';
@@ -13,6 +14,7 @@ import 'package:gdg_app/views/admin/admin_view_request_sponsors.dart';
 import 'package:gdg_app/views/individual/individual_achievement_view.dart';
 import 'package:gdg_app/views/individual/individual_contact_sponsor_view.dart';
 import 'package:gdg_app/views/individual/individual_daily_diet_view.dart';
+import 'package:gdg_app/views/individual/individual_finances_view.dart';
 import 'package:gdg_app/views/individual/individual_game_view.dart';
 import 'package:gdg_app/views/individual/individual_gym_plan_view.dart';
 import 'package:gdg_app/views/individual/individual_home_view.dart';
@@ -22,10 +24,11 @@ import 'package:gdg_app/views/coach/coach_make_an_announcement.dart';
 import 'package:gdg_app/views/coach/coach_profile.dart';
 import 'package:gdg_app/views/player/fill_injury_form_view.dart';
 import 'package:gdg_app/views/player/medical_report_view.dart';
-import 'package:gdg_app/views/player/player_profile.dart';
+import 'package:gdg_app/views/player/player_financial_view.dart';
+import 'package:gdg_app/views/player/player_home.dart';
 import 'package:gdg_app/views/player/players_view_announcement.dart';
 import 'package:gdg_app/views/sponsor/find_profile_view.dart';
-import 'package:gdg_app/views/individual/individual_register_view.dart';
+import 'package:gdg_app/views/individual_register_view.dart';
 import 'package:gdg_app/views/sponsor/invitation_view.dart';
 import 'package:gdg_app/views/landing_page_view.dart';
 import 'package:gdg_app/views/login_view.dart';
@@ -97,6 +100,9 @@ void main() {
       viewContactSponsorRoute: (context) => const IndividualContactSponsorView(),
       individualDailyDietRoute: (context) => const IndividualDailyDietView(),
       individualGymPlanRoute: (context) => const IndividualGymPlanView(),
+      individualFinancesRoute: (context) => const IndividualFinances(),
+      playerFinancialViewRoute: (context) => const PlayerFinancialView(),
+      adminManagePlayerFinancesRoute: (context) => const AdminFinancialView(),
     },
   ));
 }

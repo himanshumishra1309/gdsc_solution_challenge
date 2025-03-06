@@ -87,8 +87,10 @@ class _AdminAccessFormState extends State<AdminAccessForm> {
       drawer: CustomDrawer(
         selectedDrawerItem: editFormsRoute,
         onSelectDrawerItem: (route) {
-          Navigator.pop(context);
-          Navigator.pushReplacementNamed(context, route);
+          Navigator.pop(context); // Close the drawer
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
         },
         drawerItems: [
           DrawerItem(icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
@@ -100,7 +102,7 @@ class _AdminAccessFormState extends State<AdminAccessForm> {
           DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
           DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
           DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
+          DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
         ],
       ),
       body: SingleChildScrollView(
