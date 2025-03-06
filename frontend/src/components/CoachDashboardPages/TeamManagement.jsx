@@ -6,22 +6,70 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, PlusCircle } from "lucide-react";
 
-const initialSportsTeams = {
+
+const playerPositions = {
   Cricket: [
-    "Virat Sharma", "Rohit Mehta", "Sachin Verma", "Rahul Iyer", "Suresh Nair",
-    "Manish Tiwari", "Hardik Rao", "Jasprit Kulkarni", "Mohammed Yadav", "Bhuvaneshwar Pillai", "Ishan Joshi"
+    "Batsman", "Bowler", "All-rounder", "Wicketkeeper"
   ],
   Kabaddi: [
-    "Ajay Rathi", "Pawan Desai", "Manjeet Chauhan", "Sandeep Patil", "Surjeet Nair",
-    "Rohit Reddy", "Vikas Saxena"
+    "Raider", "Defender", "All-rounder"
   ],
   Hockey: [
-    "Dhyan Thakur", "Sandeep Bhalla", "Harman Chawla", "Rupinder Nayak", "Birendra Kapoor",
-    "Varun Ahuja", "Akash Singh", "Amit Khurana", "Mandeep Joshi", "Simranjit Arora", "Lalit Bhasin"
+    "Forward", "Midfielder", "Defender", "Goalkeeper"
   ],
   Football: [
-    "Sunil Nair", "Gurpreet Reddy", "Sandesh Malik", "Anirudh Das", "Brandon Menon",
-    "Sahal Fernandes", "Udanta Kumar", "Manvir Shah", "Rahul Gupta", "Jeakson Paul", "Liston Pinto"
+    "Forward", "Midfielder", "Defender", "Goalkeeper"
+  ],
+};
+
+const initialSportsTeams = {
+  Cricket: [
+    { name: "Virat Sharma", position: "Batsman" },
+    { name: "Rohit Mehta", position: "Bowler" },
+    { name: "Sachin Verma", position: "All-rounder" },
+    { name: "Rahul Iyer", position: "Wicketkeeper" },
+    { name: "Suresh Nair", position: "Batsman" },
+    { name: "Manish Tiwari", position: "Bowler" },
+    { name: "Hardik Rao", position: "All-rounder" },
+    { name: "Jasprit Kulkarni", position: "Bowler" },
+    { name: "Mohammed Yadav", position: "Bowler" },
+    { name: "Bhuvaneshwar Pillai", position: "Batsman" },
+    { name: "Ishan Joshi", position: "Wicketkeeper" }
+  ],
+  Kabaddi: [
+    { name: "Ajay Rathi", position: "Raider" },
+    { name: "Pawan Desai", position: "Defender" },
+    { name: "Manjeet Chauhan", position: "Raider" },
+    { name: "Sandeep Patil", position: "Defender" },
+    { name: "Surjeet Nair", position: "All-rounder" },
+    { name: "Rohit Reddy", position: "Raider" },
+    { name: "Vikas Saxena", position: "Defender" }
+  ],
+  Hockey: [
+    { name: "Dhyan Thakur", position: "Forward" },
+    { name: "Sandeep Bhalla", position: "Midfielder" },
+    { name: "Harman Chawla", position: "Defender" },
+    { name: "Rupinder Nayak", position: "Defender" },
+    { name: "Birendra Kapoor", position: "Goalkeeper" },
+    { name: "Varun Ahuja", position: "Midfielder" },
+    { name: "Akash Singh", position: "Forward" },
+    { name: "Amit Khurana", position: "Defender" },
+    { name: "Mandeep Joshi", position: "Midfielder" },
+    { name: "Simranjit Arora", position: "Forward" },
+    { name: "Lalit Bhasin", position: "Goalkeeper" }
+  ],
+  Football: [
+    { name: "Sunil Nair", position: "Forward" },
+    { name: "Gurpreet Reddy", position: "Goalkeeper" },
+    { name: "Sandesh Malik", position: "Defender" },
+    { name: "Anirudh Das", position: "Midfielder" },
+    { name: "Brandon Menon", position: "Midfielder" },
+    { name: "Sahal Fernandes", position: "Midfielder" },
+    { name: "Udanta Kumar", position: "Forward" },
+    { name: "Manvir Shah", position: "Forward" },
+    { name: "Rahul Gupta", position: "Defender" },
+    { name: "Jeakson Paul", position: "Midfielder" },
+    { name: "Liston Pinto", position: "Forward" }
   ],
 };
 
@@ -33,19 +81,24 @@ const TeamManagement = () => {
 
   // Function to add a new athlete
   const handleAddAthlete = () => {
-    if (newAthlete.trim() === "") return; 
+    if (newAthlete.trim() === "") return;
     setSportsTeams((prevTeams) => ({
       ...prevTeams,
-      [selectedSport]: [...prevTeams[selectedSport], newAthlete],
+      [selectedSport]: [
+        ...prevTeams[selectedSport],
+        { name: newAthlete, position: playerPositions[selectedSport][0] },
+      ],
     }));
     setNewAthlete(""); 
   };
 
-  
-  const handleRemoveAthlete = (athlete) => {
+  // Function to remove an athlete
+  const handleRemoveAthlete = (athleteName) => {
     setSportsTeams((prevTeams) => ({
       ...prevTeams,
-      [selectedSport]: prevTeams[selectedSport].filter((a) => a !== athlete),
+      [selectedSport]: prevTeams[selectedSport].filter(
+        (athlete) => athlete.name !== athleteName
+      ),
     }));
   };
 
@@ -59,20 +112,21 @@ const TeamManagement = () => {
           </SelectTrigger>
           <SelectContent>
             {Object.keys(sportsTeams).map((sport) => (
-              <SelectItem key={sport} value={sport}>{sport}</SelectItem>
+              <SelectItem key={sport} value={sport}>
+                {sport}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </CardHeader>
 
       <CardContent>
-       
         <div className="flex gap-2 mb-4">
-          <Input 
-            type="text" 
-            placeholder="Enter Athlete Name" 
-            value={newAthlete} 
-            onChange={(e) => setNewAthlete(e.target.value)} 
+          <Input
+            type="text"
+            placeholder="Enter Athlete Name"
+            value={newAthlete}
+            onChange={(e) => setNewAthlete(e.target.value)}
             className="flex-1"
           />
           <Button onClick={handleAddAthlete} className="flex items-center gap-1">
@@ -80,24 +134,23 @@ const TeamManagement = () => {
           </Button>
         </div>
 
-        
         <div className="space-y-4">
           {sportsTeams[selectedSport].map((athlete, index) => (
             <div
               key={index}
               className="flex justify-between items-center p-4 bg-white rounded-lg shadow-md cursor-pointer hover:bg-gray-200 transition"
             >
-              <span 
+              <span
                 className="text-lg font-semibold text-green-600 cursor-pointer"
-                onClick={() => navigate(`/athlete-dashboard/${athlete}`)}
+                onClick={() => navigate(`/athlete-dashboard/${athlete.name}`)}
               >
-                {athlete}
+                {athlete.name} ({athlete.position})
               </span>
               <div className="flex gap-2">
-                <Button size="sm" onClick={() => navigate(`/athlete-dashboard/${athlete}`)}>
+                <Button size="sm" onClick={() => navigate(`/athlete-dashboard/${athlete.name}`)}>
                   View Profile
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleRemoveAthlete(athlete)}>
+                <Button size="sm" variant="destructive" onClick={() => handleRemoveAthlete(athlete.name)}>
                   <Trash2 className="h-5 w-5" />
                 </Button>
               </div>

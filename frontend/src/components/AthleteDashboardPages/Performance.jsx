@@ -1,24 +1,42 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LineChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Line, Bar } from "recharts";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LineChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Line } from "recharts";
 
-const rpeData = [
-  { month: "Jan", rpe: 7 },
-  { month: "Feb", rpe: 8 },
-  { month: "Mar", rpe: 6 },
-  { month: "Apr", rpe: 7 },
-  { month: "May", rpe: 9 },
-  { month: "Jun", rpe: 8 },
-];
+// Generate Sample Data for All Months
+const generatePerformanceData = () => {
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
-const rpData = [
-  { month: "Jan", rp: 7.5 },
-  { month: "Feb", rp: 8.0 },
-  { month: "Mar", rp: 7.8 },
-  { month: "Apr", rp: 8.5 },
-  { month: "May", rp: 8.8 },
-  { month: "Jun", rp: 9.0 },
-];
+  let data = {};
+  months.forEach((month) => {
+    data[month] = {
+      "Week 1": [],
+      "Week 2": [],
+      "Week 3": [],
+      "Week 4": [],
+    };
+
+    for (let week = 1; week <= 4; week++) {
+      data[month][`Week ${week}`] = [
+        { day: "Monday", rpe: Math.random() * 4 + 5, rp: Math.random() * 4 + 5 },
+        { day: "Tuesday", rpe: Math.random() * 4 + 5, rp: Math.random() * 4 + 5 },
+        { day: "Wednesday", rpe: Math.random() * 4 + 5, rp: Math.random() * 4 + 5 },
+        { day: "Thursday", rpe: Math.random() * 4 + 5, rp: Math.random() * 4 + 5 },
+        { day: "Friday", rpe: Math.random() * 4 + 5, rp: Math.random() * 4 + 5 },
+        { day: "Saturday", rpe: Math.random() * 4 + 5, rp: Math.random() * 4 + 5 },
+        { day: "Sunday", rpe: Math.random() * 4 + 5, rp: Math.random() * 4 + 5 },
+      ];
+    }
+  });
+
+  return data;
+};
+
+const performanceData = generatePerformanceData();
 
 const skillsData = [
   { skill: "Speed", value: 90 },
@@ -30,9 +48,12 @@ const skillsData = [
 ];
 
 function Performance() {
+  const [selectedMonth, setSelectedMonth] = useState("January");
+  const [selectedWeek, setSelectedWeek] = useState("Week 1");
+
   return (
-    <div className="space-y-8 w-full h-full p-4">
-      <h1 className="text-3xl font-bold">Performance Dashboard</h1>
+    <div className="space-y-6 w-full h-full p-4">
+      <h1 className="text-2xl font-bold">Performance Dashboard</h1>
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="flex justify-center">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -42,14 +63,50 @@ function Performance() {
           <Card>
             <CardHeader>
               <CardTitle>Performance Overview</CardTitle>
-              <CardDescription>Your performance metrics over the last 6 months</CardDescription>
+              <CardDescription>Track your performance with RPE & RP graphs</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
+              
+              {/* Month and Week Selection Dropdowns */}
+              <div className="flex justify-center gap-6">
+                <div>
+                  <p className="text-lg font-semibold">Select Month:</p>
+                  <Select onValueChange={setSelectedMonth}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder={selectedMonth} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(performanceData).map((month) => (
+                        <SelectItem key={month} value={month}>
+                          {month}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <p className="text-lg font-semibold">Select Week:</p>
+                  <Select onValueChange={setSelectedWeek}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder={selectedWeek} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(performanceData[selectedMonth]).map((week) => (
+                        <SelectItem key={week} value={week}>
+                          {week}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* RPE and RP Graphs - Day-wise */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={rpeData}>
-                    <XAxis dataKey="month" />
+                  <LineChart data={performanceData[selectedMonth][selectedWeek]}>
+                    <XAxis dataKey="day" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
@@ -57,11 +114,10 @@ function Performance() {
                   </LineChart>
                 </ResponsiveContainer>
 
-                
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={rpData}>
-                    <XAxis dataKey="month" />
-                    <YAxis domain={[0, 10]} />
+                  <LineChart data={performanceData[selectedMonth][selectedWeek]}>
+                    <XAxis dataKey="day" />
+                    <YAxis />
                     <Tooltip />
                     <Legend />
                     <Line type="monotone" dataKey="rp" stroke="#93c5fd" />
@@ -69,22 +125,20 @@ function Performance() {
                 </ResponsiveContainer>
               </div>
 
-              
-              <div className="flex gap-4">
-                
-                <ResponsiveContainer width="50%" height={300}>
-                  <LineChart data={rpeData}>
-                    <XAxis dataKey="month" />
+              {/* RPE vs RP Line Graph & Radar Graph */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={performanceData[selectedMonth][selectedWeek]}>
+                    <XAxis dataKey="day" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="rpe" stroke="#fca5a5" />
-                    <Bar dataKey="rp" fill="#93c5fd" />
+                    <Line type="monotone" dataKey="rpe" stroke="#fca5a5" name="RPE" />
+                    <Line type="monotone" dataKey="rp" stroke="#93c5fd" name="RP" />
                   </LineChart>
                 </ResponsiveContainer>
 
-                
-                <ResponsiveContainer width="50%" height={400}>
+                <ResponsiveContainer width="100%" height={300}>
                   <RadarChart data={skillsData}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="skill" />
@@ -94,6 +148,7 @@ function Performance() {
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
+
             </CardContent>
           </Card>
         </TabsContent>

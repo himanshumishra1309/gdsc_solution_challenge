@@ -30,7 +30,7 @@ const LandingPage = () => {
   const handleRoleSelection = (role) => {
     if (role === "individual") {
       setOpen(false);
-      navigate("/sign-up");
+      navigate("athlete-signup");
     } else if (role === "sponsor") {
       setOpen(false);
       navigate("/sponsor-signup");

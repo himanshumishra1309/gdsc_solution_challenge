@@ -10,6 +10,13 @@ function Training() {
   const [showPlan, setShowPlan] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("Week 1");
   const [selectedDay, setSelectedDay] = useState("Monday");
+  const [selectedTrainer, setSelectedTrainer] = useState("");
+  const [message, setMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState([
+    { from: "Coach", text: "Great job on your workout today!" },
+    { from: "You", text: "Thanks, Coach! Feeling strong!" },
+    { from: "Coach", text: "Make sure to stretch after your workout." },
+  ]);
 
   const trainingPlans = {
     "Week 1": {
@@ -30,11 +37,36 @@ function Training() {
       Saturday: "10K Run, 40 Reps Jump Squats, 20 Min Yoga",
       Sunday: "Active Recovery / Mobility Exercises",
     },
+    "Week 3": {
+      Monday: "20 Reps Squats, 30 Pushups, 15 Min Run",
+      Tuesday: "15 Reps Deadlifts, 20 Burpees, 10 Min Jump Rope",
+      Wednesday: "30 Min Cardio, 10 Reps Bench Press, 50 Sit-ups",
+      Thursday: "20 Reps Pull-ups, 10 Min Cycling, 30 Lunges",
+      Friday: "15 Min HIIT, 20 Reps Shoulder Press, 40 Planks",
+      Saturday: "5K Run, 30 Reps Jump Squats, 15 Min Yoga",
+      Sunday: "Rest Day / Light Stretching",
+    },
+    "Week 4": {
+      Monday: "25 Reps Squats, 30 Pushups, 25 Min Run",
+      Tuesday: "10 Reps Deadlifts, 25 Burpees, 10 Min Jump Rope",
+      Wednesday: "30 Min Cardio, 10 Reps Bench Press, 50 Sit-ups",
+      Thursday: "20 Reps Pull-ups, 20 Min Cycling, 30 Lunges",
+      Friday: "15 Min HIIT, 20 Reps Shoulder Press, 40 Planks",
+      Saturday: "5K Run, 30 Reps Jump Squats, 25 Min Yoga",
+      Sunday: "Rest Day / Light Stretching",
+    },
+  };
+
+  const handleSendMessage = () => {
+    if (message.trim()) {
+      setChatMessages([...chatMessages, { from: "You", text: message }]);
+      setMessage(""); 
+    }
   };
 
   return (
     <div className="space-y-12 w-full px-4">
-      <h1 className="text-5xl font-bold text-center">Training Schedule</h1>
+      <h1 className="text-4xl font-bold text-center">Training Schedule</h1>
 
       <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
         <Card className="w-full flex flex-col items-center">
@@ -75,7 +107,7 @@ function Training() {
           </CardContent>
         </Card>
 
-        {/* Training Plan Selection Section */}
+        {/*  Plan Selection */}
         <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-3xl">Training Plan Selection</CardTitle>
@@ -110,7 +142,7 @@ function Training() {
         </Card>
       </div>
 
-      {/* Training Plan Display */}
+      
       {showPlan && (
         <Card className="w-full max-w-3xl mx-auto">
           <CardHeader>
@@ -123,6 +155,51 @@ function Training() {
           </CardContent>
         </Card>
       )}
+
+      {/* Chat Window */}
+      <div className="space-y-4">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle className="text-3xl">Chat with {selectedTrainer || "Your Trainer"}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            
+            <Select value={selectedTrainer} onValueChange={setSelectedTrainer}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Trainer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="coach">Coach</SelectItem>
+                <SelectItem value="gym_trainer">Gym Trainer</SelectItem>
+                <SelectItem value="assistant_coach">Assistant Coach</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Chat Messages */}
+            <div className="max-h-60 overflow-y-scroll space-y-2 p-4 bg-gray-100 rounded-md">
+              {chatMessages.map((msg, index) => (
+                <div key={index} className={`flex ${msg.from === "You" ? "justify-end" : "justify-start"}`}>
+                  <div className={`p-2 rounded-md ${msg.from === "You" ? "bg-blue-500 text-white" : "bg-gray-300"}`}>
+                    <span>{msg.text}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Message Input */}
+            <div className="flex space-x-4">
+              <input 
+                type="text" 
+                className="w-full p-2 border rounded-md"
+                placeholder="Type a message..." 
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+              />
+              <Button onClick={handleSendMessage}>Send</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

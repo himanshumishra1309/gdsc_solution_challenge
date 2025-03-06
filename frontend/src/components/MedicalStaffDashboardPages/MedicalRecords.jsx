@@ -39,6 +39,13 @@ const mockMedicalRecords = [
   },
 ];
 
+// Function to calculate BMI
+const calculateBMI = (height, weight) => {
+  const heightInMeters = parseInt(height) / 100; 
+  const weightInKg = parseInt(weight); 
+  return (weightInKg / (heightInMeters * heightInMeters)).toFixed(2); 
+};
+
 function MedicalRecords() {
   const [searchTerm, setSearchTerm] = useState("");
   const [records, setRecords] = useState(mockMedicalRecords);
@@ -204,6 +211,7 @@ function MedicalRecords() {
             <TableHead className="text-xl">Date of Birth</TableHead>
             <TableHead className="text-xl">Height</TableHead>
             <TableHead className="text-xl">Weight</TableHead>
+            <TableHead className="text-xl">BMI</TableHead> {/* BMI column next to Height and Weight */}
             <TableHead className="text-xl">Blood Type</TableHead>
             <TableHead className="text-xl">Allergies</TableHead>
             <TableHead className="text-xl">Last Checkup</TableHead>
@@ -216,6 +224,10 @@ function MedicalRecords() {
               <TableCell className="text-xl">{record.dateOfBirth}</TableCell>
               <TableCell className="text-xl">{record.height}</TableCell>
               <TableCell className="text-xl">{record.weight}</TableCell>
+              <TableCell className="text-xl">
+                {/* Calculate and display BMI */}
+                {calculateBMI(record.height, record.weight)}
+              </TableCell>
               <TableCell className="text-xl">{record.bloodType}</TableCell>
               <TableCell className="text-xl">{record.allergies}</TableCell>
               <TableCell className="text-xl">{record.lastCheckup}</TableCell>

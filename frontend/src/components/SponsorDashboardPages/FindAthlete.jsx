@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,20 @@ const athletes = [
   { name: "Vikram Singh", sport: "Hockey", age: 26, location: "Delhi", organization: "Delhi Lions" },
 ];
 
+const organizations = [
+  { name: "Mumbai Warriors", location: "Mumbai" },
+  { name: "Indian Smashers Academy", location: "Bangalore" },
+  { name: "Bengal Tigers FC", location: "Kolkata" },
+  { name: "Chennai Tennis Club", location: "Chennai" },
+  { name: "Delhi Lions", location: "Delhi" },
+];
+
 const sportsList = ["Cricket", "Badminton", "Football", "Tennis", "Hockey"];
 
 const FindAthlete = () => {
   const [selectedSport, setSelectedSport] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
 
   const filteredAthletes = athletes.filter(
     (athlete) =>
@@ -25,6 +35,16 @@ const FindAthlete = () => {
         athlete.sport.toLowerCase().includes(searchTerm.toLowerCase()) ||
         athlete.organization.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const handleSponsorClick = (athlete) => {
+    const dashboardPath = `/athlete-dashboard/${athlete.name.replace(/\s+/g, "-").toLowerCase()}`;
+    navigate(dashboardPath);
+  };
+
+  const handleOrganizationClick = (organization) => {
+    const dashboardPath = `/organization-dashboard/${organization.name.replace(/\s+/g, "-").toLowerCase()}`;
+    navigate(dashboardPath);
+  };
 
   return (
     <div className="container mx-auto py-10 px-6">
@@ -66,13 +86,28 @@ const FindAthlete = () => {
                 <p><strong>Age:</strong> {athlete.age}</p>
                 <p><strong>Location:</strong> {athlete.location}</p>
                 <p><strong>Organization:</strong> {athlete.organization}</p>
-                <Button className="mt-4 w-full">Sponsor</Button>
+                <Button className="mt-4 w-full" onClick={() => handleSponsorClick(athlete)}>Sponsor</Button>
               </CardContent>
             </Card>
           ))
         ) : (
           <p className="text-center text-gray-500 col-span-3">No matching results found.</p>
         )}
+      </div>
+
+      <h2 className="text-2xl font-bold text-center my-6">Organizations</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {organizations.map((organization, index) => (
+          <Card key={index} className="shadow-lg p-4">
+            <CardHeader>
+              <CardTitle>{organization.name}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p><strong>Location:</strong> {organization.location}</p>
+              <Button className="mt-4 w-full" onClick={() => handleOrganizationClick(organization)}>Visit Organization</Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

@@ -12,11 +12,11 @@ function Medical() {
     { date: "2023-05-15", type: "Sprained Ankle", status: "Recovered" },
     { date: "2023-07-02", type: "Muscle Strain", status: "In Treatment" },
   ]);
-
   const [newInjury, setNewInjury] = useState({ date: "", type: "", status: "" });
   const [rpe, setRpe] = useState(0);
   const [rpeHistory, setRpeHistory] = useState([]);
-
+  const [file, setFile] = useState(null); 
+  const [report, setReport] = useState(""); 
   const rpeDescriptions = [
     "No exertion (Resting)", "Very light", "Light", "Moderate", "Somewhat hard",
     "Hard", "Very hard", "Very, very hard", "Near maximal", "Maximal exertion"
@@ -35,10 +35,18 @@ function Medical() {
     }
   };
 
+  const handleFileUpload = (event) => {
+    setFile(event.target.files[0]);
+  };
+
+  const handleSaveReport = () => {
+    console.log("Report saved:", report);
+  };
+
   return (
     <div className="space-y-12 px-6 w-full">
-      <h1 className="text-5xl font-bold text-center">Medical Records</h1>
-      
+      <h1 className="text-4xl font-bold text-center">Medical Records</h1>
+
       <div className="grid gap-8 md:grid-cols-2">
         {/* Injury Tracking Section */}
         <Card className="w-full">
@@ -68,7 +76,7 @@ function Medical() {
           </CardContent>
         </Card>
 
-        {/* Add New Injury Section */}
+        {/*  New Injury Section */}
         <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-3xl">Add New Injury</CardTitle>
@@ -111,7 +119,7 @@ function Medical() {
         </Card>
       </div>
 
-      {/* Medical Report Section */}
+      {/* Medical Report */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-3xl">Medical Report</CardTitle>
@@ -119,14 +127,38 @@ function Medical() {
         </CardHeader>
         <CardContent>
           <Textarea
+            value={report}
+            onChange={(e) => setReport(e.target.value)}
             placeholder="Enter medical report details here..."
             className="min-h-[250px] text-lg p-4"
           />
-          <Button className="mt-6 w-full text-xl py-3">Save Report</Button>
+          <div className="mt-6 flex justify-start gap-4">
+            <Button
+              onClick={handleSaveReport}
+              className="text-sm py-2 px-4"
+            >
+              Save Report
+            </Button>
+            <div>
+              <Button
+                className="text-sm py-2 px-4"
+                onClick={() => document.getElementById("upload-report").click()}
+              >
+                Upload Report
+              </Button>
+              <input
+                id="upload-report"
+                type="file"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              {file && <p className="mt-2 text-lg">File Selected: {file.name}</p>}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* RPE Tracking Section */}
+      {/* RPE Tracking */}
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-3xl">Rate of Perceived Exertion (RPE)</CardTitle>
