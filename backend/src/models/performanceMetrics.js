@@ -1,13 +1,12 @@
 import mongoose, {Schema} from "mongoose";
 
 const performanceMetricsSchema = new mongoose.Schema({
+  athleteId: { type: mongoose.Schema.Types.ObjectId, ref: "Athlete", required: true },
   name: { type: String, required: true },
   unit: { type: String, required: true, },
-  password: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false },
+  value: { type: Number, required: true },
 
 
-  createdBy: {type: Schema.Types.ObjectId, ref: 'Admin'}
 }, { timestamps: true });
 
-export const PerformanceMetrics = mongoose.model('PerformanceMetrics', performanceMetricsSchema);
+export const PerformanceMetric = mongoose.model('PerformanceMetric', performanceMetricsSchema);

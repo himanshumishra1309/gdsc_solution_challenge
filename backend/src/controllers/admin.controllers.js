@@ -164,7 +164,7 @@ const generateAccessAndRefreshToken = async(userId) => {
 
       //we save refresh token in db
           // If no teacher is found, throw an error
-    if (!Admin) {
+    if (!admin) {
         throw new ApiError(404, "Admin not found");
       }
   
