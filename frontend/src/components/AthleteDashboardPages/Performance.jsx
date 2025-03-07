@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LineChart, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Line } from "recharts";
 
-// Generate Sample Data for All Months
+// Generate Sample Data 
 const generatePerformanceData = () => {
   const months = [
     "January", "February", "March", "April", "May", "June",
@@ -52,7 +52,7 @@ function Performance() {
   const [selectedWeek, setSelectedWeek] = useState("Week 1");
 
   return (
-    <div className="space-y-6 w-full h-full p-4">
+    <div className="space-y-2 w-full h-full p-1">
       <h1 className="text-2xl font-bold">Performance Dashboard</h1>
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="flex justify-center">
@@ -65,7 +65,7 @@ function Performance() {
               <CardTitle>Performance Overview</CardTitle>
               <CardDescription>Track your performance with RPE & RP graphs</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-8">
+            <CardContent className="space-y-7">
               
               {/* Month and Week Selection Dropdowns */}
               <div className="flex justify-center gap-6">

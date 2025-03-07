@@ -5,7 +5,7 @@ import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
 function SLayout({ userType, navItems, children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sponsorName } = useParams(); // Get sponsor name from URL
+  const { sponsorName } = useParams(); 
 
   const handleSignOut = () => {
     localStorage.removeItem("userType");
@@ -15,7 +15,7 @@ function SLayout({ userType, navItems, children }) {
   return (
     <div className="flex h-screen bg-gray-50">
       <div className="flex flex-col w-80 bg-yellow-400 text-white border-r">
-        <div className="flex flex-col items-center p-6 bg-yellow-500 border-b-2 border-darkblue-700">
+        <div className="flex flex-col items-center p-3 bg-yellow-500 border-b-2 border-darkblue-700">
           <div className="w-24 h-24 mb-4 bg-white rounded-full overflow-hidden">
             <img
               src="https://www.w3schools.com/howto/img_avatar.png"

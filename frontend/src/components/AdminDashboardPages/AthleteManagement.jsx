@@ -49,7 +49,6 @@ const AthleteManagement = () => {
     setFilteredAthletes(sport === "All" ? athletes : athletes.filter((a) => a.primarySport === sport || a.secondarySport === sport));
   };
 
-  
   const handleViewProfile = (athleteName) => {
     navigate(`/athlete-dashboard/${athleteName}`);
   };
@@ -100,17 +99,17 @@ const AthleteManagement = () => {
         </SelectContent>
       </Select>
 
-      {/* Assign Trainer */}
-      <Select value={selectedTrainer} onValueChange={setSelectedTrainer}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Select Trainer">{selectedTrainer}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {trainersList.map((trainer) => (
-            <SelectItem key={trainer} value={trainer}>{trainer}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Remove Coach Dropdown */}
+      {/* <Select value={selectedTrainer} onValueChange={setSelectedTrainer}> */}
+      {/*   <SelectTrigger className="w-full"> */}
+      {/*     <SelectValue placeholder="Select Trainer">{selectedTrainer}</SelectValue> */}
+      {/*   </SelectTrigger> */}
+      {/*   <SelectContent> */}
+      {/*     {trainersList.map((trainer) => ( */}
+      {/*       <SelectItem key={trainer} value={trainer}>{trainer}</SelectItem> */}
+      {/*     ))} */}
+      {/*   </SelectContent> */}
+      {/* </Select> */}
 
       {/* Add New Athlete Button */}
       <Dialog>
@@ -245,7 +244,7 @@ const AthleteManagement = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <input
-                type="number"
+                type="text"
                 placeholder="BMI"
                 className="input p-4 text-lg"
                 value={newAthlete.bmi}
@@ -256,8 +255,9 @@ const AthleteManagement = () => {
                   <SelectValue placeholder="Dominant Hand" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Left">Left</SelectItem>
                   <SelectItem value="Right">Right</SelectItem>
+                  <SelectItem value="Left">Left</SelectItem>
+                  <SelectItem value="Ambidextrous">Ambidextrous</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -272,7 +272,7 @@ const AthleteManagement = () => {
               />
               <input
                 type="text"
-                placeholder="Known Allergies"
+                placeholder="Allergies"
                 className="input p-4 text-lg"
                 value={newAthlete.allergies}
                 onChange={(e) => setNewAthlete({ ...newAthlete, allergies: e.target.value })}
@@ -299,8 +299,8 @@ const AthleteManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Athlete List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Athlete List - Change grid to make cards in one row */}
+      <div className="grid grid-cols-3 gap-6">
         {filteredAthletes.map((athlete) => (
           <Card key={athlete.id}>
             <CardHeader>

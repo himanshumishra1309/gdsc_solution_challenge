@@ -37,11 +37,11 @@ function Profile() {
 
   return (
     <div className="space-y-8 w-full">
-      <h1 className="text-4xl font-bold text-center">Athlete Profile</h1>
+      <h1 className="text-2xl font-bold text-center">Athlete Profile</h1>
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-3xl">Personal Information</CardTitle>
-          <CardDescription className="text-xl">Update your profile details</CardDescription>
+          <CardTitle className="text-xl">Personal Information</CardTitle>
+          <CardDescription className="text-lg">Update your profile details</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={handleUpdate}>

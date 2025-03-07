@@ -16,7 +16,7 @@ function Layout({ userType, navItems, children }) {
   return (
     <div className="flex h-screen bg-gray-50">
       <div className="flex flex-col w-72 bg-blue-500 text-white border-r">
-        <div className="flex flex-col items-center p-6 bg-blue-600 border-b-2 border-blue-700">
+        <div className="flex flex-col items-center p-3 bg-blue-600 border-b-2 border-blue-700">
           <div className="w-24 h-24 mb-4 bg-white rounded-full overflow-hidden">
             <img
               src="https://www.w3schools.com/howto/img_avatar.png"
@@ -62,7 +62,7 @@ function Layout({ userType, navItems, children }) {
         </div>
       </div>
 
-      <main className="flex-1 overflow-y-auto p-8 bg-white">
+      <main className="flex-1 overflow-y-auto p-1 bg-white">
         {children}
       </main>
     </div>

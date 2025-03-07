@@ -19,7 +19,7 @@ const InvestmentTracking = () => {
             <CardTitle>Total Investment</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">₹2,10,000</p>
+            <p className="text-2xl font-semibold">₹2,10,000</p>
           </CardContent>
         </Card>
         <Card>
@@ -27,7 +27,7 @@ const InvestmentTracking = () => {
             <CardTitle>Total Earnings</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">₹54,000</p>
+            <p className="text-2xl font-semibold">₹54,000</p>
           </CardContent>
         </Card>
         <Card>
@@ -35,7 +35,7 @@ const InvestmentTracking = () => {
             <CardTitle>ROI</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold">25.7%</p>
+            <p className="text-2xl font-semibold">25.7%</p>
           </CardContent>
         </Card>
       </div>

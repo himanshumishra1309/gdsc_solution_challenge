@@ -1,7 +1,7 @@
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const mockAthletes = [
   { id: 1, name: "Arjun Kumar", age: 28, sport: "Football", team: "Team A", status: "Active", coach: "Ravi Sharma", upcomingCheckupDate: "2025-05-10" },
@@ -10,29 +10,54 @@ const mockAthletes = [
   { id: 4, name: "Neha Desai", age: 26, sport: "Swimming", team: "Team A", status: "Active", coach: "Anita Sharma", upcomingCheckupDate: "2025-07-02" },
   { id: 5, name: "Saurabh Mehta", age: 27, sport: "Cricket", team: "Team D", status: "Active", coach: "Vinod Singh", upcomingCheckupDate: "2025-08-05" },
   { id: 6, name: "Aarti Shah", age: 23, sport: "Badminton", team: "Team E", status: "Injured", coach: "Meena Yadav", upcomingCheckupDate: "2025-09-12" },
-]
+];
 
 function ViewPlayers() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [athletes, setAthletes] = useState(mockAthletes)
-  const [selectedCheckup, setSelectedCheckup] = useState("") // state for upcoming checkup input
+  const [searchTerm, setSearchTerm] = useState("");
+  const [athletes, setAthletes] = useState(mockAthletes);
+  const [selectedCheckup, setSelectedCheckup] = useState(""); // state for upcoming checkup input
+  const [isModalOpen, setIsModalOpen] = useState(false); // state to control modal visibility
+  const [newAthlete, setNewAthlete] = useState({ name: "", age: "", sport: "", team: "", coach: "" }); // state for new athlete input
 
   const handleSearch = (event) => {
-    setSearchTerm(event.target.value)
+    setSearchTerm(event.target.value);
     const filteredAthletes = mockAthletes.filter(
       (athlete) =>
         athlete.name.toLowerCase().includes(event.target.value.toLowerCase()) ||
-        athlete.sport.toLowerCase().includes(event.target.value.toLowerCase()),
-    )
-    setAthletes(filteredAthletes)
-  }
+        athlete.sport.toLowerCase().includes(event.target.value.toLowerCase())
+    );
+    setAthletes(filteredAthletes);
+  };
 
   const handleCheckupDateChange = (athleteId, newDate) => {
     const updatedAthletes = athletes.map((athlete) =>
       athlete.id === athleteId ? { ...athlete, upcomingCheckupDate: newDate } : athlete
-    )
-    setAthletes(updatedAthletes)
-  }
+    );
+    setAthletes(updatedAthletes);
+  };
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewAthlete((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = () => {
+    // Add the new athlete
+    setAthletes([
+      ...athletes,
+      { ...newAthlete, id: athletes.length + 1, status: "Active", upcomingCheckupDate: "" },
+    ]);
+    setNewAthlete({ name: "", age: "", sport: "", team: "", coach: "" }); // reset the form
+    setIsModalOpen(false); // close the modal
+  };
 
   return (
     <div>
@@ -45,8 +70,64 @@ function ViewPlayers() {
           onChange={handleSearch}
           className="max-w-sm"
         />
-        <Button>Add New Athlete</Button>
+        <Button onClick={handleOpenModal}>Add New Athlete</Button>
       </div>
+
+      {/* Modal for adding a new athlete */}
+      {isModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50">
+          <div className="bg-white p-8 rounded-lg shadow-lg w-96">
+            <h2 className="text-2xl mb-4">Add New Athlete</h2>
+            <div className="mb-4">
+              <Input
+                type="text"
+                name="name"
+                value={newAthlete.name}
+                onChange={handleInputChange}
+                placeholder="Name"
+                className="mb-2"
+              />
+              <Input
+                type="number"
+                name="age"
+                value={newAthlete.age}
+                onChange={handleInputChange}
+                placeholder="Age"
+                className="mb-2"
+              />
+              <Input
+                type="text"
+                name="sport"
+                value={newAthlete.sport}
+                onChange={handleInputChange}
+                placeholder="Sport"
+                className="mb-2"
+              />
+              <Input
+                type="text"
+                name="team"
+                value={newAthlete.team}
+                onChange={handleInputChange}
+                placeholder="Team"
+                className="mb-2"
+              />
+              <Input
+                type="text"
+                name="coach"
+                value={newAthlete.coach}
+                onChange={handleInputChange}
+                placeholder="Coach"
+                className="mb-4"
+              />
+            </div>
+            <div className="flex justify-between">
+              <Button onClick={handleCloseModal}>Cancel</Button>
+              <Button onClick={handleSubmit}>Add Athlete</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {athletes.map((athlete) => (
           <Card key={athlete.id}>
@@ -54,18 +135,10 @@ function ViewPlayers() {
               <CardTitle>{athlete.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>
-                <strong>Age:</strong> {athlete.age}
-              </p>
-              <p>
-                <strong>Sport:</strong> {athlete.sport}
-              </p>
-              <p>
-                <strong>Team:</strong> {athlete.team}
-              </p>
-              <p>
-                <strong>Coach:</strong> {athlete.coach}
-              </p>
+              <p><strong>Age:</strong> {athlete.age}</p>
+              <p><strong>Sport:</strong> {athlete.sport}</p>
+              <p><strong>Team:</strong> {athlete.team}</p>
+              <p><strong>Coach:</strong> {athlete.coach}</p>
               <p>
                 <strong>Status:</strong>
                 <span
@@ -76,9 +149,7 @@ function ViewPlayers() {
                   {athlete.status}
                 </span>
               </p>
-              <p>
-                <strong>Upcoming Checkup:</strong> {athlete.upcomingCheckupDate || "Not Set"}
-              </p>
+              <p><strong>Upcoming Checkup:</strong> {athlete.upcomingCheckupDate || "Not Set"}</p>
               <Input
                 type="date"
                 value={selectedCheckup}
@@ -96,7 +167,7 @@ function ViewPlayers() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
-export default ViewPlayers
+export default ViewPlayers;

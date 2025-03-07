@@ -159,7 +159,7 @@ const FormManagement = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-semibold text-center">Forms Management</h1>
+      <h1 className="text-2xl font-semibold text-center">Forms Management</h1>
 
       {/* Show Message */}
       {message && <div className="p-3 text-white bg-blue-500 rounded text-center">{message}</div>}

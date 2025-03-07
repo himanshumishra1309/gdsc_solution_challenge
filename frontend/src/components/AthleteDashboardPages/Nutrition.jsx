@@ -41,11 +41,11 @@ function Nutrition() {
   };
 
   return (
-    <div className="space-y-12 px-6 w-full">
-      <h1 className="text-4xl font-bold text-center">Nutrition Plan</h1>
+    <div className="space-y-5 px-6 w-full">
+      <h1 className="text-2xl font-bold text-center">Nutrition Plan</h1>
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-3xl">Weekly Diet Plan</CardTitle>
+          <CardTitle className="text-2xl">Weekly Diet Plan</CardTitle>
           <CardDescription>Select a month and week to view or modify meals</CardDescription>
         </CardHeader>
         <CardContent>
@@ -72,8 +72,8 @@ function Nutrition() {
           <Table className="text-xl">
             <TableHeader>
               <TableRow>
-                <TableHead className="text-2xl">Time</TableHead>
-                <TableHead className="text-2xl">Meal Description</TableHead>
+                <TableHead className="text-xl">Time</TableHead>
+                <TableHead className="text-xl">Meal Description</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -89,12 +89,12 @@ function Nutrition() {
       </Card>
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-3xl">Add New Meal</CardTitle>
+          <CardTitle className="text-2xl">Add New Meal</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             <div className="space-y-3">
-              <label className="text-2xl">Meal Time</label>
+              <label className="text-xl">Meal Time</label>
               <Input
                 value={newMeal.time}
                 onChange={(e) => setNewMeal({ ...newMeal, time: e.target.value })}
@@ -103,7 +103,7 @@ function Nutrition() {
               />
             </div>
             <div className="space-y-3">
-              <label className="text-2xl">Meal Description</label>
+              <label className="text-xl">Meal Description</label>
               <Textarea
                 value={newMeal.description}
                 onChange={(e) => setNewMeal({ ...newMeal, description: e.target.value })}
@@ -111,20 +111,20 @@ function Nutrition() {
                 className="text-lg p-4"
               />
             </div>
-            <Button onClick={addMeal} className="w-full text-xl py-3">Add Meal</Button>
+            <Button onClick={addMeal} className="w-full text-lg py-2">Add Meal</Button>
           </div>
         </CardContent>
       </Card>
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-3xl">Nutritionist's Notes</CardTitle>
+          <CardTitle className="text-2xl">Nutritionist's Notes</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             placeholder="Enter nutritionist's recommendations here..."
-            className="min-h-[250px] text-lg p-4"
+            className="min-h-[200px] text-lg p-4"
           />
-          <Button className="mt-6 w-full text-xl py-3">Save Notes</Button>
+          <Button className="mt-6 w-full text-lg py-3">Save Notes</Button>
         </CardContent>
       </Card>
     </div>

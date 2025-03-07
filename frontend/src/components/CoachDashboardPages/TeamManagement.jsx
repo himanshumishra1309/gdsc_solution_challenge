@@ -6,20 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, PlusCircle } from "lucide-react";
 
-
 const playerPositions = {
-  Cricket: [
-    "Batsman", "Bowler", "All-rounder", "Wicketkeeper"
-  ],
-  Kabaddi: [
-    "Raider", "Defender", "All-rounder"
-  ],
-  Hockey: [
-    "Forward", "Midfielder", "Defender", "Goalkeeper"
-  ],
-  Football: [
-    "Forward", "Midfielder", "Defender", "Goalkeeper"
-  ],
+  Cricket: ["Batsman", "Bowler", "All-rounder", "Wicketkeeper"],
+  Kabaddi: ["Raider", "Defender", "All-rounder"],
+  Hockey: ["Forward", "Midfielder", "Defender", "Goalkeeper"],
+  Football: ["Forward", "Midfielder", "Defender", "Goalkeeper"],
 };
 
 const initialSportsTeams = {
@@ -34,7 +25,7 @@ const initialSportsTeams = {
     { name: "Jasprit Kulkarni", position: "Bowler" },
     { name: "Mohammed Yadav", position: "Bowler" },
     { name: "Bhuvaneshwar Pillai", position: "Batsman" },
-    { name: "Ishan Joshi", position: "Wicketkeeper" }
+    { name: "Ishan Joshi", position: "Wicketkeeper" },
   ],
   Kabaddi: [
     { name: "Ajay Rathi", position: "Raider" },
@@ -43,7 +34,7 @@ const initialSportsTeams = {
     { name: "Sandeep Patil", position: "Defender" },
     { name: "Surjeet Nair", position: "All-rounder" },
     { name: "Rohit Reddy", position: "Raider" },
-    { name: "Vikas Saxena", position: "Defender" }
+    { name: "Vikas Saxena", position: "Defender" },
   ],
   Hockey: [
     { name: "Dhyan Thakur", position: "Forward" },
@@ -56,7 +47,7 @@ const initialSportsTeams = {
     { name: "Amit Khurana", position: "Defender" },
     { name: "Mandeep Joshi", position: "Midfielder" },
     { name: "Simranjit Arora", position: "Forward" },
-    { name: "Lalit Bhasin", position: "Goalkeeper" }
+    { name: "Lalit Bhasin", position: "Goalkeeper" },
   ],
   Football: [
     { name: "Sunil Nair", position: "Forward" },
@@ -69,7 +60,7 @@ const initialSportsTeams = {
     { name: "Manvir Shah", position: "Forward" },
     { name: "Rahul Gupta", position: "Defender" },
     { name: "Jeakson Paul", position: "Midfielder" },
-    { name: "Liston Pinto", position: "Forward" }
+    { name: "Liston Pinto", position: "Forward" },
   ],
 };
 
@@ -103,62 +94,64 @@ const TeamManagement = () => {
   };
 
   return (
-    <Card className="bg-gray-100 p-6 rounded-lg shadow-lg">
-      <CardHeader className="flex justify-between items-center">
-        <CardTitle className="text-blue-700 text-xl font-bold">Team Management</CardTitle>
-        <Select value={selectedSport} onValueChange={setSelectedSport}>
-          <SelectTrigger className="w-[200px] bg-white text-black">
-            <SelectValue placeholder="Select Sport" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.keys(sportsTeams).map((sport) => (
-              <SelectItem key={sport} value={sport}>
-                {sport}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
+    <div className="scale-90">
+      <Card className="bg-gray-100 p-2 rounded-lg shadow-lg">
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle className="text-blue-700 text-xl font-bold">Team Management</CardTitle>
+          <Select value={selectedSport} onValueChange={setSelectedSport}>
+            <SelectTrigger className="w-[200px] bg-white text-black">
+              <SelectValue placeholder="Select Sport" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.keys(sportsTeams).map((sport) => (
+                <SelectItem key={sport} value={sport}>
+                  {sport}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardHeader>
 
-      <CardContent>
-        <div className="flex gap-2 mb-4">
-          <Input
-            type="text"
-            placeholder="Enter Athlete Name"
-            value={newAthlete}
-            onChange={(e) => setNewAthlete(e.target.value)}
-            className="flex-1"
-          />
-          <Button onClick={handleAddAthlete} className="flex items-center gap-1">
-            <PlusCircle className="h-5 w-5" /> Add
-          </Button>
-        </div>
+        <CardContent>
+          <div className="flex gap-2 mb-4">
+            <Input
+              type="text"
+              placeholder="Enter Athlete Name"
+              value={newAthlete}
+              onChange={(e) => setNewAthlete(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={handleAddAthlete} className="flex items-center gap-1">
+              <PlusCircle className="h-5 w-5" /> Add
+            </Button>
+          </div>
 
-        <div className="space-y-4">
-          {sportsTeams[selectedSport].map((athlete, index) => (
-            <div
-              key={index}
-              className="flex justify-between items-center p-4 bg-white rounded-lg shadow-md cursor-pointer hover:bg-gray-200 transition"
-            >
-              <span
-                className="text-lg font-semibold text-green-600 cursor-pointer"
-                onClick={() => navigate(`/athlete-dashboard/${athlete.name}`)}
+          <div className="space-y-4">
+            {sportsTeams[selectedSport].map((athlete, index) => (
+              <div
+                key={index}
+                className="flex justify-between items-center p-4 bg-white rounded-lg shadow-md cursor-pointer hover:bg-gray-200 transition"
               >
-                {athlete.name} ({athlete.position})
-              </span>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => navigate(`/athlete-dashboard/${athlete.name}`)}>
-                  View Profile
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => handleRemoveAthlete(athlete.name)}>
-                  <Trash2 className="h-5 w-5" />
-                </Button>
+                <span
+                  className="text-lg font-semibold text-green-600 cursor-pointer"
+                  onClick={() => navigate(`/athlete-dashboard/${athlete.name}`)}
+                >
+                  {athlete.name} ({athlete.position})
+                </span>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => navigate(`/athlete-dashboard/${athlete.name}`)}>
+                    View Profile
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleRemoveAthlete(athlete.name)}>
+                    <Trash2 className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

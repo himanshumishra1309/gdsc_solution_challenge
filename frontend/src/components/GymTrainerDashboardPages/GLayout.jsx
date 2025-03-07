@@ -14,7 +14,7 @@ function GLayout({ userType, navItems, children }) {
   return (
     <div className="flex h-screen bg-gray-50">
       <div className="flex flex-col w-72 bg-sky-700 text-white border-r">
-        <div className="flex flex-col items-center p-6 bg-sky-800 border-b-2 border-darkblue-700">
+        <div className="flex flex-col items-center p-3 bg-sky-800 border-b-2 border-darkblue-700">
           <div className="w-24 h-24 mb-4 bg-white rounded-full overflow-hidden">
             <img
               src="https://www.w3schools.com/howto/img_avatar.png"

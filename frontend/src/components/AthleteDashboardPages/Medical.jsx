@@ -44,23 +44,23 @@ function Medical() {
   };
 
   return (
-    <div className="space-y-12 px-6 w-full">
-      <h1 className="text-4xl font-bold text-center">Medical Records</h1>
+    <div className="space-y-5 px-4 w-full">
+      <h1 className="text-2xl font-bold text-center">Medical Records</h1>
 
       <div className="grid gap-8 md:grid-cols-2">
         {/* Injury Tracking Section */}
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-3xl">Injury Tracking</CardTitle>
-            <CardDescription className="text-xl">Record and monitor injuries</CardDescription>
+            <CardTitle className="text-2xl">Injury Tracking</CardTitle>
+            <CardDescription className="text-lg">Record and monitor injuries</CardDescription>
           </CardHeader>
           <CardContent>
             <Table className="text-xl">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-2xl">Date</TableHead>
-                  <TableHead className="text-2xl">Injury Type</TableHead>
-                  <TableHead className="text-2xl">Status</TableHead>
+                  <TableHead className="text-xl">Date</TableHead>
+                  <TableHead className="text-xl">Injury Type</TableHead>
+                  <TableHead className="text-xl">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -79,12 +79,12 @@ function Medical() {
         {/*  New Injury Section */}
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-3xl">Add New Injury</CardTitle>
+            <CardTitle className="text-2xl">Add New Injury</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <div className="space-y-3">
-                <Label htmlFor="injury-date" className="text-2xl">Date</Label>
+                <Label htmlFor="injury-date" className="text-xl">Date</Label>
                 <Input
                   id="injury-date"
                   type="date"
@@ -94,7 +94,7 @@ function Medical() {
                 />
               </div>
               <div className="space-y-3">
-                <Label htmlFor="injury-type" className="text-2xl">Injury Type</Label>
+                <Label htmlFor="injury-type" className="text-xl">Injury Type</Label>
                 <Input
                   id="injury-type"
                   value={newInjury.type}
@@ -104,7 +104,7 @@ function Medical() {
                 />
               </div>
               <div className="space-y-3">
-                <Label htmlFor="injury-status" className="text-2xl">Status</Label>
+                <Label htmlFor="injury-status" className="text-xl">Status</Label>
                 <Input
                   id="injury-status"
                   value={newInjury.status}
@@ -122,15 +122,15 @@ function Medical() {
       {/* Medical Report */}
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-3xl">Medical Report</CardTitle>
-          <CardDescription className="text-xl">Latest medical assessment</CardDescription>
+          <CardTitle className="text-2xl">Medical Report</CardTitle>
+          <CardDescription className="text-lg">Latest medical assessment</CardDescription>
         </CardHeader>
         <CardContent>
           <Textarea
             value={report}
             onChange={(e) => setReport(e.target.value)}
             placeholder="Enter medical report details here..."
-            className="min-h-[250px] text-lg p-4"
+            className="min-h-[150px] text-lg p-4"
           />
           <div className="mt-6 flex justify-start gap-4">
             <Button
@@ -161,14 +161,14 @@ function Medical() {
       {/* RPE Tracking */}
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-3xl">Rate of Perceived Exertion (RPE)</CardTitle>
-          <CardDescription className="text-xl">
+          <CardTitle className="text-2xl">Rate of Perceived Exertion (RPE)</CardTitle>
+          <CardDescription className="text-lg">
             Select your exertion level based on the Modified Borg CR10 Scale.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            <Label className="text-2xl">Select RPE Level</Label>
+            <Label className="text-xl">Select RPE Level</Label>
             <Slider
               min={0}
               max={10}
@@ -178,10 +178,10 @@ function Medical() {
               className="w-full"
             />
             <p className="text-lg font-semibold text-center">{rpe} - {rpeDescriptions[rpe]}</p>
-            <Button onClick={submitRpe} className="w-full text-xl py-3">Submit RPE</Button>
+            <Button onClick={submitRpe} className="w-full text-lg py-2">Submit RPE</Button>
           </div>
           <div className="mt-6">
-            <h3 className="text-2xl font-semibold">RPE History</h3>
+            <h3 className="text-xl font-semibold">RPE History</h3>
             <ul className="mt-3 space-y-2">
               {rpeHistory.map((entry, index) => (
                 <li key={index} className="text-lg">

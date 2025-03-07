@@ -44,8 +44,8 @@ const News = () => {
     : newsArticles.filter(article => article.sport === selectedSport);
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6 text-center">Latest Sports News</h1>
+    <div className="container mx-auto py-1 px-1">
+      <h1 className="text-2xl font-bold mb-6 text-center">Latest Sports News</h1>
       
       {/* Dropdown to select sports */}
       <div className="mb-6 flex justify-center">
@@ -66,7 +66,7 @@ const News = () => {
       {/* Display filtered news */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {filteredNews.map((article, index) => (
-          <Card key={index} className="hover:shadow-lg transition-shadow duration-300 p-10">
+          <Card key={index} className="hover:shadow-lg transition-shadow duration-300 p-2">
             <CardHeader>
               <CardTitle>{article.title}</CardTitle>
             </CardHeader>

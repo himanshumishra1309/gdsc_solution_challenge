@@ -7,7 +7,7 @@ import Medical from "./AthleteDashboardPages/Medical";
 import Nutrition from "./AthleteDashboardPages/Nutrition";
 import Finance from "./AthleteDashboardPages/Finance";
 import Profile from "./AthleteDashboardPages/Profile";
-import Home from "./AthleteDashboardPages/Home"; 
+
 
 const navItems = [
   { name: "Performance", icon: BarChart, path: "performance" },
@@ -23,7 +23,7 @@ function AthleteDashboard() {
     <DashboardLayout userType="Athlete" navItems={navItems}>
       <Routes>
         
-        <Route path="/" element={<Home />} /> 
+        <Route path="/" element={<Performance />} /> 
         <Route path="performance" element={<Performance />} />
         <Route path="training" element={<Training />} />
         <Route path="medical" element={<Medical />} />

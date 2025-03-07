@@ -40,8 +40,8 @@ function Finance() {
   };
 
   return (
-    <div className="space-y-8 w-full">
-      <h1 className="text-4xl font-bold text-center">Financial Overview</h1>
+    <div className="space-y-5 w-full">
+      <h1 className="text-2xl font-bold text-center">Financial Overview</h1>
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="text-2xl">Sponsorship Details</CardTitle>
