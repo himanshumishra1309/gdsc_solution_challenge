@@ -187,6 +187,10 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
     );
   }
 
+  void _handleLogout(BuildContext context) {
+    Navigator.pushReplacementNamed(context, coachAdminPlayerRoute); // Navigate to the desired page
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -210,7 +214,7 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
           }
         },
         drawerItems: [
-          DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerProfileRoute),
+          DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
           DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
           DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
           DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
@@ -219,8 +223,9 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
           DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
           DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
           DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+          DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
         ],
+        onLogout: () => _handleLogout(context),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

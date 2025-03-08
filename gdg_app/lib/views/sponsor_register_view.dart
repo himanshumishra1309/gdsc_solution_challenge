@@ -5,25 +5,36 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:gdg_app/views/login_view.dart';
 import 'package:intl/intl.dart';
-import 'landing_page_view.dart'; // Import the landing page view
+import 'package:image_picker/image_picker.dart'; // Add this package for image picking
+import 'dart:io';
+import 'landing_page_view.dart';
 
-class IndividualRegisterView extends StatefulWidget {
-  const IndividualRegisterView({super.key});
+class SponsorRegisterView extends StatefulWidget {
+  const SponsorRegisterView({super.key});
 
   @override
-  State<IndividualRegisterView> createState() => _IndividualRegisterViewState();
+  State<SponsorRegisterView> createState() => _SponsorRegisterViewState();
 }
 
-class _IndividualRegisterViewState extends State<IndividualRegisterView> {
+class _SponsorRegisterViewState extends State<SponsorRegisterView> {
   late final TextEditingController _name;
   late final TextEditingController _email;
   late final TextEditingController _dob;
   late final TextEditingController _address;
-  late final TextEditingController _highestLevelPlayed;
+  late final TextEditingController _companyName;
+  
   String? _selectedState;
   List<String> _states = [];
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
+  
+  // Sponsorship range
+  double _minSponsorAmount = 10000;
+  double _maxSponsorAmount = 50000;
+  
+  // For profile image
+  File? _profileImage;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -32,7 +43,7 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
     _email = TextEditingController();
     _dob = TextEditingController();
     _address = TextEditingController();
-    _highestLevelPlayed = TextEditingController();
+    _companyName = TextEditingController();
     _loadStates();
   }
 
@@ -50,22 +61,31 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
     _email.dispose();
     _dob.dispose();
     _address.dispose();
-    _highestLevelPlayed.dispose();
+    _companyName.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _profileImage = File(image.path);
+      });
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
     DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 365 * 18)), // Default to 18 years ago
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 30)), // Default to 30 years ago
       firstDate: DateTime(1940),
       lastDate: DateTime.now(),
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: ThemeData.light().copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Colors.deepPurple, // header background color
-              onPrimary: Colors.white, // header text color
+              primary: Colors.amber, // header background color
+              onPrimary: Colors.black87, // header text color
               onSurface: Colors.black, // body text color
             ),
             dialogBackgroundColor: Colors.white,
@@ -83,14 +103,21 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
 
   void _handleRegistration() async {
     if (_formKey.currentState!.validate()) {
+      if (_profileImage == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please upload a profile photo'))
+        );
+        return;
+      }
+      
       setState(() {
         _isSubmitting = true;
       });
 
       // Simulate API call
       await Future.delayed(const Duration(seconds: 2));
-
-      // Handle registration logic here
+      
+      if (!mounted) return;
       
       setState(() {
         _isSubmitting = false;
@@ -107,9 +134,10 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
       
       // Navigate to login page after short delay
       Future.delayed(const Duration(seconds: 2), () {
+        if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => LoginView(sourcePage: '')),
+          MaterialPageRoute(builder: (context) => const LoginView(sourcePage: 'sponsorRegister')),
         );
       });
     }
@@ -146,10 +174,10 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
             Container(
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: const AssetImage('assets/images/lgin.jpg'), // Ensure you have this image
+                  image: const AssetImage('assets/images/sponsor_bg.jpg'), // Use sponsor-specific image
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
-                    Colors.black.withOpacity(0.6),
+                    Colors.black.withOpacity(0.5),
                     BlendMode.darken,
                   ),
                 ),
@@ -184,7 +212,7 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
                           
                           // Header section
                           const Text(
-                            'ATHLETE REGISTRATION',
+                            'SPONSOR REGISTRATION',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
@@ -194,7 +222,7 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Join the GDG Sports community',
+                            'Join GDG Sports as a valued sponsor',
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.white.withOpacity(0.8),
@@ -224,13 +252,43 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
+                                          // Profile Photo Upload
+                                          Center(
+                                            child: Column(
+                                              children: [
+                                                GestureDetector(
+                                                  onTap: _pickImage,
+                                                  child: CircleAvatar(
+                                                    radius: 50,
+                                                    backgroundColor: Colors.white.withOpacity(0.3),
+                                                    backgroundImage: _profileImage != null 
+                                                        ? FileImage(_profileImage!) 
+                                                        : null,
+                                                    child: _profileImage == null 
+                                                        ? const Icon(Icons.add_a_photo, size: 40, color: Colors.white)
+                                                        : null,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Upload Profile Photo',
+                                                  style: TextStyle(
+                                                    color: Colors.white.withOpacity(0.9),
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+                                          
                                           _buildSectionTitle('Personal Information'),
                                           const SizedBox(height: 16),
                                           
                                           // Name field
                                           _buildTextFormField(
                                             controller: _name,
-                                            labelText: 'Full Name',
+                                            labelText: 'Representative Name',
                                             prefixIcon: Icons.person_outline,
                                             validator: (value) {
                                               if (value == null || value.isEmpty) {
@@ -274,18 +332,32 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
                                           ),
                                           const SizedBox(height: 24),
                                           
-                                          _buildSectionTitle('Contact Information'),
+                                          _buildSectionTitle('Company Information'),
+                                          const SizedBox(height: 16),
+                                          
+                                          // Company name field
+                                          _buildTextFormField(
+                                            controller: _companyName,
+                                            labelText: 'Company Name',
+                                            prefixIcon: Icons.business_outlined,
+                                            validator: (value) {
+                                              if (value == null || value.isEmpty) {
+                                                return 'Please enter your company name';
+                                              }
+                                              return null;
+                                            },
+                                          ),
                                           const SizedBox(height: 16),
                                           
                                           // Address field
                                           _buildTextFormField(
                                             controller: _address,
-                                            labelText: 'Address',
-                                            prefixIcon: Icons.home_outlined,
+                                            labelText: 'Company Address',
+                                            prefixIcon: Icons.location_city_outlined,
                                             maxLines: 2,
                                             validator: (value) {
                                               if (value == null || value.isEmpty) {
-                                                return 'Please enter your address';
+                                                return 'Please enter your company address';
                                               }
                                               return null;
                                             },
@@ -296,21 +368,62 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
                                           _buildStateDropdown(),
                                           const SizedBox(height: 24),
                                           
-                                          _buildSectionTitle('Sports Information'),
+                                          _buildSectionTitle('Sponsorship Range'),
                                           const SizedBox(height: 16),
                                           
-                                          // Highest level played field
-                                          _buildTextFormField(
-                                            controller: _highestLevelPlayed,
-                                            labelText: 'Highest Level Played',
-                                            prefixIcon: Icons.sports_basketball_outlined,
-                                            validator: (value) {
-                                              if (value == null || value.isEmpty) {
-                                                return 'Please enter your highest level played';
-                                              }
-                                              return null;
-                                            },
+                                          // Sponsorship range slider
+                                          Column(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                                child: Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      '₹${_minSponsorAmount.toStringAsFixed(0)}',
+                                                      style: TextStyle(
+                                                        color: Colors.white.withOpacity(0.9),
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      '₹${_maxSponsorAmount.toStringAsFixed(0)}',
+                                                      style: TextStyle(
+                                                        color: Colors.white.withOpacity(0.9),
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              RangeSlider(
+                                                values: RangeValues(_minSponsorAmount, _maxSponsorAmount),
+                                                min: 1000,
+                                                max: 1000000,
+                                                divisions: 100,
+                                                activeColor: Colors.amber,
+                                                inactiveColor: Colors.amber.withOpacity(0.2),
+                                                labels: RangeLabels(
+                                                  '₹${_minSponsorAmount.toStringAsFixed(0)}',
+                                                  '₹${_maxSponsorAmount.toStringAsFixed(0)}'
+                                                ),
+                                                onChanged: (RangeValues values) {
+                                                  setState(() {
+                                                    _minSponsorAmount = values.start;
+                                                    _maxSponsorAmount = values.end;
+                                                  });
+                                                },
+                                              ),
+                                              Text(
+                                                'Sponsorship Range: ₹${_minSponsorAmount.toStringAsFixed(0)} - ₹${_maxSponsorAmount.toStringAsFixed(0)}',
+                                                style: TextStyle(
+                                                  color: Colors.white.withOpacity(0.8),
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ],
                                           ),
+                                          
                                           const SizedBox(height: 32),
                                           
                                           // Register button
@@ -324,7 +437,7 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
                                                 Navigator.pushReplacement(
                                                   context, 
                                                   MaterialPageRoute(
-                                                    builder: (context) => const LoginView(sourcePage: ''),
+                                                    builder: (context) => const LoginView(sourcePage: 'sponsorRegister'),
                                                   ),
                                                 );
                                               },
@@ -394,7 +507,7 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.deepPurpleAccent, width: 2),
+          borderSide: BorderSide(color: Colors.amber.shade600, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -439,7 +552,7 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.deepPurpleAccent, width: 2),
+          borderSide: BorderSide(color: Colors.amber.shade600, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -471,7 +584,7 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.deepPurpleAccent, width: 2),
+            borderSide: BorderSide(color: Colors.amber.shade600, width: 2),
           ),
           filled: true,
           fillColor: Colors.white.withOpacity(0.1),
@@ -526,9 +639,9 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
       child: ElevatedButton(
         onPressed: _isSubmitting ? null : _handleRegistration,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: Colors.amber.shade700,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: Colors.deepPurple.withOpacity(0.5),
+          disabledBackgroundColor: Colors.amber.shade700.withOpacity(0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -544,7 +657,7 @@ class _IndividualRegisterViewState extends State<IndividualRegisterView> {
                 ),
               )
             : const Text(
-                'CREATE ACCOUNT',
+                'REGISTER AS SPONSOR',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
