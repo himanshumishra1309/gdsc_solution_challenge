@@ -7,7 +7,7 @@ import {
 import {
     registerIndependentAthlete,
     loginIndependentAthlete,
-    getAthleteDetails
+    getAthleteDetails,
 } from "../controllers/athlete.controllers.js";
 
 import {verifyJWTAthlete} from "../middlewares/auth.middleware.js"
@@ -19,6 +19,8 @@ const router = Router()
 router.get("/", verifyJWTAthlete, getAthletes); // Fetch all athletes with filters
 router.post("/register/individual", registerIndependentAthlete);
 router.post("/login/individual", loginIndependentAthlete);
+// router.post("/logout/individual", logoutIndependentAthlete);
+
 
 router.get("/:athleteId/details", getAthleteDetails);
 

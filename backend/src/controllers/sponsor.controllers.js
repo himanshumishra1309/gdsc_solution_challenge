@@ -2,6 +2,7 @@ import asyncHandler from "../utils/asyncHandler.js"
 import {ApiError} from "../utils/ApiError.js"
 import {Sponsor} from "../models/sponsor.model.js"
 import jwt from 'jsonwebtoken'
+import {ApiResponse} from "../utils/ApiResponse.js"
 
 
 const generateAccessAndRefreshToken = async(userId) => {
@@ -31,7 +32,58 @@ const generateAccessAndRefreshToken = async(userId) => {
     }
 }
 
-const loginUser = asyncHandler(async (req,res) => {
+const registerSponsor = asyncHandler(async (req, res) => {
+    const { name, email, dob, address, state, password } = req.body;
+
+    if (!name || !email || !dob || !address || !state || !password) {
+        throw new ApiError(400, "All fields are required");
+    }
+
+    const existingSponsor = await Sponsor.findOne({ email });
+
+    if (existingSponsor) {
+        throw new ApiError(400, "Sponsor with this email already exists");
+    }
+
+    const newSponsor = new Sponsor({
+        name,
+        email,
+        dob,
+        address,
+        state,
+        password
+    });
+
+    await newSponsor.save();
+
+    const sponsorAccessToken = newSponsor.generateAccessToken();
+    const sponsorRefreshToken = newSponsor.generateRefreshToken();
+
+    newSponsor.refreshToken = sponsorRefreshToken;
+    await newSponsor.save({ validateBeforeSave: false });
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    };
+
+    return res
+        .status(201)
+        .cookie("sponsorAccessToken", sponsorAccessToken, options)
+        .cookie("sponsorRefreshToken", sponsorRefreshToken, options)
+        .json(
+            new ApiResponse(
+                201,
+                {
+                    user: newSponsor
+                },
+                "Sponsor registered successfully"
+            )
+        );
+});
+
+
+const loginSponsor = asyncHandler(async (req,res) => {
     /*
     TO DO:
     req body -> data
@@ -83,15 +135,15 @@ const loginUser = asyncHandler(async (req,res) => {
      .json(
         new ApiResponse(
             200,{
-                user:loggedInUser, sponsorAccessToken, sponsorRefreshToken
+                user:loggedInUser
             },
-            "Coach logged in Successfully"
+            "Sponsor logged in Successfully"
         )
      )
     })
 
 
-const logoutUser = asyncHandler( async(req,res) => {
+const logoutSponsor = asyncHandler( async(req,res) => {
         await Sponsor.findByIdAndUpdate(
             req.sponsor._id,
             // {
@@ -140,3 +192,9 @@ const getSponsorProfile = asyncHandler(async(req,res) => {
         
           return res.status(200).json(new ApiResponse(200, teacher, "Sponsor profile fetched successfully"));
 })
+
+export {
+    registerSponsor,
+    loginSponsor,
+    logoutSponsor,
+ getSponsorProfile}
