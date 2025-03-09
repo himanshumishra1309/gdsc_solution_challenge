@@ -70,6 +70,10 @@ class _AdminAccessFormState extends State<AdminAccessForm> {
     });
   }
 
+  void _handleLogout(BuildContext context) {
+    Navigator.pushReplacementNamed(context, coachAdminPlayerRoute); // Navigate to the desired page
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -104,6 +108,7 @@ class _AdminAccessFormState extends State<AdminAccessForm> {
           DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
           DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
         ],
+        onLogout: () => _handleLogout(context),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

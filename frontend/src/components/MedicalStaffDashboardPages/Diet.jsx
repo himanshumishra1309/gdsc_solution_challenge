@@ -49,37 +49,36 @@ function Diet() {
   };
 
   return (
-    <div className="space-y-6 px-3 w-full">
-      <h1 className="text-4xl font-bold text-center">Diet Plans</h1>
+    <div className="space-y-4 px-4 w-full">
+      <h1 className="text-2xl font-semibold text-center">Diet Plans</h1>
 
-      <div className="grid gap-15 md:grid-cols-1">
+      <div className="grid gap-6 md:grid-cols-1">
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-3xl">Athletes</CardTitle>
-            <CardDescription className="text-xl">Manage athletes and assign nutrition plans</CardDescription>
+            <CardTitle className="text-2xl">Athletes</CardTitle>
+            <CardDescription className="text-base">Manage athletes and assign nutrition plans</CardDescription>
           </CardHeader>
           <CardContent>
-            <Table className="text-xl">
+            <Table className="text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-2xl">Athlete Name</TableHead>
-                  <TableHead className="text-2xl">Assigned Plan</TableHead>
-                  <TableHead className="text-2xl">Assign Plan</TableHead>
+                  <TableHead className="text-lg">Athlete Name</TableHead>
+                  <TableHead className="text-lg">Assigned Plan</TableHead>
+                  <TableHead className="text-lg">Assign Plan</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {athletes.map((athlete) => (
                   <TableRow key={athlete.id}>
-                    <TableCell className="text-lg">{athlete.name}</TableCell>
-                    <TableCell className="text-lg">{athlete.assignedPlan || "No plan assigned"}</TableCell>
-                    <TableCell className="text-lg">
+                    <TableCell className="text-sm">{athlete.name}</TableCell>
+                    <TableCell className="text-sm">{athlete.assignedPlan || "No plan assigned"}</TableCell>
+                    <TableCell className="text-sm">
                       <Button
                         onClick={() => {
                           setSelectedAthlete(athlete);
-                          
-                          assignMealPlanToAthlete(athlete.id, athlete.id === 1 ? 1 : 2); 
+                          assignMealPlanToAthlete(athlete.id, athlete.id === 1 ? 1 : 2);
                         }}
-                        className="w-full text-xl py-5"
+                        className="w-full text-sm py-2"
                       >
                         Assign Plan
                       </Button>
@@ -93,25 +92,25 @@ function Diet() {
       </div>
 
       {selectedAthlete && (
-        <div className="grid gap-8 md:grid-cols-1">
+        <div className="grid gap-6 md:grid-cols-1">
           <Card className="w-full">
             <CardHeader>
-              <CardTitle className="text-3xl">Weekly Meal Plan for {selectedAthlete.name}</CardTitle>
-              <CardDescription className="text-xl">Assign meals to the athlete for the week</CardDescription>
+              <CardTitle className="text-2xl">Weekly Meal Plan for {selectedAthlete.name}</CardTitle>
+              <CardDescription className="text-base">Assign meals to the athlete for the week</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table className="text-xl">
+              <Table className="text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="text-2xl">Time</TableHead>
-                    <TableHead className="text-2xl">Meal Description</TableHead>
+                    <TableHead className="text-lg">Time</TableHead>
+                    <TableHead className="text-lg">Meal Description</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {weeklyMealPlans[selectedAthlete.id]?.map((meal, index) => (
                     <TableRow key={index}>
-                      <TableCell className="text-lg">{meal.time}</TableCell>
-                      <TableCell className="text-lg">{meal.description}</TableCell>
+                      <TableCell className="text-sm">{meal.time}</TableCell>
+                      <TableCell className="text-sm">{meal.description}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -121,35 +120,34 @@ function Diet() {
         </div>
       )}
 
-      
-      <div className="grid gap-8 md:grid-cols-1">
+      <div className="grid gap-6 md:grid-cols-1">
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-3xl">Add New Meal</CardTitle>
+            <CardTitle className="text-2xl">Add New Meal</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <Label htmlFor="meal-time" className="text-2xl">Meal Time</Label>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="meal-time" className="text-lg">Meal Time</Label>
                 <Input
                   id="meal-time"
                   value={newMeal.time}
                   onChange={(e) => setNewMeal({ ...newMeal, time: e.target.value })}
                   placeholder="Enter meal time"
-                  className="text-lg p-4"
+                  className="text-sm p-3"
                 />
               </div>
-              <div className="space-y-3">
-                <Label htmlFor="meal-description" className="text-2xl">Meal Description</Label>
+              <div className="space-y-2">
+                <Label htmlFor="meal-description" className="text-lg">Meal Description</Label>
                 <Textarea
                   id="meal-description"
                   value={newMeal.description}
                   onChange={(e) => setNewMeal({ ...newMeal, description: e.target.value })}
                   placeholder="Enter meal description"
-                  className="text-lg p-4"
+                  className="text-sm p-3"
                 />
               </div>
-              <Button onClick={addMeal} className="w-full text-xl py-3">Add Meal</Button>
+              <Button onClick={addMeal} className="w-full text-sm py-2">Add Meal</Button>
             </div>
           </CardContent>
         </Card>
@@ -157,14 +155,14 @@ function Diet() {
 
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-3xl">Nutritionist's Notes</CardTitle>
+          <CardTitle className="text-2xl">Nutritionist's Notes</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             placeholder="Enter nutritionist's recommendations here..."
-            className="min-h-[250px] text-lg p-4"
+            className="min-h-[150px] text-sm p-3"
           />
-          <Button className="mt-6 w-full text-xl py-3">Save Notes</Button>
+          <Button className="mt-4 w-full text-sm py-2">Save Notes</Button>
         </CardContent>
       </Card>
     </div>

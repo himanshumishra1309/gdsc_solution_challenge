@@ -2,95 +2,129 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-function Nutrition() {
-  const [meals, setMeals] = useState([
-    { time: "Breakfast", description: "Oatmeal with berries and nuts" },
-    { time: "Lunch", description: "Grilled chicken salad with avocado" },
-    { time: "Dinner", description: "Salmon with quinoa and roasted vegetables" },
-  ]);
+const months = [
+  "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+];
 
+const weeks = ["Week 1", "Week 2", "Week 3", "Week 4"];
+
+const initialMealPlans = {};
+months.forEach((month) => {
+  initialMealPlans[month] = {};
+  weeks.forEach((week) => {
+    initialMealPlans[month][week] = [
+      { time: "Breakfast", description: "Oatmeal with berries and nuts" },
+      { time: "Lunch", description: "Grilled chicken salad with avocado" },
+      { time: "Dinner", description: "Salmon with quinoa and roasted vegetables" }
+    ];
+  });
+});
+
+function Nutrition() {
+  const [selectedMonth, setSelectedMonth] = useState("January");
+  const [selectedWeek, setSelectedWeek] = useState("Week 1");
+  const [mealPlans, setMealPlans] = useState(initialMealPlans);
   const [newMeal, setNewMeal] = useState({ time: "", description: "" });
 
   const addMeal = () => {
     if (newMeal.time && newMeal.description) {
-      setMeals([...meals, newMeal]);
+      setMealPlans((prevPlans) => {
+        const updatedPlans = { ...prevPlans };
+        updatedPlans[selectedMonth][selectedWeek] = [...updatedPlans[selectedMonth][selectedWeek], newMeal];
+        return updatedPlans;
+      });
       setNewMeal({ time: "", description: "" });
     }
   };
 
   return (
-    <div className="space-y-12 px-6 w-full">
-      <h1 className="text-5xl font-bold text-center">Nutrition Plan</h1>
-      <div className="grid gap-8 md:grid-cols-2">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-3xl">Daily Meal Plan</CardTitle>
-            <CardDescription className="text-xl">Your personalized nutrition guide</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table className="text-xl">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-2xl">Time</TableHead>
-                  <TableHead className="text-2xl">Meal Description</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {meals.map((meal, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="text-lg">{meal.time}</TableCell>
-                    <TableCell className="text-lg">{meal.description}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-3xl">Add New Meal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <Label htmlFor="meal-time" className="text-2xl">Meal Time</Label>
-                <Input
-                  id="meal-time"
-                  value={newMeal.time}
-                  onChange={(e) => setNewMeal({ ...newMeal, time: e.target.value })}
-                  placeholder="Enter meal time"
-                  className="text-lg p-4"
-                />
-              </div>
-              <div className="space-y-3">
-                <Label htmlFor="meal-description" className="text-2xl">Meal Description</Label>
-                <Textarea
-                  id="meal-description"
-                  value={newMeal.description}
-                  onChange={(e) => setNewMeal({ ...newMeal, description: e.target.value })}
-                  placeholder="Enter meal description"
-                  className="text-lg p-4"
-                />
-              </div>
-              <Button onClick={addMeal} className="w-full text-xl py-3">Add Meal</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="space-y-5 px-6 w-full">
+      <h1 className="text-2xl font-bold text-center">Nutrition Plan</h1>
       <Card className="w-full">
         <CardHeader>
-          <CardTitle className="text-3xl">Nutritionist's Notes</CardTitle>
+          <CardTitle className="text-2xl">Weekly Diet Plan</CardTitle>
+          <CardDescription>Select a month and week to view or modify meals</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 mb-6">
+            <select
+              className="border p-2 rounded"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+            >
+              {months.map((month) => (
+                <option key={month} value={month}>{month}</option>
+              ))}
+            </select>
+            <select
+              className="border p-2 rounded"
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+            >
+              {weeks.map((week) => (
+                <option key={week} value={week}>{week}</option>
+              ))}
+            </select>
+          </div>
+          <Table className="text-xl">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xl">Time</TableHead>
+                <TableHead className="text-xl">Meal Description</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mealPlans[selectedMonth][selectedWeek].map((meal, index) => (
+                <TableRow key={index}>
+                  <TableCell className="text-lg">{meal.time}</TableCell>
+                  <TableCell className="text-lg">{meal.description}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-2xl">Add New Meal</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-xl">Meal Time</label>
+              <Input
+                value={newMeal.time}
+                onChange={(e) => setNewMeal({ ...newMeal, time: e.target.value })}
+                placeholder="Enter meal time"
+                className="text-lg p-4"
+              />
+            </div>
+            <div className="space-y-3">
+              <label className="text-xl">Meal Description</label>
+              <Textarea
+                value={newMeal.description}
+                onChange={(e) => setNewMeal({ ...newMeal, description: e.target.value })}
+                placeholder="Enter meal description"
+                className="text-lg p-4"
+              />
+            </div>
+            <Button onClick={addMeal} className="w-full text-lg py-2">Add Meal</Button>
+          </div>
+        </CardContent>
+      </Card>
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-2xl">Nutritionist's Notes</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             placeholder="Enter nutritionist's recommendations here..."
-            className="min-h-[250px] text-lg p-4"
+            className="min-h-[200px] text-lg p-4"
           />
-          <Button className="mt-6 w-full text-xl py-3">Save Notes</Button>
+          <Button className="mt-6 w-full text-lg py-3">Save Notes</Button>
         </CardContent>
       </Card>
     </div>

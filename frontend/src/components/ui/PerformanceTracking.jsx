@@ -8,8 +8,8 @@ import perftrack from "@/assets/perftrack.jpeg";
 const PerformanceTrackingPage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Adjusted the height of the top image */}
-      <section className="relative text-center p-10 text-white bg-cover bg-center h-[35vh]" style={{ backgroundImage: `url(${perftrack})` }}>
+      
+      <section className="relative text-center p-10 text-white bg-cover bg-center h-[40vh]" style={{ backgroundImage: `url(${perftrack})` }}>
         <div className="absolute inset-0 bg-black opacity-50"></div>
         <div className="relative z-10">
           <h1 className="text-4xl font-extrabold">Performance Tracking</h1>
@@ -17,11 +17,11 @@ const PerformanceTrackingPage = () => {
         </div>
       </section>
 
-      <section className="py-20 text-center">
-        <h2 className="text-3xl font-bold text-green-600 mb-12">How We Help You</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 container mx-auto px-4">
+      <section className="py-5 text-center">
+        <h2 className="text-2xl font-bold text-green-600 mb-12">How We Help You</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 container mx-auto px-12">
           {/* Track Progress Card */}
-          <Card className="shadow-xl p-5 text-center border border-gray-300 rounded-xl hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-in-out">
+          <Card className="shadow-xl p-4 text-center border border-gray-300 rounded-xl hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-in-out">
             <div className="flex justify-center items-center mb-4">
               <TrendingUp className="h-12 w-12 text-green-600" />
             </div>
@@ -50,13 +50,13 @@ const PerformanceTrackingPage = () => {
         </div>
         {/* Updated the button style and size */}
         <Link to="/sign-up">
-          <Button variant="secondary" className="mt-9 px-8 py-4 text-xl bg-green-600 text-white hover:bg-green-700 transition duration-300 ease-in-out">
+          <Button variant="secondary" className="mt-9 px-8 py-3 text-lg bg-green-600 text-white hover:bg-green-700 transition duration-300 ease-in-out">
             Join Now
           </Button>
         </Link>
       </section>
 
-      <footer className="p-3 bg-gray-800 text-center text-white">
+      <footer className="p-2 bg-gray-800 text-center text-white">
         <p>© 2025 Khel-INDIA. All Rights Reserved.</p>
       </footer>
     </div>

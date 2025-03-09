@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 
 const coachDetails = {
   fullName: "Arjun Patel",
-  email: "arjunpatel@mail.com",
+  email: "abc@mail.com",
   dateOfBirth: "15th March 1985",
   gender: "Male",
   nationality: "Indian",
@@ -30,7 +30,8 @@ const CoachProfile = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <Card className="w-full max-w-4xl shadow-lg p-10 bg-white">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center">{coachDetails.fullName}</CardTitle>
+          {/* Remove the coach's name display */}
+          <CardTitle className="text-3xl font-bold text-center">Coach Profile</CardTitle>
           <p className="text-gray-500 text-center">{coachDetails.email}</p>
         </CardHeader>
         <CardContent>

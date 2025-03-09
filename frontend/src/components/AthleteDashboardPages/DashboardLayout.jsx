@@ -17,7 +17,7 @@ function DashboardLayout({ userType, navItems, children }) {
       
       <div className="flex flex-col w-72 bg-green-500 text-white border-r">
         
-        <div className="flex flex-col items-center p-6 bg-green-600 border-b-2 border-green-700">
+        <div className="flex flex-col items-center p-3 bg-green-600 border-b-2 border-green-700">
           <div className="w-24 h-24 mb-4 bg-white rounded-full overflow-hidden">
             <img
               src="https://www.w3schools.com/howto/img_avatar.png"

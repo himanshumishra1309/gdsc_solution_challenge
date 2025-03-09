@@ -38,7 +38,7 @@ const PerformanceMonitoring = () => {
   const [selectedAthlete, setSelectedAthlete] = useState("All");
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("All");
 
-  // Filtering based on selected sport and athlete
+  // Filter
   const filteredAthleteData = athleteData.filter((athlete) => {
     const isSportMatch = selectedSport === "All" || athlete.sport === selectedSport;
     const isAthleteMatch = selectedAthlete === "All" || athlete.name === selectedAthlete;

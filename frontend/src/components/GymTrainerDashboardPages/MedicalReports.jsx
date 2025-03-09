@@ -104,8 +104,8 @@ function MedicalReports() {
   };
 
   return (
-    <div className="px-8 bg-gradient-to-r from-blue-100 to-green-100 min-h-screen">
-      <h1 className="text-4xl font-bold text-indigo-700 mb-6">Medical Records</h1>
+    <div className="px-5 bg-gradient-to-r from-blue-100 to-green-100 min-h-screen">
+      <h1 className="text-3xl font-bold text-indigo-700 mb-6">Medical Records</h1>
       <div className="flex justify-between mb-6">
         <Input
           type="text"

@@ -11,6 +11,9 @@ import 'package:gdg_app/views/admin/admin_register_player_view.dart';
 import 'package:gdg_app/views/admin/admin_view_coaches.dart';
 import 'package:gdg_app/views/admin/admin_view_players.dart';
 import 'package:gdg_app/views/admin/admin_view_request_sponsors.dart';
+import 'package:gdg_app/views/coach/coach_mark_session.dart';
+import 'package:gdg_app/views/coach/coach_view_coaching_staffs_assigned.dart';
+import 'package:gdg_app/views/coach/coach_view_player_report.dart';
 import 'package:gdg_app/views/individual/individual_achievement_view.dart';
 import 'package:gdg_app/views/individual/individual_contact_sponsor_view.dart';
 import 'package:gdg_app/views/individual/individual_daily_diet_view.dart';
@@ -41,6 +44,7 @@ import 'package:gdg_app/views/player/view_coach.dart';
 import 'package:gdg_app/views/player/view_gym_plan.dart';
 import 'package:gdg_app/views/player/view_player_statistics.dart';
 import 'package:gdg_app/views/admin/video_analysis_view.dart';
+import 'package:gdg_app/views/sponsor_register_view.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,7 +80,7 @@ void main() {
       invitationToSponsorRoute: (context) => const InvitationsView(),
       requestToSponsorPageRoute: (context) => const RequestsView(),
       findOrganizationOrPlayersRoute: (context) => const FindProfilesView(),
-      playerProfileRoute: (context) => const PlayerProfile(),
+      playerHomeRoute: (context) => const PlayerHome(),
       viewCoachProfileRoute: (context) => const ViewCoach(),
       viewPlayerStatisticsRoute: (context) => const ViewPlayerStatistics(),
       medicalReportRoute: (context) => const MedicalReport(),
@@ -103,6 +107,10 @@ void main() {
       individualFinancesRoute: (context) => const IndividualFinances(),
       playerFinancialViewRoute: (context) => const PlayerFinancialView(),
       adminManagePlayerFinancesRoute: (context) => const AdminFinancialView(),
+      coachMarkSessionRoute: (context) => const CoachMarkSession(),
+      coachViewPlayerMedicalReportRoute: (context) => const CoachViewPlayerReport(),
+      viewCoachingStaffsAssignedRoute: (context) => const CoachViewCoachingStaffsAssigned(),
+      sponsorRegisterViewRoute: (context) => const SponsorRegisterView(),
     },
   ));
 }

@@ -14,9 +14,9 @@ function ALayout({ userType, navItems = [], children }) {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className="flex flex-col w-72 bg-rose-800 text-white border-r">
+      <div className="flex flex-col w-70 bg-rose-800 text-white border-r">
         {/* Profile Section */}
-        <div className="flex flex-col items-center p-6 bg-rose-900 border-b">
+        <div className="flex flex-col items-center p-3 bg-rose-900 border-b">
           <div className="w-24 h-24 mb-4 bg-white rounded-full overflow-hidden">
             <img
               src="https://www.w3schools.com/howto/img_avatar.png"
@@ -63,7 +63,7 @@ function ALayout({ userType, navItems = [], children }) {
       </div>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-8 bg-white">{children}</main>
+      <main className="flex-1 overflow-y-auto p-1 bg-white">{children}</main>
     </div>
   );
 }

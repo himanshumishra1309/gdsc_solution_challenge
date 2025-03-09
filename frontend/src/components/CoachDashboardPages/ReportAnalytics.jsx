@@ -19,55 +19,57 @@ const ReportsAnalytics = () => {
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Reports and Analytics</CardTitle>
-      </CardHeader>
-      <CardContent>
-        
-        <h3 className="text-lg font-semibold mb-4">Team Performance Summary</h3>
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="performance" fill="#8884d8" />
-            <Bar dataKey="injuries" fill="#82ca9d" />
-            <Bar dataKey="trainingLoad" fill="#ffc658" />
-          </BarChart>
-        </ResponsiveContainer>
+    <div style={{ transform: "scale(0.85)", transformOrigin: "top center" }}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Reports and Analytics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          
+          <h3 className="text-lg font-semibold mb-4">Team Performance Summary</h3>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="performance" fill="#8884d8" />
+              <Bar dataKey="injuries" fill="#82ca9d" />
+              <Bar dataKey="trainingLoad" fill="#ffc658" />
+            </BarChart>
+          </ResponsiveContainer>
 
-        
-        <h3 className="text-lg font-semibold mt-8 mb-4">Injury and Recovery Trends</h3>
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={performanceData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="injuries" stroke="#82ca9d" />
-            <Line type="monotone" dataKey="recoveryTime" stroke="#8884d8" />
-          </LineChart>
-        </ResponsiveContainer>
+          
+          <h3 className="text-lg font-semibold mt-8 mb-4">Injury and Recovery Trends</h3>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={performanceData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="injuries" stroke="#82ca9d" />
+              <Line type="monotone" dataKey="recoveryTime" stroke="#8884d8" />
+            </LineChart>
+          </ResponsiveContainer>
 
-       
-        <h3 className="text-lg font-semibold mt-8 mb-4">Training Load Analysis</h3>
-        <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={performanceData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="trainingLoad" stroke="#ffc658" />
-            <Line type="monotone" dataKey="performance" stroke="#8884d8" />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+         
+          <h3 className="text-lg font-semibold mt-8 mb-4">Training Load Analysis</h3>
+          <ResponsiveContainer width="100%" height={400}>
+            <LineChart data={performanceData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="trainingLoad" stroke="#ffc658" />
+              <Line type="monotone" dataKey="performance" stroke="#8884d8" />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

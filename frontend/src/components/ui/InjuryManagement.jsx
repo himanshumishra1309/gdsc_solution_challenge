@@ -8,8 +8,8 @@ import med from "@/assets/med.jpg";
 const InjuryManagementPage = () => {
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Adjusted the height of the top image */}
-      <section className="relative text-center p-10 text-white bg-cover bg-center h-[35vh]" style={{ backgroundImage: `url(${med})` }}>
+      
+      <section className="relative text-center p-14 text-white bg-cover bg-center h-[40vh]" style={{ backgroundImage: `url(${med})` }}>
         <div className="absolute inset-0 bg-black opacity-50"></div>
         <div className="relative z-10">
           <h1 className="text-4xl font-extrabold">Injury Management</h1>
@@ -17,9 +17,9 @@ const InjuryManagementPage = () => {
         </div>
       </section>
 
-      <section className="py-20 text-center">
-        <h2 className="text-3xl font-bold text-yellow-600 mb-12">How We Help You</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 container mx-auto px-4">
+      <section className="py-6 text-center">
+        <h2 className="text-2xl font-bold text-yellow-600 mb-12">How We Help You</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 container mx-auto px-12">
           {/* Injury Support Card */}
           <Card className="shadow-xl p-5 text-center border border-gray-300 rounded-xl hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-in-out">
             <div className="flex justify-center items-center mb-4">
