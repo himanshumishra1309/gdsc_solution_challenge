@@ -2,6 +2,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js"
 import {Athlete} from "../models/athlete.model.js"
 import jwt from 'jsonwebtoken'
+import {ApiResponse} from "../utils/ApiResponse.js"
 
 
 const generateAccessAndRefreshToken = async(userId) => {
@@ -20,7 +21,7 @@ const generateAccessAndRefreshToken = async(userId) => {
 
       athlete.refreshToken = athleteRefreshToken
       //this is used if it is something other than password wich doesnt need to validate
-      await user.save({validateBeforeSave: false})
+      await athlete.save({validateBeforeSave: false})
 
       return{athleteRefreshToken, athleteAccessToken}
     } catch (error) {
@@ -176,15 +177,61 @@ const registerIndependentAthlete = asyncHandler(async (req, res) => {
               isIndependent: true, // ✅ Ensures this is an individual
               organization: null,
             },
-            athleteAccessToken,
-            athleteRefreshToken,
           },
           "Independent athlete logged in successfully"
         )
       );
   });
   
-
+  const getAthleteDetails = async (req, res) => {
+    try {
+      const { athleteId } = req.params;
+  
+      const athleteDetails = await Athlete.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(athleteId) },
+        },
+        {
+          $lookup: {
+            from: "achievements", // Collection name in MongoDB
+            localField: "_id",
+            foreignField: "athleteId",
+            as: "achievements",
+          },
+        },
+        {
+          $lookup: {
+            from: "injuryrecords",
+            localField: "_id",
+            foreignField: "athleteId",
+            as: "injuryRecords",
+          },
+        },
+        {
+          $lookup: {
+            from: "performancemetrics",
+            localField: "_id",
+            foreignField: "athleteId",
+            as: "performanceStats",
+          },
+        },
+        {
+          $project: {
+            password: 0, // Hide sensitive fields
+            refreshToken: 0,
+          },
+        },
+      ]);
+  
+      if (!athleteDetails.length) {
+        return res.status(404).json({ message: "Athlete not found" });
+      }
+  
+      res.status(200).json(athleteDetails[0]);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
 
 
 export{
@@ -193,5 +240,6 @@ export{
     getAthleteProfile,
     getAthletes,
     registerIndependentAthlete,
-    loginIndependentAthlete
+    loginIndependentAthlete,
+    getAthleteDetails
 }

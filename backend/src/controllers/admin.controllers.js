@@ -235,9 +235,9 @@ const generateAccessAndRefreshToken = async(userId) => {
       const admin = await  Admin.findById(userId)
  
 
-      
-          
-    if (!Admin) {
+      //we save refresh token in db
+          // If no teacher is found, throw an error
+    if (!admin) {
         throw new ApiError(404, "Admin not found");
       }
   

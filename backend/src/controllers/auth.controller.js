@@ -68,7 +68,7 @@ const loginAdmin = asyncHandler(async (req, res) => {
         .status(200)
         .cookie("adminAccessToken", adminAccessToken, options)
         .cookie("adminRefreshToken", adminRefreshToken, options)
-        .json(new ApiResponse(200, { user: loggedInUser, adminAccessToken, adminRefreshToken }, "Admin logged in Successfully"));
+        .json(new ApiResponse(200, { user: loggedInUser}, "Admin logged in Successfully"));
 });
 
 const loginCoach = asyncHandler(async (req,res) => {
@@ -123,7 +123,7 @@ const loginCoach = asyncHandler(async (req,res) => {
          .json(
             new ApiResponse(
                 200,{
-                    user:loggedInUser, coachAccessToken, coachRefreshToken
+                    user:loggedInUser
                 },
                 "Coach logged in Successfully"
             )
@@ -187,7 +187,7 @@ const loginAthlete = asyncHandler(async (req,res) => {
                       ...loggedInUser.toObject(),
                       isIndependent: user.isIndependent, // ✅ Add flag for frontend
                       organization: user.organization ? user.organization : null, // ✅ Ensure null for independent athletes
-                    }, athleteAccessToken, athleteRefreshToken
+                    }
             },
             "Athlete logged in Successfully"
         )

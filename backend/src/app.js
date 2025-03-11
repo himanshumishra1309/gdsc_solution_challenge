@@ -32,12 +32,13 @@ import athleteRouter from "./routes/athlete.routes.js";
 import coachRouter from "./routes/coach.routes.js";
 import organizationRouter from "./routes/organization.routes.js";
 import authRouter from "./routes/auth.routes.js"; // Common auth routes for login/logout
-
+import sponsorRouter from "./routes/sponsor.routes.js";
 
 //routes declaration
 app.use("/api/v1/admins", adminRouter);
 app.use("/api/v1/athletes", athleteRouter);
 app.use("/api/v1/coaches", coachRouter);
+app.use("/api/v1/sponsors", sponsorRouter);
 console.log("Organization routes loaded");
 app.use("/api/v1/organizations", organizationRouter);
 app.use("/api/v1/auth", authRouter); 

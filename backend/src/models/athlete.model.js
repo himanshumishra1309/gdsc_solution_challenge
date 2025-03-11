@@ -11,7 +11,6 @@ const athleteSchema = new mongoose.Schema(
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
-      required: true,
     },
     totalExperience: { type: String },
     dob: { type: String }, //cross check, calculate age from this
@@ -36,9 +35,6 @@ const athleteSchema = new mongoose.Schema(
       },
     ],
     achievements: [{ type: String }],
-
-    InjuryRecords: [{ type: String }],
-
     coach: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Coach",
@@ -59,7 +55,11 @@ const athleteSchema = new mongoose.Schema(
      trainingPlans: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "TrainingPlan"
-    }]
+    }],
+    monthlyBudget: {
+      type: Number, // Budget for tracking expenses
+      default: 0,
+    },
   },
 
   { timestamps: true }
