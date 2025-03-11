@@ -181,6 +181,7 @@ const logoutSponsor = asyncHandler( async(req,res) => {
     
     })
 
+    
 const getSponsorProfile = asyncHandler(async(req,res) => {
         const sponsor = await Sponsor.findById(req.sponsor._id).select(
             "-password -refreshToken"

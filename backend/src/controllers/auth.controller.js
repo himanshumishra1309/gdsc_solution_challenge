@@ -13,6 +13,10 @@ const generateAccessAndRefreshToken = async (userId, userModel) => {
         if (!user) {
             throw new ApiError(404, "User not found");
         }
+                // ✅ Check if the methods exist
+                if (!user.generateAccessToken || !user.generateRefreshToken) {
+                    throw new ApiError(500, "Token generation methods are missing in the user model.");
+                }
 
         console.log("Checking user methods:", user.generateAccessToken, user.generateRefreshToken);
 
@@ -164,14 +168,20 @@ const loginAthlete = asyncHandler(async (req,res) => {
     }
     
     const {athleteRefreshToken, athleteAccessToken}= await generateAccessAndRefreshToken(user._id, Athlete)
+    if (!athleteAccessToken || !athleteRefreshToken) {
+        throw new ApiError(500, "Failed to generate authentication tokens.");
+    }
+    
+    console.log("Generated Athlete Access Token:", athleteAccessToken);
+console.log("Generated Athlete Refresh Token:", athleteRefreshToken);
     
     const loggedInUser = await Athlete.findById(user._id).
     select("-refreshToken -password")
     
      const options = {
         // now the cookies can only be accessed and changed from the server and not the frontend
-            httpOnly: true,
-            secure: true
+            httpOnly: false,
+            secure: false
      }
     
      //(key,value,options)
@@ -187,7 +197,7 @@ const loginAthlete = asyncHandler(async (req,res) => {
                       ...loggedInUser.toObject(),
                       isIndependent: user.isIndependent, // ✅ Add flag for frontend
                       organization: user.organization ? user.organization : null, // ✅ Ensure null for independent athletes
-                    }
+                    },athleteAccessToken,athleteRefreshToken
             },
             "Athlete logged in Successfully"
         )
