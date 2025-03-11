@@ -57,7 +57,7 @@ const PerformanceTrackingPage = () => {
       </section>
 
       <footer className="p-2 bg-gray-800 text-center text-white">
-        <p>© 2025 Khel-INDIA. All Rights Reserved.</p>
+        <p>© 2025 AthleTech. All Rights Reserved.</p>
       </footer>
     </div>
   );

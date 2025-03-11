@@ -69,7 +69,7 @@ const LandingPage = () => {
     <div className="min-h-screen bg-gray-100 font-sans">
       {/* Navbar */}
       <nav className="sticky top-0 z-50 flex justify-between items-center p-2 sm:p-3 bg-white shadow-lg">
-        <h1 className="text-xl sm:text-2xl font-extrabold text-green-600">Khel-INDIA</h1>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-green-600">AthleTech</h1>
         <div className="flex space-x-3 sm:space-x-4 font-semibold text-sm sm:text-base text-gray-700">
           <Link to="/performance-tracking">
             <Button variant="link" className="hover:text-blue-600 text-xs sm:text-sm transition-all">Performance Tracking</Button>
@@ -104,7 +104,7 @@ const LandingPage = () => {
 
       {/* Features Section */}
       <section className="py-12 sm:py-14 bg-gray-50 text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-green-600 mb-6 sm:mb-8">Why Choose Khel-INDIA?</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-green-600 mb-6 sm:mb-8">Why Choose AthleTech?</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6 container mx-auto px-12">
           {features.map(({ title, description, icon }) => (
             <Card key={title} className="shadow-md p-3 sm:p-8 text-center border border-gray-300 rounded-xl hover:bg-gray-50 hover:scale-105 hover:shadow-lg transition-all duration-300 ease-in-out">
