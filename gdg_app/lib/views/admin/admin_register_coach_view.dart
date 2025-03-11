@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:gdg_app/serivces/coach_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AdminRegisterCoachView extends StatefulWidget {
   const AdminRegisterCoachView({super.key});
@@ -21,6 +24,7 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
   final _countryController = TextEditingController();
   final _stateController = TextEditingController();
   final _addressController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _experienceController = TextEditingController();
   final _certificationsController = TextEditingController();
   final _previousOrganizationsController = TextEditingController();
@@ -30,10 +34,18 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
   final List<String> _sports = ['Cricket', 'Football', 'Badminton', 'Basketball'];
   bool _agreeToTerms = false;
   
-  // File placeholders
+  // File variables
+  File? _profilePhotoFile;
+  File? _idProofFile;
+  File? _certificatesFile;
   String? _profilePhotoPath;
   String? _idProofPath;
   String? _certificatesPath;
+  
+  // API integration
+  final CoachService _coachService = CoachService();
+  bool _isLoading = false;
+  final ImagePicker _imagePicker = ImagePicker();
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -58,6 +70,48 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
     if (picked != null) {
       setState(() {
         _dobController.text = "${picked.toLocal()}".split(' ')[0];
+      });
+    }
+  }
+
+  Future<void> _pickProfilePhoto() async {
+    final XFile? image = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    
+    if (image != null) {
+      setState(() {
+        _profilePhotoFile = File(image.path);
+        _profilePhotoPath = image.name;
+      });
+    }
+  }
+  
+  Future<void> _pickIdProof() async {
+    final XFile? file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
+    
+    if (file != null) {
+      setState(() {
+        _idProofFile = File(file.path);
+        _idProofPath = file.name;
+      });
+    }
+  }
+  
+  Future<void> _pickCertificates() async {
+    final XFile? file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
+    
+    if (file != null) {
+      setState(() {
+        _certificatesFile = File(file.path);
+        _certificatesPath = file.name;
       });
     }
   }
@@ -118,14 +172,18 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
                       _countryController.clear();
                       _stateController.clear();
                       _addressController.clear();
+                      _passwordController.clear();
                       _experienceController.clear();
                       _certificationsController.clear();
                       _previousOrganizationsController.clear();
                       setState(() {
                         _agreeToTerms = false;
                         _profilePhotoPath = null;
+                        _profilePhotoFile = null;
                         _idProofPath = null;
+                        _idProofFile = null;
                         _certificatesPath = null;
+                        _certificatesFile = null;
                       });
                     },
                     style: ElevatedButton.styleFrom(
@@ -148,6 +206,73 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
 
   void _handleLogout(BuildContext context) {
     Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
+  }
+
+  // Method to submit the form to the API
+  Future<void> _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      if (!_agreeToTerms) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please agree to the Terms of Service and Privacy Policy'),
+            backgroundColor: Colors.red,
+          )
+        );
+        return;
+      }
+      
+      setState(() {
+        _isLoading = true;
+      });
+      
+      try {
+        final result = await _coachService.registerCoach(
+          name: _nameController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
+          dob: _dobController.text,
+          gender: _genderController.text,
+          nationality: _nationalityController.text,
+          contactNumber: _phoneController.text,
+          address: _addressController.text,
+          state: _stateController.text,
+          country: _countryController.text,
+          sport: _selectedSport,
+          experience: _experienceController.text,
+          certifications: _certificationsController.text,
+          previousOrganizations: _previousOrganizationsController.text,
+          profilePhoto: _profilePhotoFile,
+          idProof: _idProofFile,
+          certificatesFile: _certificatesFile,
+        );
+        
+        setState(() {
+          _isLoading = false;
+        });
+        
+        if (result['success']) {
+          _showSuccessDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -428,6 +553,15 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
                             ),
                             
                             const SizedBox(height: 16),
+
+                            _buildEnhancedFormField(
+                              controller: _passwordController,
+                              labelText: 'Password',
+                              validator: (value) => value?.isEmpty ?? true ? 'Please enter your Password' : null,
+                              icon: Icons.password,
+                            ),
+                            
+                            const SizedBox(height: 16),
                             
                             _buildEnhancedFormField(
                               controller: _experienceController,
@@ -472,12 +606,7 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
                               Icons.photo_camera,
                               Colors.blue,
                               _profilePhotoPath,
-                              () {
-                                // Simulate file selection
-                                setState(() {
-                                  _profilePhotoPath = 'profile_photo.jpg';
-                                });
-                              },
+                              _pickProfilePhoto,
                             ),
                             
                             const SizedBox(height: 10),
@@ -487,12 +616,7 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
                               Icons.badge,
                               Colors.green,
                               _idProofPath,
-                              () {
-                                // Simulate file selection
-                                setState(() {
-                                  _idProofPath = 'id_proof.pdf';
-                                });
-                              },
+                              _pickIdProof,
                             ),
                             
                             const SizedBox(height: 10),
@@ -502,12 +626,7 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
                               Icons.file_copy,
                               Colors.orange,
                               _certificatesPath,
-                              () {
-                                // Simulate file selection
-                                setState(() {
-                                  _certificatesPath = 'certificates.zip';
-                                });
-                              },
+                              _pickCertificates,
                             ),
                             
                             const SizedBox(height: 20),
@@ -590,11 +709,7 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
                 margin: const EdgeInsets.only(top: 16),
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: !_agreeToTerms ? null : () {
-                    if (_formKey.currentState!.validate()) {
-                      _showSuccessDialog();
-                    }
-                  },
+                  onPressed: _isLoading || !_agreeToTerms ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
                     disabledBackgroundColor: Colors.grey.shade300,
@@ -605,8 +720,21 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
                     ),
                     elevation: 2,
                   ),
-                  icon: const Icon(Icons.person_add),
-                  label: const Text('Register Coach', style: TextStyle(fontSize: 16)),
+                  icon: _isLoading 
+                      ? Container(
+                          width: 24,
+                          height: 24,
+                          padding: const EdgeInsets.all(2.0),
+                          child: const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 3,
+                          ),
+                        )
+                      : const Icon(Icons.person_add),
+                  label: Text(
+                    _isLoading ? 'Registering...' : 'Register Coach', 
+                    style: const TextStyle(fontSize: 16)
+                  ),
                 ),
               ),
             ],
@@ -757,23 +885,37 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-          focusedBorder: OutlineInputBorder(
+                    focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.deepPurple, width: 1.5),
           ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 1),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5),
+          ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
-        items: items
-            .map((item) => DropdownMenuItem(
-                  value: item,
-                  child: Text(item),
-                ))
-            .toList(),
+        items: items.map((String item) {
+          return DropdownMenuItem<String>(
+            value: item,
+            child: Text(
+              item,
+              style: const TextStyle(
+                fontSize: 14,
+              ),
+            ),
+          );
+        }).toList(),
         onChanged: onChanged,
         validator: validator,
-        icon: const Icon(Icons.arrow_drop_down, color: Colors.deepPurple),
         isExpanded: true,
+        icon: const Icon(Icons.arrow_drop_down, color: Colors.deepPurple),
         dropdownColor: Colors.white,
+        elevation: 2,
       ),
     );
   }
@@ -850,168 +992,66 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
   void _showHelpDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.help_outline,
-                        color: Colors.deepPurple,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Coach Registration Help',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'This form allows you to register a new coach in the system. Make sure to fill out all required fields accurately.',
-                  style: TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.blue.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Required Documents:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      _buildHelpBulletPoint('A recent photograph of the coach'),
-                      _buildHelpBulletPoint('Valid ID proof (Passport, Aadhar, etc.)'),
-                      _buildHelpBulletPoint('Copies of relevant certifications'),
-                      _buildHelpBulletPoint('Previous experience documentation if available'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 45),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Got it'),
-                ),
-              ],
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.help_outline, color: Colors.deepPurple),
+            SizedBox(width: 10),
+            Text('Coach Registration Help'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHelpItem('Personal Information', 'Enter coach\'s name, date of birth, and gender'),
+            _buildHelpItem('Contact Details', 'Add valid email and phone number for notifications'),
+            _buildHelpItem('Address', 'Complete address information for official records'),
+            _buildHelpItem('Professional Details', 'Select sport and add experience details'),
+            _buildHelpItem('Documents', 'Upload clear images of required documents'),
+            _buildHelpItem('Terms', 'Read and accept terms of service before submission'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.deepPurple,
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  // Help bullet point
-  Widget _buildHelpBulletPoint(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('• ', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-          Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 13)),
+            child: Text('Got it'),
           ),
         ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }
 
-  // Handle will pop to confirm before leaving
-  Future<bool> _onWillPop() async {
-    if (_formHasChanges()) {
-      return await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Discard changes?'),
-              content: const Text('You have unsaved changes. Are you sure you want to leave this page?'),
-              actions: <Widget>[
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text('CANCEL'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  child: const Text('YES, LEAVE'),
-                ),
-              ],
+  // Help item
+  Widget _buildHelpItem(String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
             ),
-          ) ??
-          false;
-    }
-    return true;
-  }
-
-  // Check if form has any changes
-  bool _formHasChanges() {
-    return _nameController.text.isNotEmpty ||
-        _emailController.text.isNotEmpty ||
-        _dobController.text.isNotEmpty ||
-        _genderController.text.isNotEmpty ||
-        _nationalityController.text.isNotEmpty ||
-        _phoneController.text.isNotEmpty ||
-        _countryController.text.isNotEmpty ||
-        _stateController.text.isNotEmpty ||
-        _addressController.text.isNotEmpty ||
-        _experienceController.text.isNotEmpty ||
-        _certificationsController.text.isNotEmpty ||
-        _previousOrganizationsController.text.isNotEmpty ||
-        _profilePhotoPath != null ||
-        _idProofPath != null ||
-        _certificatesPath != null;
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _dobController.dispose();
-    _genderController.dispose();
-    _nationalityController.dispose();
-    _phoneController.dispose();
-    _countryController.dispose();
-    _stateController.dispose();
-    _addressController.dispose();
-    _experienceController.dispose();
-    _certificationsController.dispose();
-    _previousOrganizationsController.dispose();
-    super.dispose();
+          ),
+          SizedBox(height: 4),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

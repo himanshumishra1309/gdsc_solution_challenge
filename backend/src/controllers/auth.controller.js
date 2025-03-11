@@ -132,7 +132,7 @@ const loginCoach = asyncHandler(async (req,res) => {
                 "Coach logged in Successfully"
             )
          )
-  })
+});
   
 const loginAthlete = asyncHandler(async (req,res) => {
     /*
@@ -202,7 +202,7 @@ console.log("Generated Athlete Refresh Token:", athleteRefreshToken);
             "Athlete logged in Successfully"
         )
      )
-})
+});
 
 export{
     loginAdmin,

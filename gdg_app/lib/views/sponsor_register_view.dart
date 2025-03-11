@@ -3,11 +3,11 @@ import 'dart:ui';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:gdg_app/constants/routes.dart';
 import 'package:gdg_app/views/login_view.dart';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart'; // Add this package for image picking
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'landing_page_view.dart';
 
 class SponsorRegisterView extends StatefulWidget {
   const SponsorRegisterView({super.key});
@@ -19,8 +19,10 @@ class SponsorRegisterView extends StatefulWidget {
 class _SponsorRegisterViewState extends State<SponsorRegisterView> {
   late final TextEditingController _name;
   late final TextEditingController _email;
+  late final TextEditingController _contactNo;
   late final TextEditingController _dob;
   late final TextEditingController _address;
+  late final TextEditingController _password;
   late final TextEditingController _companyName;
   
   String? _selectedState;
@@ -41,8 +43,10 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
     super.initState();
     _name = TextEditingController();
     _email = TextEditingController();
+    _contactNo = TextEditingController();
     _dob = TextEditingController();
     _address = TextEditingController();
+    _password = TextEditingController();
     _companyName = TextEditingController();
     _loadStates();
   }
@@ -59,8 +63,10 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _contactNo.dispose();
     _dob.dispose();
     _address.dispose();
+    _password.dispose();
     _companyName.dispose();
     super.dispose();
   }
@@ -72,6 +78,96 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
         _profileImage = File(image.path);
       });
     }
+  }
+
+  Future<void> _takePhoto() async {
+    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+    if (photo != null) {
+      setState(() {
+        _profileImage = File(photo.path);
+      });
+    }
+  }
+
+  void _showImageSourceActionSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.grey[900]!.withOpacity(0.9),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                "Select Profile Photo",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.amber.withOpacity(0.2),
+                        child: IconButton(
+                          icon: const Icon(Icons.photo_library, color: Colors.amber),
+                          onPressed: () {
+                            _pickImage();
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text("Gallery", style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                  Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 30,
+                        backgroundColor: Colors.amber.withOpacity(0.2),
+                        child: IconButton(
+                          icon: const Icon(Icons.camera_alt, color: Colors.amber),
+                          onPressed: () {
+                            _takePhoto();
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text("Camera", style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancel"),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -135,24 +231,47 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
       // Navigate to login page after short delay
       Future.delayed(const Duration(seconds: 2), () {
         if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginView(sourcePage: 'sponsorRegister')),
-        );
+        Navigator.pushReplacementNamed(context, loginRoute);
       });
     }
+  }
+
+  Future<bool> _onWillPop(BuildContext context) async {
+    bool shouldLeave = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Leave Registration?'),
+        content: const Text('Your progress will not be saved. Are you sure you want to leave?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLeave) {
+      Navigator.pushReplacementNamed(context, landingPageRoute);
+    }
+
+    return false; // Prevent default back button behavior
   }
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LandingPageView()),
-        );
-        return false; // Prevent default back button behavior
-      },
+      onWillPop: () => _onWillPop(context),
       child: Scaffold(
         extendBodyBehindAppBar: true,
         appBar: AppBar(
@@ -160,12 +279,7 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LandingPageView()),
-              );
-            },
+            onPressed: () => _onWillPop(context),
           ),
         ),
         body: Stack(
@@ -257,7 +371,7 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
                                             child: Column(
                                               children: [
                                                 GestureDetector(
-                                                  onTap: _pickImage,
+                                                  onTap: _showImageSourceActionSheet,
                                                   child: CircleAvatar(
                                                     radius: 50,
                                                     backgroundColor: Colors.white.withOpacity(0.3),
@@ -317,6 +431,24 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
                                           ),
                                           const SizedBox(height: 16),
                                           
+                                          // Contact Number field
+                                          _buildTextFormField(
+                                            controller: _contactNo,
+                                            labelText: 'Contact Number',
+                                            prefixIcon: Icons.phone_outlined,
+                                            keyboardType: TextInputType.phone,
+                                            validator: (value) {
+                                              if (value == null || value.isEmpty) {
+                                                return 'Please enter your contact number';
+                                              }
+                                              if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+                                                return 'Please enter a valid 10-digit number';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          const SizedBox(height: 16),
+                                          
                                           // Date of birth field
                                           _buildDateField(
                                             context: context,
@@ -326,6 +458,23 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
                                             validator: (value) {
                                               if (value == null || value.isEmpty) {
                                                 return 'Please select your date of birth';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                          const SizedBox(height: 16),
+                                          
+                                          // Password field
+                                          _buildPasswordField(
+                                            controller: _password,
+                                            labelText: 'Password',
+                                            prefixIcon: Icons.lock_outline,
+                                            validator: (value) {
+                                              if (value == null || value.isEmpty) {
+                                                return 'Please enter a password';
+                                              }
+                                              if (value.length < 6) {
+                                                return 'Password must be at least 6 characters';
                                               }
                                               return null;
                                             },
@@ -434,12 +583,7 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
                                           Center(
                                             child: TextButton.icon(
                                               onPressed: () {
-                                                Navigator.pushReplacement(
-                                                  context, 
-                                                  MaterialPageRoute(
-                                                    builder: (context) => const LoginView(sourcePage: 'sponsorRegister'),
-                                                  ),
-                                                );
+                                                Navigator.pushReplacementNamed(context, loginRoute);
                                               },
                                               icon: const Icon(Icons.login, size: 18, color: Colors.white),
                                               label: const Text(
@@ -520,6 +664,60 @@ class _SponsorRegisterViewState extends State<SponsorRegisterView> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
+    );
+  }
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String labelText,
+    required IconData prefixIcon,
+    String? Function(String?)? validator,
+  }) {
+    bool _obscureText = true;
+    
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return TextFormField(
+          controller: controller,
+          obscureText: _obscureText,
+          decoration: InputDecoration(
+            labelText: labelText,
+            labelStyle: TextStyle(color: Colors.white.withOpacity(0.9)),
+            prefixIcon: Icon(prefixIcon, color: Colors.white.withOpacity(0.7)),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscureText ? Icons.visibility : Icons.visibility_off,
+                color: Colors.white.withOpacity(0.7),
+              ),
+              onPressed: () {
+                setState(() {
+                  _obscureText = !_obscureText;
+                });
+              },
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.amber.shade600, width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.redAccent.withOpacity(0.8), width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.1),
+          ),
+          style: const TextStyle(color: Colors.white),
+          validator: validator,
+        );
+      }
     );
   }
 

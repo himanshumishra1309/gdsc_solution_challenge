@@ -140,7 +140,7 @@ const loginSponsor = asyncHandler(async (req,res) => {
             "Sponsor logged in Successfully"
         )
      )
-    })
+})
 
 
 const logoutSponsor = asyncHandler( async(req,res) => {
