@@ -23,6 +23,8 @@ const coachSchema = new mongoose.Schema(
       type: String, 
       required: false 
     },
+    role: { type: String, default: "coach", enum: ["coach"] }, // Fixed role
+
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",

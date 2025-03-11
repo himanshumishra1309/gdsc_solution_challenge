@@ -4,7 +4,8 @@ import asyncHandler from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken"
 import {ApiError} from "../utils/ApiError.js"
 import { Admin } from "../models/admin.model.js";
-
+import { Coach } from "../models/coach.model.js";
+import { Athlete } from "../models/athlete.model.js";
 //here no need of rs so we put _
 
 // const verifyJWT = asyncHandler( async (req, _, next) => {
@@ -62,7 +63,6 @@ const verifyJWT = asyncHandler(async (req, _, next) => {
     throw new ApiError(401, error?.message || "Invalid access token");
   }
 });
-
 
 export{
   verifyJWT

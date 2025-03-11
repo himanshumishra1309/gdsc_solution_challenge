@@ -132,10 +132,15 @@ const getFinancialRecords = asyncHandler(async (req, res) => {
         // Admins see all financial records
     } else if (["coach", "athlete"].includes(user.role)) {
         // Coaches & Athletes see only their organization's records
-        if (!user.organizationId) {
+
+        console.log("User Data:", user);
+
+
+        if (!user.organization) {
             throw new ApiError(403, "Access Denied. No organization linked.");
         }
-        query.organizationId = user.organizationId;
+        query.organizationId = user.organization; // Use `user.organization`, not `user.organizationId`
+        
     } else {
         throw new ApiError(403, "Access Denied.");
     }
