@@ -128,7 +128,7 @@ const loginCoach = asyncHandler(async (req,res) => {
                 "Coach logged in Successfully"
             )
          )
-  })
+});
   
 const loginAthlete = asyncHandler(async (req,res) => {
     /*
@@ -192,7 +192,7 @@ const loginAthlete = asyncHandler(async (req,res) => {
             "Athlete logged in Successfully"
         )
      )
-})
+});
 
 export{
     loginAdmin,

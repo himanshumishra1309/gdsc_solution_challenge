@@ -88,7 +88,7 @@ const loginUser = asyncHandler(async (req,res) => {
             "Coach logged in Successfully"
         )
      )
-    })
+})
 
 
 const logoutUser = asyncHandler( async(req,res) => {
