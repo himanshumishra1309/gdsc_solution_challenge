@@ -16,12 +16,14 @@ class CustomDrawer extends StatelessWidget {
   final String selectedDrawerItem;
   final Function(String) onSelectDrawerItem;
   final List<DrawerItem> drawerItems;
+  final VoidCallback onLogout; // Callback for logout
 
   const CustomDrawer({
     Key? key,
     required this.selectedDrawerItem,
     required this.onSelectDrawerItem,
     required this.drawerItems,
+    required this.onLogout, // Add this parameter
   }) : super(key: key);
 
   @override
@@ -30,7 +32,7 @@ class CustomDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          UserAccountsDrawerHeader(
+          const UserAccountsDrawerHeader(
             accountName: Text('User Name'),
             accountEmail: Text('user@example.com'),
             currentAccountPicture: CircleAvatar(
@@ -48,6 +50,12 @@ class CustomDrawer extends StatelessWidget {
               onTap: () => onSelectDrawerItem(item.route), // Use route for navigation
             );
           }).toList(),
+          const Divider(), // Add a divider before the logout button
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red), // Logout icon
+            title: const Text('Logout', style: TextStyle(color: Colors.red)), // Logout text
+            onTap: onLogout, // Call the logout callback
+          ),
         ],
       ),
     );

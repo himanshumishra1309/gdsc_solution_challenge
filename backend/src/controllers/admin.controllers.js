@@ -12,7 +12,7 @@ import {CustomForm} from "../models/customForm.model.js"
 
 import mongoose from "mongoose"
 
-// import {CustomForm} from "../models/customForm.model.js"
+
 
 
 import jwt from 'jsonwebtoken'
@@ -22,34 +22,34 @@ import jwt from 'jsonwebtoken'
 const registerOrganizationAthlete = asyncHandler(async (req, res) => {
   const { name, email, password, organizationId, sport } = req.body;
 
-    // 1️⃣ Ensure organization ID is provided
+    
     if (!organizationId) {
       throw new ApiError(400, "Organization ID is required for organization athletes");
     }
 
-  // ✅ Check if athlete already exists
+  
   const existingAthlete = await Athlete.findOne({ email });
   if (existingAthlete) {
     throw new ApiError(400, "Athlete with this email already exists");
   }
 
-  // 2️⃣ Validate if the organization exists
+  
   const organizationExists = await Organization.exists({ _id: organizationId });
   if (!organizationExists) {
     throw new ApiError(404, "Organization not found");
   }
 
-  // ✅ Create athlete
+  
   const athlete = await Athlete.create({
     name,
     email,
-    password, // Will be hashed automatically in the model
+    password, 
     sport,
-    isIndependent: false, // ✅ Automatically set for organization athletes
-    organization: organizationId, // ✅ Assign valid organization
+    isIndependent: false, 
+    organization: organizationId, 
   });
 
-  // ✅ Send Email with Login Credentials
+  
   await sendEmail({
     email: athlete.email,
     subject: "Welcome to AMS - Athlete Login Details",
@@ -60,7 +60,7 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
               <p>Please log in and change your password.</p>`,
   });
 
-  // ✅ Response
+  
   res.status(201).json({
     success: true,
     message: "Athlete registered successfully, email sent.",
@@ -68,83 +68,156 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
       _id: athlete._id,
       name: athlete.name,
       email: athlete.email,
-      sportType: organization.sportType, // Get sport from organization
-      isIndependent: false, // ✅ Ensures frontend understands athlete belongs to an organization
+      sportType: organization.sportType, 
+      isIndependent: false, 
       organization: organizationId,
     },
   });
 });
 
-// ✅ Register Coach (Only Admin can do this)
+
 const registerCoach = asyncHandler(async (req, res) => {
-  const { name, email, password, organizationId, designation, sport } = req.body;
+  const { 
+    name, 
+    email, 
+    password, 
+    organizationId,
+    dob, 
+    gender, 
+    nationality,
+    contactNumber,
+    address,
+    city,
+    state,
+    country,
+    pincode,
+    sport,
+    experience,
+    certifications,
+    previousOrganizations,
+    designation = "Assistant Coach", // Default value
+    profilePhoto,
+    idProof,
+    certificatesFile
+  } = req.body;
 
-  console.log("Received Organization ID:", organizationId); // 🔹 Debugging
+  console.log("Received Organization ID:", organizationId);
 
-  // ✅ Convert organizationId to ObjectId (if it's a valid format)
+  // Validate required fields
+  if (!name || !email || !password || !organizationId || !dob || !gender || !contactNumber || 
+      !address || !state || !country || !sport) {
+    throw new ApiError(400, "Please provide all required fields");
+  }
+  
+  // Validate organization ID
   if (!mongoose.Types.ObjectId.isValid(organizationId)) {
     throw new ApiError(400, "Invalid Organization ID format");
   }
-  const orgId = new mongoose.Types.ObjectId(organizationId); // Convert to ObjectId
-
-  // ✅ Verify if Organization exists
+  const orgId = new mongoose.Types.ObjectId(organizationId);
+  
+  // Verify organization exists
   const organization = await Organization.findById(orgId);
-  console.log("Organization Query Result:", organization); // 🔹 Debugging
+  console.log("Organization Query Result:", organization);
 
   if (!organization) {
     throw new ApiError(404, `Organization not found with ID: ${organizationId}`);
   }
-
-  // ✅ Validate if the selected sport is allowed in the organization
+  
+  // Validate sport against organization's sports
   if (!organization.sportType.includes(sport)) {
     throw new ApiError(400, `Invalid sport. Allowed sports: ${organization.sportType.join(", ")}`);
   }
 
-  // ✅ Check if coach already exists
+  // Check if coach with email already exists
   const existingCoach = await Coach.findOne({ email });
   if (existingCoach) {
     throw new ApiError(400, "Coach with this email already exists");
   }
 
-  // ✅ Create coach
+  // Parse date of birth
+  const dobDate = new Date(dob);
+  if (isNaN(dobDate.getTime())) {
+    throw new ApiError(400, "Invalid date of birth format");
+  }
+
+  // Parse experience as a number
+  const experienceYears = parseInt(experience);
+  if (isNaN(experienceYears)) {
+    throw new ApiError(400, "Experience must be a valid number");
+  }
+
+  // Format certifications and previous organizations
+  const certificationsList = certifications ? certifications.split(',').map(cert => cert.trim()) : [];
+  const previousOrgList = previousOrganizations ? previousOrganizations.split(',').map(org => org.trim()) : [];
+
+  // Create coach with all provided fields
   const coach = await Coach.create({
     name,
     email,
-    password, // Hashed in model
+    password,
     organization: orgId,
+    dob: dobDate,
+    gender,
+    nationality,
+    contactNumber,
+    address: {
+      street: address,
+      city: city || "",
+      state,
+      country,
+      pincode: pincode || ""
+    },
     sport,
+    experience: experienceYears,
+    certifications: certificationsList,
+    previousOrganizations: previousOrgList,
     designation,
+    avatar: profilePhoto || "",
+    documents: {
+      idProof: idProof || "",
+      certificates: certificatesFile || ""
+    },
+    status: "Active",
+    joined_date: new Date()
   });
 
-  // ✅ Send Email with Login Credentials
+  // Send welcome email with login credentials
   await sendEmail({
     email: coach.email,
     subject: "Welcome to AMS - Coach Login Details",
-    message: `<h3>Hi ${coach.name},</h3>
-              <p>Your account has been created in the Athlete Management System.</p>
-              <p><strong>Email:</strong> ${coach.email}</p>
-              <p><strong>Password:</strong> ${password}</p>
-              <p>Please log in and change your password.</p>`,
+    message: `
+      <h3>Hi ${coach.name},</h3>
+      <p>Your account has been created in the Athlete Management System.</p>
+      <p><strong>Email:</strong> ${coach.email}</p>
+      <p><strong>Password:</strong> ${password}</p>
+      <p>Please log in and change your password at your earliest convenience.</p>
+      <p>You have been assigned to ${organization.name} as a ${designation} for ${sport}.</p>
+      <p>For any questions, please contact the system administrator.</p>
+      <p>Thank you!</p>
+    `
   });
 
-  // ✅ Response
+  // Send success response
   res.status(201).json({
     success: true,
-    message: "Coach registered successfully, email sent.",
+    message: "Coach registered successfully, welcome email sent.",
     coach: {
       _id: coach._id,
       name: coach.name,
       email: coach.email,
-      organization: organizationId,
+      organization: organization.name,
       sport,
       designation,
-    },
+      contactNumber,
+      experience: experienceYears,
+      joined_date: coach.joined_date
+    }
   });
 });
 
-// ✅ Fetch All Athletes & Coaches (For Admin Dashboard)
+
 const getAllUsers = asyncHandler(async (req, res) => {
-  const { organization } = req.user; // Assuming admin is logged in
+  const { organization } = req.user; 
 
   const athletes = await Athlete.find({ organization });
   const coaches = await Coach.find({ organization });
@@ -164,7 +237,7 @@ const generateAccessAndRefreshToken = async(userId) => {
 
       //we save refresh token in db
           // If no teacher is found, throw an error
-    if (!Admin) {
+    if (!admin) {
         throw new ApiError(404, "Admin not found");
       }
   
@@ -172,12 +245,12 @@ const generateAccessAndRefreshToken = async(userId) => {
       const adminRefreshToken = admin.generateRefreshToken()
 
       admin.refreshToken = adminRefreshToken
-      //this is used if it is something other than password wich doesnt need to validate
+      
       await admin.save({validateBeforeSave: false})
 
       return{adminRefreshToken, adminAccessToken}
     } catch (error) {
-        console.error("Error generating tokens:", error); // Optional: for debugging purposes
+        console.error("Error generating tokens:", error); 
 
         throw new ApiError(500, "Something went wrong while generating tokens")
     }
@@ -188,24 +261,24 @@ const generateAccessAndRefreshToken = async(userId) => {
 const logoutUser = asyncHandler( async(req,res) => {
         await Admin.findByIdAndUpdate(
             req.admin._id,
-            // {
-            //     $set: {refreshToken : undefined}
-            // },
-             // {
-        //   refreshToken: undefined
-        // }, dont use this approach, this dosent work well
+            
+            
+            
+             
+        
+        
     
         {
             $unset: {
-              adminRefreshToken: 1, // this removes the field from the document
+              adminRefreshToken: 1, 
             },
           },
             {
                 new: true
             }
         )
-        //clear cookies
-        // reset the refresh token in User modelSchema
+        
+        
     
         const options = {
                 httpOnly: true,
@@ -236,25 +309,25 @@ const getAdminProfile = asyncHandler(async(req,res) => {
 })
 
 const getRpeInsights = asyncHandler(async (req, res) => {
-    const { athleteId } = req.params; // Extract athleteId from URL path
-    const userId = req.user._id; // User ID from authenticated user
-    const userRole = req.user.role; // User role (athlete, head_coach, assistant_coach, training_staff)
+    const { athleteId } = req.params; 
+    const userId = req.user._id; 
+    const userRole = req.user.role; 
   
     try {
-      // Fetch the athlete
+      
       const athlete = await Athlete.findById(athleteId);
       if (!athlete) {
         return res.status(404).json({ message: 'Athlete not found.' });
       }
   
-      // Check access permissions
+      
       if (userRole === 'athlete') {
-        // Athletes can only view their own RPE insights
+        
         if (athleteId !== userId.toString()) {
           return res.status(403).json({ message: 'Access denied. You can only view your own RPE insights.' });
         }
       } else if (userRole === 'head_coach' || userRole === 'assistant_coach' || userRole === 'training_staff') {
-        // Coaches can view RPE insights for athletes in their organization
+        
         const coach = await Coach.findById(userId);
         if (!coach || coach.organization.toString() !== athlete.organization.toString()) {
           return res.status(403).json({ message: 'Access denied. Athlete does not belong to your organization.' });
@@ -263,11 +336,11 @@ const getRpeInsights = asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'Access denied. Invalid role.' });
       }
   
-      // Fetch RPE records for the athlete
+      
       const rpeRecords = await RPE.find({ athleteId });
       const averageRPE = rpeRecords.reduce((sum, record) => sum + record.rpe, 0) / rpeRecords.length;
   
-      // Generate recommendations
+      
       let recommendation = '';
       if (averageRPE >= 8) {
         recommendation = 'High RPE detected. Consider rest and recovery activities.';
@@ -287,7 +360,7 @@ const getRpeInsights = asyncHandler(async (req, res) => {
 
  const createCustomForm = asyncHandler(async (req, res) => {
     const { title, sport, fields } = req.body;
-    const organizationId = req.user.organization; // Admin's organization
+    const organizationId = req.user.organization; 
   
     try {
       const customForm = new CustomForm({
@@ -313,5 +386,5 @@ const getRpeInsights = asyncHandler(async (req, res) => {
     logoutUser,
     getAdminProfile,
     getRpeInsights,
-    // createCustomForm,
+    
   }

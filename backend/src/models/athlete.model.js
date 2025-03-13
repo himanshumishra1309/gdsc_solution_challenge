@@ -8,10 +8,10 @@ const athleteSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: [true, "Password is Required"] },
     avatar: { type: String, required: false },
+    role: { type: String, default: "athlete", enum: ["athlete"] }, // Fixed role
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",
-      required: true,
     },
     totalExperience: { type: String },
     dob: { type: String }, //cross check, calculate age from this
@@ -36,9 +36,6 @@ const athleteSchema = new mongoose.Schema(
       },
     ],
     achievements: [{ type: String }],
-
-    InjuryRecords: [{ type: String }],
-
     coach: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Coach",
@@ -59,7 +56,11 @@ const athleteSchema = new mongoose.Schema(
      trainingPlans: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "TrainingPlan"
-    }]
+    }],
+    monthlyBudget: {
+      type: Number, // Budget for tracking expenses
+      default: 0,
+    },
   },
 
   { timestamps: true }

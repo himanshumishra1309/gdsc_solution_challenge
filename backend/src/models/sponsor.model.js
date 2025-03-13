@@ -1,4 +1,8 @@
 import mongoose, {Schema} from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { SponsorshipContract } from "./sponsorshipContract.model.js";
+
 
 const sponsorSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -7,11 +11,14 @@ const sponsorSchema = new mongoose.Schema({
   avatar: {
     type: String,
   },
+  dob: { type: Date, required: true },
+  address: { type: String, required: true },
+  state: { type: String, required: true },
   contactNo: {type: String},
-  contracts: {
+  contracts: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'SponsorshipContract'
-  },
+  }],
   refreshToken: {
     type: "String"
   }

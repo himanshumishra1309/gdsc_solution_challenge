@@ -17,10 +17,8 @@ const adminSchema = new mongoose.Schema({
     required: true,
 
   },
-  role : {
-    type: String, 
-    default: "admin"
-  },
+  role: { type: String, default: "admin", enum: ["admin"] }, // Fixed role
+
   refreshToken: {
     type: "String"
   }

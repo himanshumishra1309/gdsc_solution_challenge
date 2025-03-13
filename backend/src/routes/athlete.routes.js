@@ -6,18 +6,25 @@ import {
 } from "../controllers/athlete.controllers.js";
 import {
     registerIndependentAthlete,
-    loginIndependentAthlete
+    loginIndependentAthlete,
+    getAthleteDetails,
 } from "../controllers/athlete.controllers.js";
 
-import {verifyJWTAthlete} from "../middlewares/auth.middleware.js"
+import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { authorize } from "../middlewares/authorize.middleware.js"; // New middleware for role-based access
 
 
 const router = Router()
 
 
-router.get("/", verifyJWTAthlete, getAthletes); // Fetch all athletes with filters
+router.get("/", verifyJWT, authorize(["athlete"]), getAthletes); // Fetch all athletes with filters
 router.post("/register/individual", registerIndependentAthlete);
 router.post("/login/individual", loginIndependentAthlete);
+// router.post("/logout/individual", logoutIndependentAthlete);
+
+
+router.get("/:athleteId/details", getAthleteDetails);
+
 
 
 // router.post("/login", loginAthlete);

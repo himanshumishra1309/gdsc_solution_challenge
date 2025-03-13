@@ -16,5 +16,5 @@ const verifyAdmin = asyncHandler(async (req, res, next) => {
 });
 
 export{
-
+verifyAdmin
 }
