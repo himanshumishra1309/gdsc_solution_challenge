@@ -80,12 +80,22 @@ export default function OrganizationSignup() {
     { label: "Private Company", value: "company" },
   ]
 
-  // Step 1: Fix the organization registration function
-  const handleNextStep = async (e) => {
-    
+// Step 1: Handle first step (organization details)
+const handleNextStep = async (e) => {
+  e.preventDefault()
+  setError("")
+  
+  // Validate organization details
+  if (!orgName || !orgEmail || !orgType || !address || !country || !state) {
+    setError("Please fill all required organization fields")
+    return
   }
+  
+  // Just move to admin step without API call yet
+  setCurrentStep(2)
+}
 
-// Step 2: Fix the admin registration function
+// Step 2: Handle complete registration (submit everything)
 const handleCompleteRegistration = async (e) => {
   e.preventDefault()
   setError("")
@@ -104,59 +114,73 @@ const handleCompleteRegistration = async (e) => {
   setIsLoading(true)
   
   try {
-    // Send admin data as JSON
-    const response = await axios.post('http://localhost:8000/api/v1/admins/register', {
-      name: adminName,
-      email: adminEmail,
-      password: adminPassword,
-      organizationId: organizationId
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
+    // Create form data for the complete registration
+    const formData = new FormData()
+    
+    // Organization data
+    formData.append("orgName", orgName)
+    formData.append("orgEmail", orgEmail)
+    formData.append("organizationType", orgType)
+    formData.append("address", address)
+    formData.append("country", country)
+    formData.append("state", state)
+    
+    // Admin data
+    formData.append("adminName", adminName)
+    formData.append("adminEmail", adminEmail)
+    formData.append("adminPassword", adminPassword)
+    
+    // Files
+    if (orgLogo) formData.append("logo", orgLogo)
+    if (certificates) formData.append("certificates", certificates)
+    if (adminAvatar) formData.append("adminAvatar", adminAvatar)
+    
+    console.log("Sending registration data:", {
+      organization: {
+        orgName,
+        orgEmail,
+        organizationType: orgType,
+        address,
+        country,
+        state
+      },
+      admin: {
+        adminName,
+        adminEmail
+      },
+      files: {
+        logo: orgLogo ? orgLogo.name : null,
+        certificates: certificates ? certificates.name : null,
+        adminAvatar: adminAvatar ? adminAvatar.name : null
       }
     })
     
-    console.log("Admin registration response:", response.data)
-    
-    // Handle admin avatar upload separately if needed
-    if (adminAvatar) {
-      const avatarFormData = new FormData()
-      avatarFormData.append("avatar", adminAvatar)
-      
-      try {
-        await axios.post(
-          `http://localhost:8000/api/v1/admins/${response.data.admin._id}/upload-avatar`, 
-          avatarFormData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data'
-            }
-          }
-        )
-      } catch (avatarErr) {
-        console.error("Avatar upload error:", avatarErr)
-        // Don't block the flow if avatar upload fails
+    // Send complete registration data
+    const response = await axios.post(
+      'http://localhost:8000/api/v1/organizations/register', 
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       }
+    )
+    
+    console.log("Registration response:", response.data)
+    
+    // Store organization ID in case needed later
+    if (response.data?.data?.organization?._id) {
+      setOrganizationId(response.data.data.organization._id)
     }
-    
-    // After successfully registering admin, link admin to organization
-    await axios.post('http://localhost:8000/api/v1/organizations/update-admin', {
-      organizationId: organizationId,
-      adminId: response.data.admin._id
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    })
     
     // Show success dialog
     setRegistrationComplete(true)
     setIsSuccessDialogOpen(true)
   } catch (err) {
-    console.error("Admin registration error:", err)
+    console.error("Registration error:", err)
     if (err.response) {
-      console.error("Error response data:", err.response.data)
-      setError(err.response.data.message || "An error occurred during admin registration")
+      console.error("Error data:", err.response.data)
+      setError(err.response.data.message || "Registration failed")
     } else if (err.request) {
       setError("No response from server. Please check your network connection.")
     } else {

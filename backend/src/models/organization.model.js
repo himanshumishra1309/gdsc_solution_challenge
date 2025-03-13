@@ -46,11 +46,6 @@ const organizationSchema = new mongoose.Schema({
   state: { 
     type: String,
     required: true
-  },
-  admin: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: "Admin", 
-    required: true
   }
 }, {
   timestamps: true

@@ -31,6 +31,7 @@ const registerOrganization = asyncHandler(async (req, res) => {
   } = req.body;
 
   console.log("Request body:", req.body);
+  console.log("Files:", req.files);
 
   if (
     !orgName ||
@@ -108,14 +109,7 @@ const registerOrganization = asyncHandler(async (req, res) => {
     }
   }
 
-  const admin = await Admin.create({
-    name: adminName,
-    email: adminEmail,
-    password: adminPassword,
-    avatar: adminAvatarUrl,
-    role: "admin",
-  });
-
+  // First, create the organization **without the admin reference**
   const organization = await Organization.create({
     name: orgName,
     email: orgEmail,
@@ -125,14 +119,25 @@ const registerOrganization = asyncHandler(async (req, res) => {
     address,
     country,
     state,
-    admin: admin._id,
   });
 
-  await Admin.findByIdAndUpdate(
-    admin._id,
-    { organization: organization._id },
-    { new: true }
-  );
+  if (!organization) {
+    throw new ApiError(500, "Error creating organization");
+  }
+
+  // Now, create the admin **with the organization reference**
+  const admin = await Admin.create({
+    name: adminName,
+    email: adminEmail,
+    password: adminPassword,
+    avatar: adminAvatarUrl,
+    role: "admin",
+    organization: organization._id, // Now we can pass the organization ID
+  });
+
+  if (!admin) {
+    throw new ApiError(500, "Error creating admin");
+  }
 
   try {
     await sendEmail({
