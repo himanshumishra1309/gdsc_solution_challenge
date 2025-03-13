@@ -1,13 +1,22 @@
 import { Router } from "express";
-import { registerOrganizationAthlete, registerCoach, getAllUsers } from "../controllers/admin.controllers.js";
+import { registerOrganizationAthlete,
+  registerAdmin,
+  registerCoach,
+  getAllUsers,
+  generateAccessAndRefreshToken,
+  logoutAdmin,
+  getAdminProfile,
+  getRpeInsights, } from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
-// import {verifyJWTCoach} from "../middlewares/auth.middleware.js"
-// import { verifyAdmin } from "../middlewares/admin.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 
 const router = Router()
 
-
+router.route("/register").post(
+  upload.single("avatar"), // Handle avatar image upload
+  registerAdmin
+);
 
 router.post("/register-athlete",verifyJWTAdmin, registerOrganizationAthlete);
 router.post("/register-coach",verifyJWTAdmin, registerCoach);

@@ -31,44 +31,50 @@ const generateAccessAndRefreshToken = async (userId, userModel) => {
 };
 
 const loginAdmin = asyncHandler(async (req, res) => {
-    console.log("Request body:", req.body);
-    
     const { email, password } = req.body;
-    if (!email) {
-        throw new ApiError(400, "Email is required");
+  
+    if (!email || !password) {
+      throw new ApiError(400, "Email and password are required");
     }
-
-    const user = await Admin.findOne({ email });
-    if (!user) {
-        throw new ApiError(400, "User doesn't exist");
+  
+    const admin = await Admin.findOne({ email });
+  
+    if (!admin) {
+      throw new ApiError(401, "Invalid email or password");
     }
-
-    const isPasswordValid = await user.isPasswordCorrect(password);
+  
+    const isPasswordValid = await admin.isPasswordCorrect(password);
+  
     if (!isPasswordValid) {
-        throw new ApiError(401, "Invalid User Credentials");
+      throw new ApiError(401, "Invalid email or password");
     }
-
-    // Generate tokens
-    const { refreshToken: adminRefreshToken, accessToken: adminAccessToken } = await generateAccessAndRefreshToken(user._id, Admin);
-    console.log("Generated Tokens: ", { adminAccessToken, adminRefreshToken });
-
-    if (!adminAccessToken || !adminRefreshToken) {
-        throw new ApiError(500, "Token generation failed");
-    }
-
-    const loggedInUser = await Admin.findById(user._id).select("-refreshToken -password -__v");
-
+  
+    const { adminAccessToken, adminRefreshToken } = await generateAccessAndRefreshToken(admin._id);
+  
+    const loggedInAdmin = await Admin.findById(admin._id)
+      .select("-password -refreshToken")
+      .populate("organization", "name email organizationType");
+  
     const options = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // Secure only in production
-        sameSite: "Strict",
+      httpOnly: true,
+      secure: true
     };
-
+  
     return res
-        .status(200)
-        .cookie("adminAccessToken", adminAccessToken, options)
-        .cookie("adminRefreshToken", adminRefreshToken, options)
-        .json(new ApiResponse(200, { user: loggedInUser}, "Admin logged in Successfully"));
+      .status(200)
+      .cookie("adminAccessToken", adminAccessToken, options)
+      .cookie("adminRefreshToken", adminRefreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          {
+            admin: loggedInAdmin,
+            accessToken: adminAccessToken,
+            refreshToken: adminRefreshToken
+          },
+          "Admin logged in successfully"
+        )
+      );
 });
 
 const loginCoach = asyncHandler(async (req,res) => {

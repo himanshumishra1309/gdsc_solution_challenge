@@ -13,11 +13,11 @@ const athleteSchema = new mongoose.Schema(
       ref: "Organization",
     },
     totalExperience: { type: String },
-    dob: { type: String }, //cross check, calculate age from this
+    dob: { type: Date, required: true },
     sex: { type: String, enum: ["Male", "Female", "Other"] },
     joined_date: { type: Date },
     sport: { type: String, enum: ["Cricket", "Basketball", "Football"] },
-    isIndependent: { type: Boolean, default: false }, // ✅ Flag for individual athletes
+    isIndependent: { type: Boolean, default: false },
 
     currentLevel: {
       type: String,

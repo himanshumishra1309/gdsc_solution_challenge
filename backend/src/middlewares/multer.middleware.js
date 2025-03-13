@@ -5,7 +5,7 @@ import path from "path"
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, 'E:/Project/public/temp')
+      cb(null, './public/temp')
     },
     filename: function (req, file, cb) {
         //do more research on uniqueSuffix

@@ -1,49 +1,50 @@
-import express from "express"
-import cookieParser from "cookie-parser"
-import cors from "cors"
-import errorHandler from "./middlewares/errorHandler.middleware.js"
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import errorHandler from "./middlewares/errorHandler.middleware.js";
 
-const app = express()
+const app = express();
 
-app.use(cors({
-    origin: process.env.CORS_ORIGIN,
-    credentials: true
-}))
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-app.use(express.json({
-limit: "16kb"
-}))
+app.use(
+  express.json({
+    limit: "16kb",
+  })
+);
 
-app.use(express.urlencoded({
+app.use(
+  express.urlencoded({
     extended: true,
-    limit: "16kb"
-}))
+    limit: "16kb",
+  })
+);
 
-app.use(express.static("public"))
+app.use(express.static("public"));
 
-app.use(cookieParser())
+app.use(cookieParser());
 
-app.use(errorHandler)
+app.use(errorHandler);
 
-
-//routes import
 import adminRouter from "./routes/admin.routes.js";
 import athleteRouter from "./routes/athlete.routes.js";
 import coachRouter from "./routes/coach.routes.js";
+import individualAthleteRouter from "./routes/individualAthlete.routes.js";
 import organizationRouter from "./routes/organization.routes.js";
-import authRouter from "./routes/auth.routes.js"; // Common auth routes for login/logout
+import authRouter from "./routes/auth.routes.js";
 import sponsorRouter from "./routes/sponsor.routes.js";
 
-//routes declaration
 app.use("/api/v1/admins", adminRouter);
 app.use("/api/v1/athletes", athleteRouter);
+app.use("/api/v1/independent-athletes", individualAthleteRouter);
 app.use("/api/v1/coaches", coachRouter);
 app.use("/api/v1/sponsors", sponsorRouter);
-console.log("Organization routes loaded");
 app.use("/api/v1/organizations", organizationRouter);
-app.use("/api/v1/auth", authRouter); 
-// Handles login/logout for all users
-//userRouter goes takes you to that router file and there's the methods
-// http://localhost:8000/api/v1/users/register
+app.use("/api/v1/auth", authRouter);
 
-export {app}
+export { app };
