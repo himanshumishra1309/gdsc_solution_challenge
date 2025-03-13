@@ -45,164 +45,74 @@ const loginAdmin = async (req, res) => {
       console.error("Admin login error:", error);
       return next(new ApiError(500, "Internal server error"));
     }
-};
+  };
+  
 
-const loginAdmin = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+  const loginCoach = async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const coach = await Coach.findOne({ email });
   
-    if (!email || !password) {
-      throw new ApiError(400, "Email and password are required");
-    }
+      if (!coach) {
+        return res.status(404).json({ error: "Coach not found" });
+      }
   
-    const admin = await Admin.findOne({ email });
+      const isPasswordValid = await coach.isPasswordCorrect(password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
   
-    if (!admin) {
-      throw new ApiError(401, "Invalid email or password");
-    }
+      const accessToken = coach.generateAccessToken();
+      const refreshToken = coach.generateRefreshToken();
   
-    const isPasswordValid = await admin.isPasswordCorrect(password);
+      coach.refreshToken = refreshToken;
+      await coach.save({ validateBeforeSave: false });
   
-    if (!isPasswordValid) {
-      throw new ApiError(401, "Invalid email or password");
-    }
+      res.cookie("accessToken", accessToken, { httpOnly: true, secure: true });
+      res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
   
-    const { adminAccessToken, adminRefreshToken } = await generateAccessAndRefreshToken(admin._id);
-  
-    const loggedInAdmin = await Admin.findById(admin._id)
-      .select("-password -refreshToken")
-      .populate("organization", "name email organizationType");
-  
-    const options = {
-      httpOnly: true,
-      secure: true
-    };
-  
-    return res
-      .status(200)
-      .cookie("adminAccessToken", adminAccessToken, options)
-      .cookie("adminRefreshToken", adminRefreshToken, options)
-      .json(
+      return res.status(200).json(
         new ApiResponse(
-          200,
-          {
-            admin: loggedInAdmin,
-            accessToken: adminAccessToken,
-            refreshToken: adminRefreshToken
-          },
-          "Admin logged in successfully"
+            200,
+            {
+                coach: { _id: coach._id, email: coach.email, role: coach.role },
+                accessToken,
+                refreshToken
+            },
+            "Coach login successful"
         )
-      );
-});
-
-const loginCoach = asyncHandler(async (req,res) => {
-        /*
-        TO DO:
-        req body -> data
-        check if the user is created
-        req.file match the password or username ,
-        Access and refresh token
-        Send them through  secured cookies
-        check if expired if yes then match refresh token
-        */
-        
-        const {email, password} = req.body
-        
-        if(!email){
-            throw new ApiError(400, "Email is required")
-        
-        }
-        
-        //alternative id you want to check both in the frontend !(username)
-        
-        const user = await Coach.findOne({email})
-        
-        if(!user){
-            throw new ApiError(400, "Coach doesn't not exist")
-        }
-        
-          // we are not using 'User' rather we will use 'user' which is returned above, because 'User' is an instance of the moongoose of mongoDB and user is the data returned from the data base which signifies a single user and user.models.js file contain all the methods which can be accessed here such as isPasswordCorrect or refreshToken or accessToken
-        const isPasswordValid = await user.isPasswordCorrect(password);
-        
-        if(!isPasswordValid){
-            throw new ApiError(401, "Invalid User Credentials")
-        }
-        
-        const {coachRefreshToken, coachAccessToken}= await generateAccessAndRefreshToken(user._id, Coach)
-        
-        const loggedInUser = await Coach.findById(user._id).
-        select("-refreshToken -password")
-        
-         const options = {
-            // now the cookies can only be accessed and changed from the server and not the frontend
-                httpOnly: true,
-                secure: true
-         }
-        
-         //(key,value,options)
-         return res.
-         status(200)
-         .cookie("coachAccessToken", coachAccessToken, options)
-         .cookie("coachRefreshToken", coachRefreshToken, options)
-         .json(
-            new ApiResponse(
-                200,{
-                    user:loggedInUser
-                },
-                "Coach logged in Successfully"
-            )
-         )
-});
+    );
+    } catch (error) {
+      console.error("Coach login error:", error);
+      return next(new ApiError(500, "Internal server error"));
+    }
+  };
   
-const loginAthlete = asyncHandler(async (req,res) => {
-    /*
-    TO DO:
-    req body -> data
-    check if the user is created
-    req.file match the password or username ,
-    Access and refresh token
-    Send them through  secured cookies
-    check if expired if yes then match refresh token
-    */
-    
-    const {email, password} = req.body
-    
-    if(!email){
-        throw new ApiError(400, "Email is required")
-    
-    }
-    
-    //alternative id you want to check both in the frontend !(username)
-    
-    const user = await Athlete.findOne({email})
-    
-    if(!user){
-        throw new ApiError(400, "Athlete doesn't not exist")
-    }
-    
-      // we are not using 'User' rather we will use 'user' which is returned above, because 'User' is an instance of the moongoose of mongoDB and user is the data returned from the data base which signifies a single user and user.models.js file contain all the methods which can be accessed here such as isPasswordCorrect or refreshToken or accessToken
-    const isPasswordValid = await user.isPasswordCorrect(password);
-    
-    if(!isPasswordValid){
-        throw new ApiError(401, "Invalid User Credentials")
-    }
-    
-    const {athleteRefreshToken, athleteAccessToken}= await generateAccessAndRefreshToken(user._id, Athlete)
-    
-    const loggedInUser = await Athlete.findById(user._id).
-    select("-refreshToken -password")
-    
-     const options = {
-        // now the cookies can only be accessed and changed from the server and not the frontend
-            httpOnly: true,
-            secure: true
-     }
-    
-     //(key,value,options)
-     return res.
-     status(200)
-     .cookie("athleteAccessToken", athleteAccessToken, options)
-     .cookie("athleteRefreshToken", athleteRefreshToken, options)
-     .json(
+
+const loginAthlete = async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const athlete = await Athlete.findOne({ email });
+  
+      if (!athlete) {
+        return res.status(404).json({ error: "Athlete not found" });
+      }
+  
+      const isPasswordValid = await athlete.isPasswordCorrect(password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+  
+      const accessToken = athlete.generateAccessToken();
+      const refreshToken = athlete.generateRefreshToken();
+  
+      athlete.refreshToken = refreshToken;
+      await athlete.save({ validateBeforeSave: false });
+  
+      res.cookie("accessToken", accessToken, { httpOnly: true, secure: true });
+      res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+  
+      return res.status(200).json(
         new ApiResponse(
             200,
             {
