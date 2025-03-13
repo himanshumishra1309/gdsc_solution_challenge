@@ -10,12 +10,32 @@ const verifyJWTAthlete = asyncHandler( async (req, _, next) => {
   // maybe cookies are sent by custom header
 try {
     const token =
-    req.cookies?.athleteAccessToken || req.header("Authorization")?.replace("Bearer ", "")
+      req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "").trim();
 
-    if(!token){
-        throw new ApiError(401, "Unauthorized request")
+    if (!token) {
+      throw new ApiError(401, "Unauthorized request");
     }
 
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+    let user = await Admin.findById(decodedToken?._id).select("-password -refreshToken");
+    if (!user) {
+      user = await Coach.findById(decodedToken?._id).select("-password -refreshToken");
+    }
+    if (!user) {
+      user = await Athlete.findById(decodedToken?._id).select("-password -refreshToken");
+    }
+
+    if (!user) {
+      throw new ApiError(401, "Invalid Access Token");
+    }
+
+    req.user = user; // ✅ Attach user to request
+    next();
+  } catch (error) {
+    throw new ApiError(401, error?.message || "Invalid access token");
+  }
+});
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
     const athlete = await Athlete.findById(decodedToken?._id).select("-password -refreshToken")
 
@@ -116,6 +136,7 @@ try {
 
 
 export{
+  verifyJWT
     verifyJWTAthlete,
     verifyJWTAdmin,
     verifyJWTIndividualAthlete,

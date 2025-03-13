@@ -2,6 +2,10 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import errorHandler from "./middlewares/errorHandler.middleware.js";
+import express from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import errorHandler from "./middlewares/errorHandler.middleware.js";
 
 const app = express();
 
@@ -38,6 +42,8 @@ import individualAthleteRouter from "./routes/individualAthlete.routes.js";
 import organizationRouter from "./routes/organization.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import sponsorRouter from "./routes/sponsor.routes.js";
+import financesRouter from "./routes/finance.routes.js";
+import notificationRoutes from "./routes/notification.routes.js";
 
 app.use("/api/v1/admins", adminRouter);
 app.use("/api/v1/athletes", athleteRouter);

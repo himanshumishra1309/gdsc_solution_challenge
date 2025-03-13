@@ -8,6 +8,7 @@ const athleteSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: [true, "Password is Required"] },
     avatar: { type: String, required: false },
+    role: { type: String, default: "athlete", enum: ["athlete"] }, // Fixed role
     organization: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Organization",

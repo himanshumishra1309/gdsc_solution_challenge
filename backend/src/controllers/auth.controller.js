@@ -6,27 +6,44 @@ import {Coach} from "../models/coach.model.js"
 import {Athlete} from "../models/athlete.model.js"
 import {ApiError} from "../utils/ApiError.js"
 
-const generateAccessAndRefreshToken = async (userId, userModel) => {
+
+const loginAdmin = async (req, res) => {
     try {
-        const user = await userModel.findById(userId); // Dynamically fetching user
-
-        if (!user) {
-            throw new ApiError(404, "User not found");
-        }
-
-        console.log("Checking user methods:", user.generateAccessToken, user.generateRefreshToken);
-
-
-        const accessToken = user.generateAccessToken(); 
-        const refreshToken = user.generateRefreshToken();
-
-        user.refreshToken = refreshToken;
-        await user.save({ validateBeforeSave: false });
-
-        return { refreshToken, accessToken };
+      const { email, password } = req.body;
+      const admin = await Admin.findOne({ email });
+  
+      if (!admin) {
+        return res.status(404).json({ error: "Admin not found" });
+      }
+  
+      const isPasswordValid = await admin.isPasswordCorrect(password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+  
+      const accessToken = admin.generateAccessToken();
+      const refreshToken = admin.generateRefreshToken();
+  
+      admin.refreshToken = refreshToken;
+      await admin.save({ validateBeforeSave: false });
+  
+      res.cookie("accessToken", accessToken, { httpOnly: true, secure: true });
+      res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+  
+      res.json(
+        new ApiResponse(
+            200,
+            {
+                admin: { _id: admin._id, email: admin.email, role: admin.role },
+                accessToken,
+                refreshToken
+            },
+            "Admin login successful"
+        )
+    );
     } catch (error) {
-        console.error("Error generating tokens:", error);
-        throw new ApiError(500, "Something went wrong while generating tokens");
+      console.error("Admin login error:", error);
+      return next(new ApiError(500, "Internal server error"));
     }
 };
 
@@ -188,18 +205,20 @@ const loginAthlete = asyncHandler(async (req,res) => {
      .json(
         new ApiResponse(
             200,
-                {
-                    user: {
-                      ...loggedInUser.toObject(),
-                      isIndependent: user.isIndependent, // ✅ Add flag for frontend
-                      organization: user.organization ? user.organization : null, // ✅ Ensure null for independent athletes
-                    }
+            {
+                athlete: { _id: athlete._id, email: athlete.email, role: athlete.role },
+                accessToken,
+                refreshToken
             },
-            "Athlete logged in Successfully"
+            "Athlete login successful"
         )
-     )
-});
-
+    );
+} catch (error) {
+    console.error("Athlete login error:", error);
+    return next(new ApiError(500, "Internal server error"));
+}
+  };
+  
 export{
     loginAdmin,
     loginCoach,

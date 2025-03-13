@@ -99,17 +99,7 @@ const AthleteManagement = () => {
         </SelectContent>
       </Select>
 
-      {/* Remove Coach Dropdown */}
-      {/* <Select value={selectedTrainer} onValueChange={setSelectedTrainer}> */}
-      {/*   <SelectTrigger className="w-full"> */}
-      {/*     <SelectValue placeholder="Select Trainer">{selectedTrainer}</SelectValue> */}
-      {/*   </SelectTrigger> */}
-      {/*   <SelectContent> */}
-      {/*     {trainersList.map((trainer) => ( */}
-      {/*       <SelectItem key={trainer} value={trainer}>{trainer}</SelectItem> */}
-      {/*     ))} */}
-      {/*   </SelectContent> */}
-      {/* </Select> */}
+    
 
       {/* Add New Athlete Button */}
       <Dialog>
@@ -250,6 +240,21 @@ const AthleteManagement = () => {
                 value={newAthlete.bmi}
                 onChange={(e) => setNewAthlete({ ...newAthlete, bmi: e.target.value })}
               />
+              <input
+                type="text"
+                placeholder="Primary Sport"
+                className="input p-4 text-lg"
+                value={newAthlete.primarySport}
+                onChange={(e) => setNewAthlete({ ...newAthlete, primarySport: e.target.value })}
+              />
+               <input
+                type="text"
+                placeholder="Secondary Sport"
+                className="input p-4 text-lg"
+                value={newAthlete.secondarySport}
+                onChange={(e) => setNewAthlete({ ...newAthlete, secondarySport: e.target.value })}
+              />
+
               <Select value={newAthlete.dominantHand} onValueChange={(value) => setNewAthlete({ ...newAthlete, dominantHand: value })}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Dominant Hand" />
@@ -262,7 +267,11 @@ const AthleteManagement = () => {
               </Select>
             </div>
 
+
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+
               <input
                 type="text"
                 placeholder="Blood Group"

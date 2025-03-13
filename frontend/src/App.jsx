@@ -64,6 +64,7 @@ import InvestmentTracking from "./components/SponsorDashboardPages/InvestmentTra
 import ViewMetrics from "./components/SponsorDashboardPages/ViewMetrics";
 import News from "./components/SponsorDashboardPages/News";
 import FindAthlete from "./components/SponsorDashboardPages/FindAthlete";
+import SProfile from "./components/SponsorDashboardPages/SProfile";
 
 import AdminDashboard from "./components/AdminDashboard";
 import AdminManagement from "./components/AdminDashboardPages/AdminManagement";
@@ -148,6 +149,7 @@ function App() {
           <Route path="viewmetrics" element={<ViewMetrics />} />
           <Route path="news" element={<News />} />
           <Route path="findathlete" element={<FindAthlete />} />
+          <Route path="sprofile" element={<SProfile />} />
         </Route>
 
         <Route path="/admin-dashboard/*" element={<AdminDashboard />} >

@@ -44,7 +44,7 @@ const FindAthlete = () => {
   );
 
   const handleSponsorClick = (athlete) => {
-    const dashboardPath = `/athlete-dashboard/${athlete.name.replace(/\s+/g, "-").toLowerCase()}`;
+    const dashboardPath = `/athlete-dashboard/${athlete.name.replace(/\s+/g, " ").toLowerCase()}`;
     navigate(dashboardPath);
   };
 
