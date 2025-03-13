@@ -14,7 +14,7 @@ function SLayout({ userType, navItems, children }) {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <div className="flex flex-col w-80 bg-yellow-400 text-white border-r">
+      <div className="flex flex-col w-72 bg-yellow-400 text-white border-r">
         <div className="flex flex-col items-center p-3 bg-yellow-500 border-b-2 border-darkblue-700">
           <div className="w-24 h-24 mb-4 bg-white rounded-full overflow-hidden">
             <img
@@ -37,7 +37,7 @@ function SLayout({ userType, navItems, children }) {
                   variant="ghost"
                   className={`w-full justify-start text-lg font-medium text-white hover:bg-green-600 hover:text-gray-100 rounded-lg py-3 transition-colors mb-2 ${isActive ? "bg-green-600 text-gray-100" : ""}`}
                 >
-                  <item.icon className="mr-3 h-5 w-5 text-gray-200 hover:text-white" />
+                  <item.icon className="mr-1 h-5 w-5 text-gray-200 hover:text-white" />
                   {item.label}
                 </Button>
               </Link>
