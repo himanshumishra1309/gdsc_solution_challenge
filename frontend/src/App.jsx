@@ -75,6 +75,17 @@ import SponsorManagement from "./components/AdminDashboardPages/SponsorManagemen
 import VideoAnalysis from "./components/AdminDashboardPages/VideoAnalysis";
 import AdminSignUp from "./components/AdminSignUp";
 
+import PlayerDashboard from "./components/PlayerDashboard";
+import FillInjuryForms from "./components/PlayerDashboardPages/FillInjuryForms";
+import Graphs from "./components/PlayerDashboardPages/Graphs";
+import ViewAnnouncements from "./components/PlayerDashboardPages/ViewAnnouncements";
+import ViewCoaches from "./components/PlayerDashboardPages/ViewCoaches";
+import ViewGymPlans from "./components/PlayerDashboardPages/ViewGymPlans";
+import ViewMedicalReports from "./components/PlayerDashboardPages/ViewMedicalReports";
+import ViewNutritionalPlans from "./components/PlayerDashboardPages/ViewNutritionalPlans";
+import ViewStats from "./components/PlayerDashboardPages/ViewStats";
+
+
 function App() {
   return (
     <Router>
@@ -97,7 +108,7 @@ function App() {
         
 
 
-        <Route path="/athlete-dashboard/:organizationId/:athleteName/*" element={<AthleteDashboard />}>
+        <Route path="/athlete-dashboard/:athleteName/*" element={<AthleteDashboard />}>
           <Route path="home" element={<Home />} />
           <Route path="finance" element={<Finance />} />
           <Route path="medical" element={<Medical />} />
@@ -161,6 +172,17 @@ function App() {
           <Route path="coach" element={<CoachManagement />} />
           
           
+        </Route>
+
+        <Route path="/player-dashboard/:organizationId/:playerName/*" element={<PlayerDashboard />} >
+          <Route path="injuryform" element={<FillInjuryForms />} />
+          <Route path="graphs" element={<Graphs />} />
+          <Route path="viewannouncements" element={<ViewAnnouncements />} />
+          <Route path="viewcoaches" element={<ViewCoaches />} />
+          <Route path="viewgym" element={<ViewGymPlans />} />
+          <Route path="viewmed" element={<ViewMedicalReports />} />
+          <Route path="viewnutri" element={<ViewNutritionalPlans />} />
+          <Route path="viewstats" element={<ViewStats />} />
         </Route>
 
 
