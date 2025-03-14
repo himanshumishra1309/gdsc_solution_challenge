@@ -8,8 +8,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { LogIn, Users, UserPlus, TrendingUp, Activity, Star } from "lucide-react";
+import { LogIn, Users, UserPlus, TrendingUp, Activity, Star, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import athleteImage from "@/assets/stadium.jpeg";
 
 const features = [
@@ -29,6 +30,8 @@ const LandingPage = () => {
   const [selectedRole, setSelectedRole] = useState(""); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
 
   const handleRoleSelection = (role) => {
@@ -45,23 +48,84 @@ const LandingPage = () => {
 
   const handleRoleSelectionForOrganization = (role) => {
     setSelectedRole(role);
+    setOpen(false);
     setSignInOpen(true); 
   };
 
-  const handleSignIn = () => {
-    if (email && password) {
-      console.log(`Signed in as ${selectedRole}`);
-      setSignInOpen(false); 
+  const handleSignIn = async () => {
+    // Input validation
+    if (!email || !password) {
+      setLoginError("Please enter both email and password");
+      return;
+    }
+    
+    setIsLoading(true);
+    setLoginError("");
+    
+    try {
+      let endpoint = "";
+      let redirectPath = "";
       
-      if (selectedRole === "Athlete") {
-        navigate("/athlete-dashboard/:athleteName/");
-      } else if (selectedRole === "Admin") {
-        navigate("/admin-dashboard");
+      // Set the correct endpoint and redirect path based on selected role
+      if (selectedRole === "Admin") {
+        endpoint = "http://localhost:8000/api/v1/auth/admin/login";
+        redirectPath = "/admin-dashboard";
       } else if (selectedRole === "Coach") {
-        navigate("/coach-dashboard/:coachName/");
+        endpoint = "http://localhost:8000/api/v1/auth/coach/login";
+        redirectPath = "/coach-dashboard";
+      } else if (selectedRole === "Athlete") {
+        endpoint = "http://localhost:8000/api/v1/auth/athlete/login";
+        redirectPath = "/athlete-dashboard";
+      } else {
+        setLoginError("Invalid role selected");
+        setIsLoading(false);
+        return;
       }
-    } else {
-      console.log("Please enter valid email and password");
+      
+      // Configure axios to include credentials (cookies)
+      const response = await axios.post(endpoint, 
+        { email, password },
+        { 
+          withCredentials: true,  // Important for cookies to be sent/received
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log("Login successful:", response.data);
+      
+      // Store user info in localStorage (but not auth tokens - those are in HTTP-only cookies)
+      localStorage.setItem("userRole", selectedRole.toLowerCase());
+      
+      // Store user data based on role
+      if (selectedRole === "Admin") {
+        localStorage.setItem("userData", JSON.stringify(response.data.data.admin));
+      } else if (selectedRole === "Coach") {
+        localStorage.setItem("userData", JSON.stringify(response.data.data.coach));
+      } else if (selectedRole === "Athlete") {
+        localStorage.setItem("userData", JSON.stringify(response.data.data.athlete));
+      }
+      
+      // Close dialog and redirect
+      setSignInOpen(false);
+      navigate(redirectPath);
+      
+    } catch (err) {
+      console.error("Login error:", err);
+      
+      if (err.response) {
+        // Server responded with an error
+        setLoginError(err.response.data.message || err.response.data.error || "Authentication failed");
+      } else if (err.request) {
+        // Request was made but no response
+        setLoginError("No response from server. Please check your connection.");
+      } else {
+        // Error setting up request
+        setLoginError("Login failed. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -152,7 +216,17 @@ const LandingPage = () => {
       </Dialog>
 
       {/* Sign-In Dialog */}
-      <Dialog open={signInOpen} onOpenChange={setSignInOpen}>
+      <Dialog open={signInOpen} onOpenChange={(isOpen) => {
+        if (!isLoading) {
+          setSignInOpen(isOpen);
+          if (!isOpen) {
+            // Reset form when dialog closes
+            setLoginError("");
+            setEmail("");
+            setPassword("");
+          }
+        }
+      }}>
         <DialogContent className="p-4 sm:p-5 max-w-lg rounded-2xl bg-white shadow-lg border border-gray-200 transform transition-all scale-95">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl font-bold text-center text-gray-900">
@@ -162,12 +236,21 @@ const LandingPage = () => {
               Please enter your email and password to sign in as a {selectedRole}.
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Error message */}
+          {loginError && (
+            <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-2 rounded-lg text-xs sm:text-sm mb-4">
+              {loginError}
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-4 sm:mt-5">
             <input
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
               className="py-2 px-4 text-sm rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none w-full"
             />
             <input
@@ -175,16 +258,43 @@ const LandingPage = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
               className="py-2 px-4 text-sm rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none w-full"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLoading) {
+                  handleSignIn();
+                }
+              }}
             />
           </div>
           <div className="mt-4 sm:mt-5 flex justify-center">
-            <Button variant="outline" className="py-2 text-sm rounded-xl border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all" onClick={handleSignIn}>
-              Sign In
+            <Button 
+              variant="outline" 
+              className="py-2 text-sm rounded-xl border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all" 
+              onClick={handleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing In...
+                </>
+              ) : "Sign In"}
             </Button>
           </div>
           <div className="mt-4 sm:mt-1 flex justify-center">
-            <Button variant="ghost" className="text-gray-600 hover:text-red-500 transition-all" onClick={() => setSignInOpen(false)}>
+            <Button 
+              variant="ghost" 
+              className="text-gray-600 hover:text-red-500 transition-all" 
+              onClick={() => {
+                if (!isLoading) {
+                  setSignInOpen(false);
+                  setLoginError("");
+                  setEmail("");
+                  setPassword("");
+                }
+              }}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
           </div>

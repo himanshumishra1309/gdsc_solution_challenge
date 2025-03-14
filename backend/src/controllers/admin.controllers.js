@@ -12,56 +12,465 @@ import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
 const registerOrganizationAthlete = asyncHandler(async (req, res) => {
-  const { name, email, password, organizationId, sport } = req.body;
-
-  if (!organizationId) {
-    throw new ApiError(
-      400,
-      "Organization ID is required for organization athletes"
-    );
-  }
-
-  const existingAthlete = await Athlete.findOne({ email });
-  if (existingAthlete) {
-    throw new ApiError(400, "Athlete with this email already exists");
-  }
-
-  const organizationExists = await Organization.exists({ _id: organizationId });
-  if (!organizationExists) {
-    throw new ApiError(404, "Organization not found");
-  }
-
-  const athlete = await Athlete.create({
+  // Extract all fields from request
+  const {
+    // Basic Information
     name,
+    dob,
+    gender,
+    nationality,
+    address,
+    phoneNumber,
+    
+    // School Information
+    schoolName,
+    year,
+    studentId,
+    schoolEmail,
+    schoolWebsite,
+    
+    // Sports Information
+    sports,
+    skillLevel,
+    trainingStartDate,
+    positions,
+    dominantHand,
+    
+    // Staff Assignments
+    headCoachAssigned,
+    gymTrainerAssigned,
+    medicalStaffAssigned,
+    
+    // Medical Information
+    height,
+    weight,
+    bloodGroup,
+    allergies,
+    medicalConditions,
+    
+    // Emergency Contact
+    emergencyContactName,
+    emergencyContactNumber,
+    emergencyContactRelationship,
+    
+    // Authentication
     email,
     password,
-    sport,
-    isIndependent: false,
-    organization: organizationId,
-  });
+    
+    // Organization
+    organizationId,
+    
+    // If updating an existing athlete
+    athleteId
+  } = req.body;
 
-  await sendEmail({
-    email: athlete.email,
-    subject: "Welcome to AMS - Athlete Login Details",
-    message: `<h3>Hi ${athlete.name},</h3>
-              <p>Your account has been created in the Athlete Management System.</p>
-              <p><strong>Email:</strong> ${athlete.email}</p>
-              <p><strong>Password:</strong> ${password}</p>
-              <p>Please log in and change your password.</p>`,
-  });
+  console.log("response: ", req.body);
 
-  res.status(201).json({
-    success: true,
-    message: "Athlete registered successfully, email sent.",
-    athlete: {
-      _id: athlete._id,
-      name: athlete.name,
-      email: athlete.email,
-      sportType: organization.sportType,
-      isIndependent: false,
-      organization: organizationId,
+  // Validate required fields
+  if (
+    !name ||
+    !dob ||
+    !gender ||
+    !nationality ||
+    !address ||
+    !phoneNumber ||
+    !schoolName ||
+    !year ||
+    !studentId ||
+    !sports ||
+    !skillLevel ||
+    !trainingStartDate ||
+    !height ||
+    !weight ||
+    !emergencyContactName ||
+    !emergencyContactNumber ||
+    !emergencyContactRelationship ||
+    !email ||
+    !password ||
+    !organizationId
+  ) {
+    throw new ApiError(400, "All required fields must be provided");
+  }
+  
+  // Validate organization ID
+  if (!mongoose.Types.ObjectId.isValid(organizationId)) {
+    throw new ApiError(400, "Invalid Organization ID format");
+  }
+
+  // Check if organization exists
+  const organization = await Organization.findById(organizationId);
+  if (!organization) {
+    throw new ApiError(404, `Organization not found with ID: ${organizationId}`);
+  }
+
+  // Check for existing athlete - using ID if provided, otherwise email
+  let existingAthlete = null;
+  
+  if (athleteId && mongoose.Types.ObjectId.isValid(athleteId)) {
+    // If ID is provided, look up by ID
+    existingAthlete = await Athlete.findById(athleteId);
+    
+    // If found but email doesn't match, verify it's not assigned to someone else
+    if (existingAthlete && existingAthlete.email !== email) {
+      const duplicateEmail = await Athlete.findOne({ email });
+      if (duplicateEmail) {
+        throw new ApiError(400, "Email is already assigned to another athlete");
+      }
+    }
+  } else {
+    // Otherwise check by email
+    existingAthlete = await Athlete.findOne({ email });
+    if (existingAthlete) {
+      throw new ApiError(400, "Athlete with this email already exists");
+    }
+  }
+
+  // Create a unique athleteId if not updating an existing athlete
+  let athleteIdCode;
+  
+  if (!existingAthlete) {
+    const currentDate = new Date();
+    const yearPrefix = currentDate.getFullYear().toString().slice(-2);
+    const orgPrefix = organization.name.substring(0, 3).toUpperCase();
+    
+    // Find last athlete ID for this org to create a sequential number
+    const lastAthlete = await Athlete.findOne({ 
+      organization: organizationId 
+    }).sort({ createdAt: -1 });
+    
+    let sequentialNumber = 1;
+    if (lastAthlete && lastAthlete.athleteId) {
+      // Try to extract sequential number from existing ID
+      const match = lastAthlete.athleteId.match(/\d+$/);
+      if (match) {
+        sequentialNumber = parseInt(match[0]) + 1;
+      }
+    }
+    
+    // Format sequential number with leading zeros
+    const paddedNumber = sequentialNumber.toString().padStart(4, '0');
+    
+    // Generate athleteId: ORG-YY-0001
+    athleteIdCode = `${orgPrefix}-${yearPrefix}-${paddedNumber}`;
+  } else {
+    // Keep existing code if updating
+    athleteIdCode = existingAthlete.athleteId;
+  }
+
+  // Add this code before line 200 (where you create the positionsMap)
+
+  // Handle file uploads
+  let avatarUrl = null;
+  let uploadSchoolIdUrl = null;
+  let latestMarksheetUrl = null;
+  
+  // If files were uploaded, handle them
+  if (req.files) {
+    // Process avatar if uploaded
+    if (req.files.avatar) {
+      // In a real implementation, you would upload to a cloud storage
+      // and get back the URL. For now, we'll just use a placeholder.
+      avatarUrl = `/uploads/avatars/${Date.now()}-${req.files.avatar[0].originalname}`;
+      
+      // If using local storage, you might save the file like this:
+      // const avatarFile = req.files.avatar[0];
+      // fs.writeFileSync(path.join(__dirname, '..', 'public', avatarUrl), avatarFile.buffer);
+    }
+    
+    // Process school ID document if uploaded
+    if (req.files.uploadSchoolId) {
+      uploadSchoolIdUrl = `/uploads/school-ids/${Date.now()}-${req.files.uploadSchoolId[0].originalname}`;
+    }
+    
+    // Process marksheet if uploaded
+    if (req.files.latestMarksheet) {
+      latestMarksheetUrl = `/uploads/marksheets/${Date.now()}-${req.files.latestMarksheet[0].originalname}`;
+    }
+  }
+
+  // Convert positions from object to Map
+  const positionsMap = new Map();
+  if (positions) {
+    Object.keys(positions).forEach(sport => {
+      positionsMap.set(sport, positions[sport]);
+    });
+  }
+
+  // Create or update athlete
+  let athlete;
+  
+  if (existingAthlete) {
+    // Update existing athlete
+    athlete = await Athlete.findByIdAndUpdate(
+      existingAthlete._id,
+      {
+        name,
+        avatar: avatarUrl || existingAthlete.avatar,
+        dob: new Date(dob),
+        gender,
+        nationality,
+        address,
+        phoneNumber,
+        schoolName,
+        year,
+        studentId,
+        schoolEmail: schoolEmail || "",
+        schoolWebsite: schoolWebsite || "",
+        uploadSchoolId: uploadSchoolIdUrl || existingAthlete.uploadSchoolId,
+        latestMarksheet: latestMarksheetUrl || existingAthlete.latestMarksheet,
+        sports: Array.isArray(sports) ? sports : [sports],
+        skillLevel,
+        trainingStartDate: new Date(trainingStartDate),
+        positions: positionsMap,
+        dominantHand: dominantHand || null,
+        headCoachAssigned: headCoachAssigned || existingAthlete.headCoachAssigned,
+        gymTrainerAssigned: gymTrainerAssigned || existingAthlete.gymTrainerAssigned,
+        medicalStaffAssigned: medicalStaffAssigned || existingAthlete.medicalStaffAssigned,
+        height: Number(height),
+        weight: Number(weight),
+        bloodGroup: bloodGroup || existingAthlete.bloodGroup,
+        allergies: allergies ? (Array.isArray(allergies) ? allergies : [allergies]) : existingAthlete.allergies,
+        medicalConditions: medicalConditions ? 
+          (Array.isArray(medicalConditions) ? medicalConditions : [medicalConditions]) : 
+          existingAthlete.medicalConditions,
+        emergencyContactName,
+        emergencyContactNumber,
+        emergencyContactRelationship,
+        email,
+        // Don't update password unless specifically requested
+        ...(req.body.updatePassword && { password }),
+        organization: organizationId
+      },
+      { new: true }
+    );
+  } else {
+    // Create new athlete
+    athlete = await Athlete.create({
+      name,
+      athleteId: athleteIdCode,
+      avatar: avatarUrl,
+      dob: new Date(dob),
+      gender,
+      nationality,
+      address,
+      phoneNumber,
+      schoolName,
+      year,
+      studentId,
+      schoolEmail: schoolEmail || "",
+      schoolWebsite: schoolWebsite || "",
+      uploadSchoolId: uploadSchoolIdUrl,
+      latestMarksheet: latestMarksheetUrl,
+      sports: Array.isArray(sports) ? sports : [sports],
+      skillLevel,
+      trainingStartDate: new Date(trainingStartDate),
+      positions: positionsMap,
+      dominantHand: dominantHand || null,
+      headCoachAssigned: headCoachAssigned || null,
+      gymTrainerAssigned: gymTrainerAssigned || null,
+      medicalStaffAssigned: medicalStaffAssigned || null,
+      height: Number(height),
+      weight: Number(weight),
+      bloodGroup: bloodGroup || null,
+      allergies: allergies ? (Array.isArray(allergies) ? allergies : [allergies]) : [],
+      medicalConditions: medicalConditions ? 
+        (Array.isArray(medicalConditions) ? medicalConditions : [medicalConditions]) : [],
+      emergencyContactName,
+      emergencyContactNumber,
+      emergencyContactRelationship,
+      email,
+      password,
+      role: "athlete",
+      organization: organizationId
+    });
+
+    // Send welcome email for new athletes
+    try {
+      await sendEmail({
+        email: athlete.email,
+        subject: "Welcome to AMS - Athlete Account Created",
+        message: `
+          <h3>Hi ${athlete.name},</h3>
+          <p>Your athlete account has been created in the Athlete Management System.</p>
+          <p><strong>Athlete ID:</strong> ${athlete.athleteId}</p>
+          <p><strong>Email:</strong> ${athlete.email}</p>
+          <p><strong>Password:</strong> ${password}</p>
+          <p>Please log in and change your password at your earliest convenience.</p>
+          <p>You have been registered with ${organization.name}.</p>
+          <p>Thank you!</p>
+        `,
+      });
+    } catch (emailError) {
+      console.log("Email sending failed:", emailError);
+    }
+  }
+
+  // Calculate age for response
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  // Return success response
+  res.status(201).json(new ApiResponse(
+    201,
+    {
+      athlete: {
+        _id: athlete._id,
+        name: athlete.name,
+        athleteId: athlete.athleteId,
+        email: athlete.email,
+        age: age,
+        gender: athlete.gender,
+        sports: athlete.sports,
+        organization: {
+          id: organization._id,
+          name: organization.name
+        }
+      }
     },
-  });
+    existingAthlete ? "Athlete updated successfully." : "Athlete registered successfully. Welcome email sent."
+  ));
+});
+
+// Add a new function to find athlete by ID
+const getAthleteById = asyncHandler(async (req, res) => {
+  const { athleteId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(athleteId)) {
+    throw new ApiError(400, "Invalid athlete ID format");
+  }
+
+  const athlete = await Athlete.findById(athleteId)
+    .populate({
+      path: 'organization',
+      select: 'name logo'
+    })
+    .populate({
+      path: 'headCoachAssigned',
+      select: 'name email avatar'
+    })
+    .populate({
+      path: 'gymTrainerAssigned',
+      select: 'name email avatar'
+    })
+    .populate({
+      path: 'medicalStaffAssigned',
+      select: 'name email avatar'
+    });
+
+  if (!athlete) {
+    throw new ApiError(404, "Athlete not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, { athlete }, "Athlete details retrieved successfully")
+  );
+});
+
+const getAllAthletes = asyncHandler(async (req, res) => {
+  // Extract query parameters
+  const { 
+    page = 1, 
+    limit = 10, 
+    sort = 'name', 
+    order = 'asc', 
+    search = '',
+    sport = '',
+    skillLevel = '',
+    gender = '',
+    organizationId
+  } = req.query;
+
+  // Build filter object
+  const filter = {};
+
+  // Add organization filter based on user role
+  if (req.admin) {
+    // If admin, filter by their organization
+    filter.organization = req.admin.organization;
+  } else if (organizationId && mongoose.Types.ObjectId.isValid(organizationId)) {
+    // If organization ID provided and valid, use it
+    filter.organization = organizationId;
+  }
+
+  // Add sport filter if provided
+  if (sport) {
+    filter.sports = { $in: [sport] };
+  }
+
+  // Add skill level filter if provided
+  if (skillLevel) {
+    filter.skillLevel = skillLevel;
+  }
+
+  // Add gender filter if provided
+  if (gender) {
+    filter.gender = gender;
+  }
+
+  // Add search functionality (search by name or athleteId)
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { athleteId: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  // Set up pagination
+  const pageNumber = parseInt(page, 10);
+  const limitNumber = parseInt(limit, 10);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  // Set up sort option
+  const sortOption = {};
+  sortOption[sort] = order === 'asc' ? 1 : -1;
+
+  try {
+    // Get athletes with pagination, filtering, and sorting
+    const athletes = await Athlete.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limitNumber)
+      .select('-password -refreshToken')
+      .populate({
+        path: 'organization',
+        select: 'name logo'
+      })
+      .populate({
+        path: 'headCoachAssigned',
+        select: 'name email'
+      });
+
+    // Get total count for pagination info
+    const totalAthletes = await Athlete.countDocuments(filter);
+    const totalPages = Math.ceil(totalAthletes / limitNumber);
+
+    // Return response
+    return res.status(200).json(
+      new ApiResponse(
+        200, 
+        {
+          athletes,
+          pagination: {
+            totalAthletes,
+            totalPages,
+            currentPage: pageNumber,
+            limit: limitNumber,
+            hasNextPage: pageNumber < totalPages,
+            hasPrevPage: pageNumber > 1
+          }
+        }, 
+        "Athletes fetched successfully"
+      )
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error fetching athletes: " + error.message);
+  }
 });
 
 const registerAdmin = asyncHandler(async (req, res) => {
@@ -446,6 +855,7 @@ const createCustomForm = asyncHandler(async (req, res) => {
 
 export {
   registerOrganizationAthlete,
+  getAllAthletes,
   registerAdmin,
   registerCoach,
   getAllUsers,

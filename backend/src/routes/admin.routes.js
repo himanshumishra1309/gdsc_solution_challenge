@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { registerOrganizationAthlete,
+  getAllAthletes,
   registerAdmin,
   registerCoach,
   getAllUsers,
@@ -18,8 +19,18 @@ router.route("/register").post(
   registerAdmin
 );
 
-router.post("/register-athlete",verifyJWTAdmin, registerOrganizationAthlete);
+router.post(
+  "/register-organization-athlete",
+  verifyJWTAdmin, // Ensure only admins can register athletes
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "uploadSchoolId", maxCount: 1 },
+    { name: "latestMarksheet", maxCount: 1 }
+  ]),
+  registerOrganizationAthlete
+);
 router.post("/register-coach",verifyJWTAdmin, registerCoach);
+router.get('/athletes', verifyJWTAdmin, getAllAthletes);
 
 
 const sportEnum = ["Football", "Badminton", "Cricket", "Basketball", "Tennis"];

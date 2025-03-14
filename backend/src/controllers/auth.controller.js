@@ -43,7 +43,7 @@ const loginAdmin = async (req, res) => {
     );
     } catch (error) {
       console.error("Admin login error:", error);
-      return next(new ApiError(500, "Internal server error"));
+      next(new ApiError(500, "Internal server error"));
     }
   };
   
