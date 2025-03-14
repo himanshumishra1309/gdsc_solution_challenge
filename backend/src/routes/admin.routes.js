@@ -7,7 +7,8 @@ import { registerOrganizationAthlete,
   generateAccessAndRefreshToken,
   logoutAdmin,
   getAdminProfile,
-  getRpeInsights, } from "../controllers/admin.controllers.js";
+  getRpeInsights,
+  getAllAdmins } from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
 import { upload } from "../middlewares/multer.middleware.js";
 
@@ -31,7 +32,7 @@ router.post(
 );
 router.post("/register-coach",verifyJWTAdmin, registerCoach);
 router.get('/athletes', verifyJWTAdmin, getAllAthletes);
-
+router.get('/administrators', verifyJWTAdmin, getAllAdmins);
 
 const sportEnum = ["Football", "Badminton", "Cricket", "Basketball", "Tennis"];
 router.get("/allowed-sports", (req, res) => {

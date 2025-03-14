@@ -4,7 +4,7 @@ import { Admin } from "../models/admin.model.js";
 import { Athlete } from "../models/athlete.model.js";
 import { Coach } from "../models/coach.model.js";
 import { Organization } from "../models/organization.model.js";
-import { sendEmail } from "../utils/sendEmail.js";
+// import { sendEmail } from "../utils/sendEmail.js";
 import { RPE } from "../models/rpe.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { CustomForm } from "../models/customForm.model.js";
@@ -508,20 +508,20 @@ const registerAdmin = asyncHandler(async (req, res) => {
     role: "admin"
   });
 
-  // Send welcome email
-  await sendEmail({
-    email: admin.email,
-    subject: "Welcome to AMS - Admin Account Created",
-    message: `
-      <h3>Hi ${admin.name},</h3>
-      <p>Your admin account has been created in the Athlete Management System.</p>
-      <p><strong>Email:</strong> ${admin.email}</p>
-      <p><strong>Password:</strong> ${password}</p>
-      <p>Please log in and change your password at your earliest convenience.</p>
-      <p>You have been assigned as an administrator for ${organization.name}.</p>
-      <p>Thank you!</p>
-    `,
-  });
+  // // Send welcome email
+  // await sendEmail({
+  //   email: admin.email,
+  //   subject: "Welcome to AMS - Admin Account Created",
+  //   message: `
+  //     <h3>Hi ${admin.name},</h3>
+  //     <p>Your admin account has been created in the Athlete Management System.</p>
+  //     <p><strong>Email:</strong> ${admin.email}</p>
+  //     <p><strong>Password:</strong> ${password}</p>
+  //     <p>Please log in and change your password at your earliest convenience.</p>
+  //     <p>You have been assigned as an administrator for ${organization.name}.</p>
+  //     <p>Thank you!</p>
+  //   `,
+  // });
 
   // Send success response (without password)
   res.status(201).json({
@@ -535,6 +535,90 @@ const registerAdmin = asyncHandler(async (req, res) => {
       role: admin.role
     }
   });
+});
+
+const getAllAdmins = asyncHandler(async (req, res) => {
+  // Extract query parameters
+  const { 
+    page = 1, 
+    limit = 10, 
+    sort = 'name', 
+    order = 'asc', 
+    search = '',
+    organizationId
+  } = req.query;
+
+  // Build filter object
+  const filter = {};
+
+  // Add organization filter based on user role or query parameter
+  if (req.admin && req.admin.role === "superadmin") {
+    // Super admins can see all admins or filter by organization
+    if (organizationId && mongoose.Types.ObjectId.isValid(organizationId)) {
+      filter.organization = organizationId;
+    }
+  } else if (req.admin) {
+    // Regular admins can only see admins from their own organization
+    filter.organization = req.admin.organization;
+  } else if (organizationId && mongoose.Types.ObjectId.isValid(organizationId)) {
+    // If no logged-in admin but organization ID provided in query
+    filter.organization = organizationId;
+  }
+
+  // Add search functionality (search by name or email)
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  // Set up pagination
+  const pageNumber = parseInt(page, 10);
+  const limitNumber = parseInt(limit, 10);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  // Set up sort option
+  const sortOption = {};
+  sortOption[sort] = order === 'asc' ? 1 : -1;
+
+  try {
+    // Get admins with pagination, filtering, and sorting
+    const admins = await Admin.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limitNumber)
+      .select('-password -refreshToken') // Exclude sensitive fields
+      .populate({
+        path: 'organization',
+        select: 'name logo'
+      });
+
+    // Get total count for pagination info
+    const totalAdmins = await Admin.countDocuments(filter);
+    const totalPages = Math.ceil(totalAdmins / limitNumber);
+
+    // Return response
+    return res.status(200).json(
+      new ApiResponse(
+        200, 
+        {
+          admins,
+          pagination: {
+            totalAdmins,
+            totalPages,
+            currentPage: pageNumber,
+            limit: limitNumber,
+            hasNextPage: pageNumber < totalPages,
+            hasPrevPage: pageNumber > 1
+          }
+        }, 
+        "Administrators fetched successfully"
+      )
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error fetching administrators: " + error.message);
+  }
 });
 
 const registerCoach = asyncHandler(async (req, res) => {
@@ -863,4 +947,5 @@ export {
   logoutAdmin,
   getAdminProfile,
   getRpeInsights,
+  getAllAdmins
 };
