@@ -97,7 +97,7 @@ function App() {
         
 
 
-        <Route path="/athlete-dashboard/:athleteName/*" element={<AthleteDashboard />}>
+        <Route path="/athlete-dashboard/:organizationId/:athleteName/*" element={<AthleteDashboard />}>
           <Route path="home" element={<Home />} />
           <Route path="finance" element={<Finance />} />
           <Route path="medical" element={<Medical />} />
@@ -107,7 +107,7 @@ function App() {
           <Route path="profile" element={<Profile />} />
         
         </Route>
-        <Route path="/coach-dashboard/:coachName/*" element={<CoachDashboard />} >
+        <Route path="/coach-dashboard/:organizationId/:coachName/*" element={<CoachDashboard />} >
           <Route path="teammanagement" element={<TeamManagement />} />
           <Route path="performance" element={<PerformanceMonitoring />} />
           <Route path="training" element={<TrainingPlans />} />
@@ -118,7 +118,7 @@ function App() {
           
         </Route>
 
-        <Route path="/assistantcoach-dashboard/*" element={<AssistantCoachDashboard />} >
+        <Route path="/assistantcoach-dashboard/:organizationId/*" element={<AssistantCoachDashboard />} >
           <Route path="report" element={<Reports />} />
           <Route path="monitoring" element={<PerformanceMonitor />} />
           <Route path="training" element={<TrainingPl />} />
@@ -126,14 +126,14 @@ function App() {
           <Route path="chat" element={<Comm />} />
           <Route path="team" element={<Team />} />
         </Route>
-        <Route path="/medicalstaff-dashboard/*" element={<MedicalStaffDashboard />} >
+        <Route path="/medicalstaff-dashboard/:organizationId/*" element={<MedicalStaffDashboard />} >
           <Route path="diet" element={<Diet />} />
           <Route path="viewplayers" element={<ViewPlayers />} />
           <Route path="injurylogs" element={<InjuryLogs />} />
           <Route path="announcements" element={<Announcements/>} />
           <Route path="medicalrecords" element={<MedicalRecords />} />
         </Route>
-        <Route path="/gymtrainer-dashboard/*" element={<GymTrainerDashboard />} >
+        <Route path="/gymtrainer-dashboard/:organizationId/*" element={<GymTrainerDashboard />} >
           <Route path="alerts" element={<Alerts />} />
           <Route path="challenges" element={<Challenges />} />
           <Route path="medicalreports" element={<MedicalReports />} />
@@ -152,7 +152,7 @@ function App() {
           <Route path="sprofile" element={<SProfile />} />
         </Route>
 
-        <Route path="/admin-dashboard/*" element={<AdminDashboard />} >
+        <Route path="/admin-dashboard/:organizationId/*" element={<AdminDashboard />} >
           <Route path="admin" element={<AdminManagement />} />
           <Route path="sponsor" element={<SponsorManagement />} />
           <Route path="athlete" element={<AthleteManagement />} />

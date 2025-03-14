@@ -34,7 +34,7 @@ const loginAdmin = async (req, res) => {
         new ApiResponse(
             200,
             {
-                admin: { _id: admin._id, email: admin.email, role: admin.role },
+                admin: { _id: admin._id, email: admin.email, role: admin.role, organization: admin.organization },
                 accessToken,
                 refreshToken
             },
@@ -75,7 +75,7 @@ const loginAdmin = async (req, res) => {
         new ApiResponse(
             200,
             {
-                coach: { _id: coach._id, email: coach.email, role: coach.role },
+                coach: { _id: coach._id, email: coach.email, role: coach.role, organization: coach.organization },
                 accessToken,
                 refreshToken
             },
@@ -116,7 +116,7 @@ const loginAthlete = async (req, res) => {
         new ApiResponse(
             200,
             {
-                athlete: { _id: athlete._id, email: athlete.email, role: athlete.role },
+                athlete: { _id: athlete._id, email: athlete.email, role: athlete.role, organization: athlete.organization },
                 accessToken,
                 refreshToken
             },

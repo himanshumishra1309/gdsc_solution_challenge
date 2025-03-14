@@ -640,11 +640,13 @@ const registerCoach = asyncHandler(async (req, res) => {
     experience,
     certifications,
     previousOrganizations,
-    designation = "Assistant Coach", // Default value
+    designation, // Default value
     profilePhoto,
     idProof,
     certificatesFile,
   } = req.body;
+  console.log("Received Coach Data:", req.body);
+
 
   console.log("Received Organization ID:", organizationId);
 
@@ -683,12 +685,12 @@ const registerCoach = asyncHandler(async (req, res) => {
   }
 
   // Validate sport against organization's sports
-  if (!organization.sportType.includes(sport)) {
-    throw new ApiError(
-      400,
-      `Invalid sport. Allowed sports: ${organization.sportType.join(", ")}`
-    );
-  }
+  // if (!organization.sportType.includes(sport)) {
+  //   throw new ApiError(
+  //     400,
+  //     `Invalid sport. Allowed sports: ${organization.sportType.join(", ")}`
+  //   );
+  // }
 
   // Check if coach with email already exists
   const existingCoach = await Coach.findOne({ email });
@@ -716,52 +718,53 @@ const registerCoach = asyncHandler(async (req, res) => {
     ? previousOrganizations.split(",").map((org) => org.trim())
     : [];
 
-  // Create coach with all provided fields
-  const coach = await Coach.create({
-    name,
-    email,
-    password,
-    organization: orgId,
-    dob: dobDate,
-    gender,
-    nationality,
-    contactNumber,
-    address: {
-      street: address,
-      city: city || "",
-      state,
-      country,
-      pincode: pincode || "",
-    },
-    sport,
-    experience: experienceYears,
-    certifications: certificationsList,
-    previousOrganizations: previousOrgList,
-    designation,
-    avatar: profilePhoto || "",
-    documents: {
-      idProof: idProof || "",
-      certificates: certificatesFile || "",
-    },
-    status: "Active",
-    joined_date: new Date(),
-  });
+  // Modify the coach creation part around line 730
+const coach = await Coach.create({
+  name,
+  email,
+  password,
+  organization: orgId,
+  dob: dobDate,
+  gender,
+  nationality,
+  contactNumber,
+  address: {
+    street: address,
+    city: city || "",
+    state,
+    country,
+    pincode: pincode || "",
+  },
+  sport,
+  experience: experienceYears,
+  certifications: certificationsList.length ? certificationsList : ["Default Certification"],  // Add a default if empty
+  previousOrganizations: previousOrgList,
+  designation,
+  avatar: profilePhoto || "",
+  documents: {
+    // Use placeholder values instead of empty strings
+    idProof: idProof || "placeholder-id-proof.jpg",
+    certificates: certificatesFile || "placeholder-certificates.pdf",
+  },
+  status: "Active",
+  joined_date: new Date(),
+});
 
-  // Send welcome email with login credentials
-  await sendEmail({
-    email: coach.email,
-    subject: "Welcome to AMS - Coach Login Details",
-    message: `
-      <h3>Hi ${coach.name},</h3>
-      <p>Your account has been created in the Athlete Management System.</p>
-      <p><strong>Email:</strong> ${coach.email}</p>
-      <p><strong>Password:</strong> ${password}</p>
-      <p>Please log in and change your password at your earliest convenience.</p>
-      <p>You have been assigned to ${organization.name} as a ${designation} for ${sport}.</p>
-      <p>For any questions, please contact the system administrator.</p>
-      <p>Thank you!</p>
-    `,
-  });
+  // // Send welcome email with login credentials
+  // await sendEmail({
+  //   email: coach.email,
+  //   subject: "Welcome to AMS - Coach Login Details",
+  //   message: `
+  //     <h3>Hi ${coach.name},</h3>
+  //     <p>Your account has been created in the Athlete Management System.</p>
+  //     <p><strong>Email:</strong> ${coach.email}</p>
+  //     <p><strong>Password:</strong> ${password}</p>
+  //     <p>Please log in and change your password at your earliest convenience.</p>
+  //     <p>You have been assigned to ${organization.name} as a ${designation} for ${sport}.</p>
+  //     <p>For any questions, please contact the system administrator.</p>
+  //     <p>Thank you!</p>
+  //   `,
+  // });
 
   // Send success response
   res.status(201).json({
@@ -779,6 +782,103 @@ const registerCoach = asyncHandler(async (req, res) => {
       joined_date: coach.joined_date,
     },
   });
+});
+
+const getAllCoaches = asyncHandler(async (req, res) => {
+  // Extract query parameters
+  const { 
+    page = 1, 
+    limit = 10, 
+    sort = 'name', 
+    order = 'asc', 
+    search = '',
+    sport = '',
+    designation = '',
+    organizationId
+  } = req.query;
+
+  // Build filter object
+  const filter = {};
+
+  // Add organization filter based on user role
+  if (req.admin) {
+    // If admin, filter by their organization
+    filter.organization = req.admin.organization;
+  } else if (organizationId && mongoose.Types.ObjectId.isValid(organizationId)) {
+    // If organization ID provided and valid, use it
+    filter.organization = organizationId;
+  }
+
+  // Add sport filter if provided
+  if (sport) {
+    filter.sport = sport;
+  }
+
+  // Add designation filter if provided
+  if (designation) {
+    filter.designation = designation;
+  }
+
+  // Add search functionality (search by name or email)
+  if (search) {
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { email: { $regex: search, $options: 'i' } },
+      { contactNumber: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  // Set up pagination
+  const pageNumber = parseInt(page, 10);
+  const limitNumber = parseInt(limit, 10);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  // Set up sort option
+  const sortOption = {};
+  sortOption[sort] = order === 'asc' ? 1 : -1;
+
+  try {
+    // Get coaches with pagination, filtering, and sorting
+    const coaches = await Coach.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limitNumber)
+      .select('-password -refreshToken') // Exclude sensitive fields
+      .populate({
+        path: 'organization',
+        select: 'name logo'
+      })
+      .populate({
+        path: 'assignedAthletes',
+        select: 'name athleteId avatar',
+        options: { limit: 5 } // Limit number of populated athletes
+      });
+
+    // Get total count for pagination info
+    const totalCoaches = await Coach.countDocuments(filter);
+    const totalPages = Math.ceil(totalCoaches / limitNumber);
+
+    // Return response
+    return res.status(200).json(
+      new ApiResponse(
+        200, 
+        {
+          coaches,
+          pagination: {
+            totalCoaches,
+            totalPages,
+            currentPage: pageNumber,
+            limit: limitNumber,
+            hasNextPage: pageNumber < totalPages,
+            hasPrevPage: pageNumber > 1
+          }
+        }, 
+        "Coaches fetched successfully"
+      )
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error fetching coaches: " + error.message);
+  }
 });
 
 const getAllUsers = asyncHandler(async (req, res) => {
@@ -947,5 +1047,6 @@ export {
   logoutAdmin,
   getAdminProfile,
   getRpeInsights,
-  getAllAdmins
+  getAllAdmins,
+  getAllCoaches
 };

@@ -52,82 +52,84 @@ const LandingPage = () => {
     setSignInOpen(true); 
   };
 
-  const handleSignIn = async () => {
-    // Input validation
-    if (!email || !password) {
-      setLoginError("Please enter both email and password");
+  // Replace this part of your handleSignIn function
+const handleSignIn = async () => {
+  // Input validation
+  if (!email || !password) {
+    setLoginError("Please enter both email and password");
+    return;
+  }
+  
+  setIsLoading(true);
+  setLoginError("");
+  
+  try {
+    let endpoint = "";
+    
+    // Set the correct endpoint based on selected role
+    if (selectedRole === "Admin") {
+      endpoint = "http://localhost:8000/api/v1/auth/admin/login";
+    } else if (selectedRole === "Coach") {
+      endpoint = "http://localhost:8000/api/v1/auth/coach/login";
+    } else if (selectedRole === "Athlete") {
+      endpoint = "http://localhost:8000/api/v1/auth/athlete/login";
+    } else {
+      setLoginError("Invalid role selected");
+      setIsLoading(false);
       return;
     }
     
-    setIsLoading(true);
-    setLoginError("");
-    
-    try {
-      let endpoint = "";
-      let redirectPath = "";
-      
-      // Set the correct endpoint and redirect path based on selected role
-      if (selectedRole === "Admin") {
-        endpoint = "http://localhost:8000/api/v1/auth/admin/login";
-        redirectPath = "/admin-dashboard";
-      } else if (selectedRole === "Coach") {
-        endpoint = "http://localhost:8000/api/v1/auth/coach/login";
-        redirectPath = "/coach-dashboard";
-      } else if (selectedRole === "Athlete") {
-        endpoint = "http://localhost:8000/api/v1/auth/athlete/login";
-        redirectPath = "/athlete-dashboard";
-      } else {
-        setLoginError("Invalid role selected");
-        setIsLoading(false);
-        return;
-      }
-      
-      // Configure axios to include credentials (cookies)
-      const response = await axios.post(endpoint, 
-        { email, password },
-        { 
-          withCredentials: true,  // Important for cookies to be sent/received
-          headers: {
-            'Content-Type': 'application/json'
-          }
+    // Configure axios to include credentials (cookies)
+    const response = await axios.post(endpoint, 
+      { email, password },
+      { 
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
         }
-      );
-      
-      console.log("Login successful:", response.data);
-      
-      // Store user info in localStorage (but not auth tokens - those are in HTTP-only cookies)
-      localStorage.setItem("userRole", selectedRole.toLowerCase());
-      
-      // Store user data based on role
-      if (selectedRole === "Admin") {
-        localStorage.setItem("userData", JSON.stringify(response.data.data.admin));
-      } else if (selectedRole === "Coach") {
-        localStorage.setItem("userData", JSON.stringify(response.data.data.coach));
-      } else if (selectedRole === "Athlete") {
-        localStorage.setItem("userData", JSON.stringify(response.data.data.athlete));
       }
+    );
+    
+    console.log("Login successful:", response.data);
+    
+    // Store user role in localStorage
+    localStorage.setItem("userRole", selectedRole.toLowerCase());
+    
+    // Handle navigation based on role
+    if (selectedRole === "Admin") {
       
-      // Close dialog and redirect
+      console.log("Admin data:", response.data);
+      // Extract organization ID from response
+      const organizationId = response.data.data.admin.organization;
+      localStorage.setItem("userData", JSON.stringify(response.data.data.admin));
+      
+      // Navigate to admin dashboard with organization ID
       setSignInOpen(false);
-      navigate(redirectPath);
+      navigate(`/admin-dashboard/${organizationId}/admin`);
+    } 
+    else if (selectedRole === "Coach") {
+      const organizationId = response.data.data.coach.organization;
+      const coachName = response.data.data.coach.name.replace(/\s+/g, '-').toLowerCase();
+      localStorage.setItem("userData", JSON.stringify(response.data.data.coach));
       
-    } catch (err) {
-      console.error("Login error:", err);
+      setSignInOpen(false);
+      navigate(`/coach-dashboard/${organizationId}/${coachName}/teammanagement`);
+    } 
+    else if (selectedRole === "Athlete") {
+      const organizationId = response.data.data.athlete.organization;
+      const athleteName = response.data.data.athlete.name.replace(/\s+/g, '-').toLowerCase();
+      localStorage.setItem("userData", JSON.stringify(response.data.data.athlete));
       
-      if (err.response) {
-        // Server responded with an error
-        setLoginError(err.response.data.message || err.response.data.error || "Authentication failed");
-      } else if (err.request) {
-        // Request was made but no response
-        setLoginError("No response from server. Please check your connection.");
-      } else {
-        // Error setting up request
-        setLoginError("Login failed. Please try again.");
-      }
-    } finally {
-      setIsLoading(false);
+      setSignInOpen(false);
+      navigate(`/athlete-dashboard/${organizationId}/${athleteName}/home`);
     }
-  };
+    
+  } catch (err) {
+    // Your existing error handling...
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">

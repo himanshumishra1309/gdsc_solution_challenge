@@ -8,6 +8,7 @@ import { registerOrganizationAthlete,
   logoutAdmin,
   getAdminProfile,
   getRpeInsights,
+  getAllCoaches,
   getAllAdmins } from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
 import { upload } from "../middlewares/multer.middleware.js";
@@ -30,9 +31,19 @@ router.post(
   ]),
   registerOrganizationAthlete
 );
-router.post("/register-coach",verifyJWTAdmin, registerCoach);
+router.post(
+  '/register-coach',
+  verifyJWTAdmin,
+  upload.fields([
+    { name: 'profilePhoto', maxCount: 1 },
+    { name: 'idProof', maxCount: 1 },
+    { name: 'certificates', maxCount: 1 }
+  ]),
+  registerCoach
+);
 router.get('/athletes', verifyJWTAdmin, getAllAthletes);
 router.get('/administrators', verifyJWTAdmin, getAllAdmins);
+router.get('/coaches/:organizationId', verifyJWTAdmin, getAllCoaches);
 
 const sportEnum = ["Football", "Badminton", "Cricket", "Basketball", "Tennis"];
 router.get("/allowed-sports", (req, res) => {
