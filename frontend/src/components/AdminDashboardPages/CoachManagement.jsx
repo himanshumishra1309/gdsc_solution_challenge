@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,8 @@ const CoachManagement = () => {
   
   // Get organization ID from localStorage
   const adminData = JSON.parse(localStorage.getItem('userData') || '{}');
-  const organizationId = adminData?.organization || '67d2a52441f8f9d57e80242d';
+  const {organizationId} = useParams();
+  console.log("Organization ID:", organizationId);
   
   // Initial coach form state
   const [newCoach, setNewCoach] = useState({
@@ -54,7 +55,27 @@ const CoachManagement = () => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [idProof, setIdProof] = useState(null);
   const [certificatesFile, setCertificatesFile] = useState(null);
+
+  // Add missing handleSportChange function
+  const handleSportChange = (sport) => {
+    setSelectedSport(sport);
+    
+    if (sport === "All") {
+      setFilteredCoaches(coaches);
+    } else {
+      setFilteredCoaches(coaches.filter(coach => coach.sport === sport));
+    }
+  };
   
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewCoach(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSelectChange = (name, value) => {
+    setNewCoach(prev => ({ ...prev, [name]: value }));
+  };
+
   // Fetch coaches on component mount
   useEffect(() => {
     if (organizationId) {
@@ -66,48 +87,43 @@ const CoachManagement = () => {
   
   // Fetch coaches from API
   // Example frontend fetch
-const fetchCoaches = async (organizationId) => {
+// Fix the fetchCoaches function
+const fetchCoaches = async () => {
+  setLoading(true);
   try {
-    const response = await axios.get(`http://localhost:8000/api/v1/admins/coaches/${organizationId}`, {
+    // Use query parameter instead of path parameter
+    const response = await axios.get(`http://localhost:8000/api/v1/admins/coaches`, {
+      params: { organizationId },
       withCredentials: true
     });
     
-    if (response.data && response.data.data) {
+    console.log("Coach data received:", response.data);
+    
+    if (response.data && response.data.data && response.data.data.coaches) {
+      // Update coaches state with fetched data
       const coachesData = response.data.data.coaches;
-      // Process coaches data
+      setCoaches(coachesData);
+      
+      // Update filtered coaches based on currently selected sport
+      if (selectedSport === "All") {
+        setFilteredCoaches(coachesData);
+      } else {
+        setFilteredCoaches(coachesData.filter(coach => coach.sport === selectedSport));
+      }
+    } else {
+      console.warn("No coaches data found in response");
+      setCoaches([]);
+      setFilteredCoaches([]);
     }
   } catch (error) {
     console.error("Error fetching coaches:", error);
+    setErrorMessage("Failed to load coaches. Please try again.");
+    setCoaches([]);
+    setFilteredCoaches([]);
+  } finally {
+    setLoading(false);
   }
 };
-  
-  // Filter coaches by sport
-  const handleSportChange = (sport) => {
-    setSelectedSport(sport);
-    setFilteredCoaches(
-      sport === "All" 
-        ? coaches 
-        : coaches.filter((coach) => coach.sport === sport)
-    );
-  };
-  
-  // Handle input change for form fields
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setNewCoach({ ...newCoach, [name]: value });
-  };
-  
-  // Handle select change (for dropdowns)
-  const handleSelectChange = (name, value) => {
-    setNewCoach({ ...newCoach, [name]: value });
-  };
-  
-  // Handle file change
-  const handleFileChange = (e, setterFunction) => {
-    if (e.target.files && e.target.files[0]) {
-      setterFunction(e.target.files[0]);
-    }
-  };
   
   // Add new coach
   const handleAddCoach = async () => {

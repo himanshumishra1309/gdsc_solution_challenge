@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useParams, Navigate } from "react-router-dom";
 import { BarChart, Dumbbell, Heart, Apple, PiggyBank, User } from "lucide-react";
 import DashboardLayout from "./AthleteDashboardPages/DashboardLayout";
 import Performance from "./AthleteDashboardPages/Performance";
@@ -7,9 +7,10 @@ import Medical from "./AthleteDashboardPages/Medical";
 import Nutrition from "./AthleteDashboardPages/Nutrition";
 import Finance from "./AthleteDashboardPages/Finance";
 import Profile from "./AthleteDashboardPages/Profile";
-
+import Home from "./AthleteDashboardPages/Home";
 
 const navItems = [
+  { name: "Home", icon: User, path: "home" },
   { name: "Performance", icon: BarChart, path: "performance" },
   { name: "Training", icon: Dumbbell, path: "training" },
   { name: "Medical", icon: Heart, path: "medical" },
@@ -19,11 +20,15 @@ const navItems = [
 ];
 
 function AthleteDashboard() {
+  // Access URL parameters
+  const { organizationId, athleteName } = useParams();
+  
   return (
-    <DashboardLayout userType="Athlete" navItems={navItems}>
+    <DashboardLayout userType="Athlete" navItems={navItems} organizationId={organizationId} athleteName={athleteName}>
       <Routes>
-        
-        <Route path="/" element={<Performance />} /> 
+        {/* Redirect root to home */}
+        <Route path="/" element={<Navigate to="home" replace />} />
+        <Route path="home" element={<Home />} />
         <Route path="performance" element={<Performance />} />
         <Route path="training" element={<Training />} />
         <Route path="medical" element={<Medical />} />

@@ -19,7 +19,7 @@ const router = Router()
 router.route("/register").post(
   upload.single("avatar"), // Handle avatar image upload
   registerAdmin
-);
+); //connected
 
 router.post(
   "/register-organization-athlete",
@@ -30,7 +30,8 @@ router.post(
     { name: "latestMarksheet", maxCount: 1 }
   ]),
   registerOrganizationAthlete
-);
+); //connected
+
 router.post(
   '/register-coach',
   verifyJWTAdmin,
@@ -40,10 +41,11 @@ router.post(
     { name: 'certificates', maxCount: 1 }
   ]),
   registerCoach
-);
-router.get('/athletes', verifyJWTAdmin, getAllAthletes);
-router.get('/administrators', verifyJWTAdmin, getAllAdmins);
-router.get('/coaches/:organizationId', verifyJWTAdmin, getAllCoaches);
+); // connected
+
+router.get('/athletes', verifyJWTAdmin, getAllAthletes); //connected
+router.get('/administrators', verifyJWTAdmin, getAllAdmins); //connected
+router.get('/coaches', verifyJWTAdmin, getAllCoaches); //connected
 
 const sportEnum = ["Football", "Badminton", "Cricket", "Basketball", "Tennis"];
 router.get("/allowed-sports", (req, res) => {

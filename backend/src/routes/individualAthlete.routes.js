@@ -16,9 +16,9 @@ const router = Router();
 router.route("/register").post(
   upload.single("avatar"), // Handle avatar image upload
   registerIndependentAthlete
-);
+); //connected
 
-router.route("/login").post(loginIndependentAthlete);
+router.route("/login").post(loginIndependentAthlete); //connected
 
 router.route("/refresh-token").post(refreshAccessToken);
 

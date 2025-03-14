@@ -11,7 +11,7 @@ router.post("/register", upload.fields([
     { name: "logo", maxCount: 1 },
     { name: "certificates", maxCount: 1 },
     { name: "adminAvatar", maxCount: 1 }
-  ]), registerOrganization);
-router.get("/:orgId", getOrganizationDetails);
+  ]), registerOrganization); //connected
+router.get("/:orgId", getOrganizationDetails); 
 
 export default router;

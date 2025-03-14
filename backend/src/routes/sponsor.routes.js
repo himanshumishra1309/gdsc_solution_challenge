@@ -5,9 +5,9 @@ import {registerSponsor, loginSponsor, logoutSponsor, getSponsorProfile, updateS
 
 const router = Router()
 
-router.post("/register", upload.single("avatar"), registerSponsor);
-router.post("/login", loginSponsor);
-router.post("/logout", verifySponsorJWT, logoutSponsor);
+router.post("/register", upload.single("avatar"), registerSponsor); //connected
+router.post("/login", loginSponsor); //connected
+router.post("/logout", verifySponsorJWT, logoutSponsor); //connected
 
 // Profile routes
 router.get("/profile", verifySponsorJWT, getSponsorProfile);

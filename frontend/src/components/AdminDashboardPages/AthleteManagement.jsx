@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -32,7 +32,7 @@ const AthleteManagement = () => {
   
   // Get organization ID from localStorage (admin should be logged in)
   const adminData = JSON.parse(localStorage.getItem('userData') || '{}');
-  const organizationId = adminData?.organization || '67d2a52441f8f9d57e80242d';
+  const {organizationId} = useParams();
   
   const defaultAthleteState = {
     // Basic Information

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Pencil, Plus, Loader2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 
 const AdminManagement = () => {
   const [admins, setAdmins] = useState([]);
@@ -20,7 +21,7 @@ const AdminManagement = () => {
   
   // Get organization ID from localStorage (super admin should be logged in)
   const adminData = JSON.parse(localStorage.getItem('userData') || '{}');
-  const organizationId = adminData?.organization || '67d2a52441f8f9d57e80242d';
+  const {organizationId} = useParams();
 
   // Fetch admins on component mount
   useEffect(() => {
