@@ -19,20 +19,16 @@ const navItems = [
 ];
 
 function AdminDashboard() {
-  // Get organizationId from URL params
   const { organizationId } = useParams();
-  
-  // Check if organizationId is present
+
   useEffect(() => {
     if (!organizationId) {
       console.error("No organization ID found in URL");
-      // Try to get organization ID from local storage as fallback
       const userData = localStorage.getItem("userData");
       if (userData) {
         try {
           const parsedData = JSON.parse(userData);
           if (parsedData.organization) {
-            // Redirect to the correct URL with organization ID
             window.location.href = `/admin-dashboard/${parsedData.organization}/admin`;
           }
         } catch (e) {
@@ -42,7 +38,6 @@ function AdminDashboard() {
     }
   }, [organizationId]);
 
-  // If no organizationId and not redirecting yet, show loading
   if (!organizationId) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -57,7 +52,6 @@ function AdminDashboard() {
   return (
     <ALayout userType="Admin" navItems={navItems} organizationId={organizationId}>
       <Routes>
-        {/* Default route - redirect to admin management */}
         <Route path="/" element={<Navigate to="admin" replace />} />
         <Route path="admin" element={<AdminManagement organizationId={organizationId} />} />
         <Route path="athlete" element={<AthleteManagement organizationId={organizationId} />} />

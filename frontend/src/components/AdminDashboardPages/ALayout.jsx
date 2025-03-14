@@ -2,7 +2,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 
-function ALayout({ userType, navItems = [], children }) {
+function ALayout({ userType, navItems = [], organizationId, children }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,7 +31,7 @@ function ALayout({ userType, navItems = [], children }) {
         {/* Navigation Items */}
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item, index) => {
-            const fullPath = `/${userType.toLowerCase()}-dashboard/${item.path}`;
+            const fullPath = `/${userType.toLowerCase()}-dashboard/${organizationId}/${item.path}`;
             const isActive = location.pathname === fullPath;
 
             return (
