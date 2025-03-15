@@ -66,8 +66,6 @@ const verifyJWTAthlete = asyncHandler(async (req, _, next) => {
 
 const verifyJWTAdmin = asyncHandler(async (req, _, next) => {
   try {
-    console.log("Cookies:", req.cookies); // Debug logging
-    console.log("Auth header:", req.header("Authorization")); // Debug logging
     const token = 
       req.cookies?.adminAccessToken || 
       req.header("Authorization")?.replace("Bearer ", "")?.trim();
