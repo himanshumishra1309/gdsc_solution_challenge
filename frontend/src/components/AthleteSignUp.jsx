@@ -123,10 +123,12 @@ export default function AthleteSignUp() {
         const userData = response.data.data.user;
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("userType", "independentAthlete");
+        const athleteId = userData._id;
+        const athleteName = userData.name.replace(/\s+/g, "-");
         
         // Navigate to dashboard with a delay to show success message
         setTimeout(() => {
-          navigate(`/athlete-dashboard/${userData._id}/${userData.name.replace(/\s+/g, "-")}/home`);
+          navigate(`/athlete-dashboard/${athleteId}/${athleteName}/home`);
         }, 1500);
       }
     } catch (error) {
@@ -170,10 +172,12 @@ export default function AthleteSignUp() {
         const userData = response.data.data.user;
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("userType", "independentAthlete");
+        athleteId = userData._id;
+        athleteName = userData.name.replace(/\s+/g, "-");
         
         // Navigate to dashboard with a delay to show success message
         setTimeout(() => {
-          navigate(`/athlete-dashboard/${userData._id}/${userData.name.replace(/\s+/g, "-")}/home`);
+          navigate(`/athlete-dashboard/${athleteId}/${athleteName}/home`);
         }, 1500);
       }
     } catch (error) {

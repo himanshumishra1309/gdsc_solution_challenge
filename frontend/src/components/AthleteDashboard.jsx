@@ -10,7 +10,7 @@ import Profile from "./AthleteDashboardPages/Profile";
 import Home from "./AthleteDashboardPages/Home";
 
 const navItems = [
-  { name: "Home", icon: User, path: "home" },
+  { name: "Home", icon: User, path: "/" },
   { name: "Performance", icon: BarChart, path: "performance" },
   { name: "Training", icon: Dumbbell, path: "training" },
   { name: "Medical", icon: Heart, path: "medical" },
