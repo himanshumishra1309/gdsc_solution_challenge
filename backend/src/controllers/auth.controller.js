@@ -21,22 +21,22 @@ const loginAdmin = async (req, res) => {
         return res.status(401).json({ error: "Invalid credentials" });
       }
   
-      const accessToken = admin.generateAccessToken();
-      const refreshToken = admin.generateRefreshToken();
+      const adminAccessToken = admin.generateAccessToken();
+      const adminRefreshToken = admin.generateRefreshToken();
   
-      admin.refreshToken = refreshToken;
+      admin.refreshToken = adminRefreshToken;
       await admin.save({ validateBeforeSave: false });
   
-      res.cookie("accessToken", accessToken, { httpOnly: true, secure: true });
-      res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+      res.cookie("adminAccessToken", adminAccessToken, { httpOnly: true, secure: true });
+      res.cookie("adminRefreshToken", adminRefreshToken, { httpOnly: true, secure: true });
   
       res.json(
         new ApiResponse(
             200,
             {
                 admin: { _id: admin._id, email: admin.email, role: admin.role, organization: admin.organization },
-                accessToken,
-                refreshToken
+                adminAccessToken,
+                adminRefreshToken
             },
             "Admin login successful"
         )

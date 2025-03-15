@@ -9,7 +9,8 @@ import { registerOrganizationAthlete,
   getAdminProfile,
   getRpeInsights,
   getAllCoaches,
-  getAllAdmins } from "../controllers/admin.controllers.js";
+  getAllAdmins,
+  getAthleteById } from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
 import { upload } from "../middlewares/multer.middleware.js";
 
@@ -17,7 +18,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 const router = Router()
 
 router.route("/register").post(
-  upload.single("avatar"), // Handle avatar image upload
+  upload.single("avatar"),
   registerAdmin
 ); //connected
 
@@ -46,15 +47,12 @@ router.post(
 router.get('/athletes', verifyJWTAdmin, getAllAthletes); //connected
 router.get('/administrators', verifyJWTAdmin, getAllAdmins); //connected
 router.get('/coaches', verifyJWTAdmin, getAllCoaches); //connected
+router.post('/logout', verifyJWTAdmin, logoutAdmin); //connected
 
 const sportEnum = ["Football", "Badminton", "Cricket", "Basketball", "Tennis"];
 router.get("/allowed-sports", (req, res) => {
   res.json({ allowedSports: sportEnum });
 });
-
-// router.get("/users", verifyJWTAdmin, getAllUsers);
-// router.post("/login", loginAdmin);
-// router.post("/logout", verifyAdminJWT, logoutAdmin);
 
 export default router;
 

@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
     getAthletes,
     // loginAthlete,
-    // logoutAthlete
+    logoutUser
 } from "../controllers/athlete.controllers.js";
 import {
     getAthleteDetails,
@@ -16,7 +16,7 @@ const router = Router()
 
 
 router.get("/", verifyJWTAthlete, getAthletes);
-
+router.get("/logout", verifyJWTAthlete, logoutUser);
 
 router.get("/:athleteId/details", getAthleteDetails);
 

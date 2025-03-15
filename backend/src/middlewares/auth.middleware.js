@@ -69,7 +69,7 @@ const verifyJWTAdmin = asyncHandler(async (req, _, next) => {
     console.log("Cookies:", req.cookies); // Debug logging
     console.log("Auth header:", req.header("Authorization")); // Debug logging
     const token = 
-      req.cookies?.accessToken || 
+      req.cookies?.adminAccessToken || 
       req.header("Authorization")?.replace("Bearer ", "")?.trim();
 
     if (!token) {

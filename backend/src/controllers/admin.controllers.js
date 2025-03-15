@@ -1048,5 +1048,6 @@ export {
   getAdminProfile,
   getRpeInsights,
   getAllAdmins,
-  getAllCoaches
+  getAllCoaches,
+  getAthleteById
 };
