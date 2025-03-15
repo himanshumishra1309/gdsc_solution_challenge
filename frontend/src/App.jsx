@@ -40,6 +40,7 @@ import PerformanceMonitor from "./components/AssistantCoachDashboardPages/Perfor
 import Reports from "./components/AssistantCoachDashboardPages/Reports";
 import Team from "./components/AssistantCoachDashboardPages/Team";
 import TrainingPl from "./components/AssistantCoachDashboardPages/TrainingPl";
+import ACProfile from "./components/AssistantCoachDashboardPages/ACProfile";
 
 import MedicalStaffDashboard from "./components/MedicalStaffDashboard";
 import Announcements from "./components/MedicalStaffDashboardPages/Announcements";
@@ -74,6 +75,7 @@ import FormManagement from "./components/AdminDashboardPages/FormManagement";
 import SponsorManagement from "./components/AdminDashboardPages/SponsorManagement";
 import VideoAnalysis from "./components/AdminDashboardPages/VideoAnalysis";
 import AdminSignUp from "./components/AdminSignUp";
+import AdminHome from "./components/AdminDashboardPages/AdminHome";
 
 import PlayerDashboard from "./components/PlayerDashboard";
 import FillInjuryForms from "./components/PlayerDashboardPages/FillInjuryForms";
@@ -136,6 +138,7 @@ function App() {
           <Route path="injury" element={<InjuryRecords />} />
           <Route path="chat" element={<Comm />} />
           <Route path="team" element={<Team />} />
+          <Route path="acprofile" element={<ACProfile />} />
         </Route>
         <Route path="/medicalstaff-dashboard/:organizationId/:coachName/*" element={<MedicalStaffDashboard />} >
           <Route path="diet" element={<Diet />} />
@@ -170,7 +173,7 @@ function App() {
           <Route path="video" element={<VideoAnalysis />} />
           <Route path="form" element={<FormManagement />} />
           <Route path="coach" element={<CoachManagement />} />
-          
+          <Route path="adminhome" element={<AdminHome />} />
           
         </Route>
 

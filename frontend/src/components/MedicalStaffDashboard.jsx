@@ -1,5 +1,5 @@
 import { Users, Salad, Hospital, Clipboard, MessageSquare } from "lucide-react"; 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route,useParams } from "react-router-dom";
 import Announcements from "./MedicalStaffDashboardPages/Announcements";
 import Diet from "./MedicalStaffDashboardPages/Diet";
 import InjuryLogs from "./MedicalStaffDashboardPages/InjuryLogs";
@@ -18,8 +18,11 @@ const navItems = [
 ];
 
 function MedicalStaffDashboard() {
+
+  const { organizationId , coachName } = useParams();
+
   return (
-    <MLayout userType="MedicalStaff" navItems={navItems}>
+    <MLayout userType="MedicalStaff" navItems={navItems} organizationId={organizationId} coachName={coachName}>
       <Routes>
        <Route path="diet" element={<Diet />} />
        <Route path="/" element={<ViewPlayers />} />
