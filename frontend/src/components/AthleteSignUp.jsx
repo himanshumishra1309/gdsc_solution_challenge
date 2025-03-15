@@ -126,7 +126,7 @@ export default function AthleteSignUp() {
         
         // Navigate to dashboard with a delay to show success message
         setTimeout(() => {
-          navigate(`/athlete-dashboard/${userData.name.replace(/\s+/g, "-")}/`);
+          navigate(`/athlete-dashboard/${userData._id}/${userData.name.replace(/\s+/g, "-")}/home`);
         }, 1500);
       }
     } catch (error) {
@@ -173,7 +173,7 @@ export default function AthleteSignUp() {
         
         // Navigate to dashboard with a delay to show success message
         setTimeout(() => {
-          navigate(`/athlete-dashboard/${userData.name.replace(/\s+/g, "-")}/`);
+          navigate(`/athlete-dashboard/${userData._id}/${userData.name.replace(/\s+/g, "-")}/home`);
         }, 1500);
       }
     } catch (error) {

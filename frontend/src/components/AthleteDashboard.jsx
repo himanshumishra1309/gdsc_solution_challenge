@@ -21,13 +21,13 @@ const navItems = [
 
 function AthleteDashboard() {
   // Access URL parameters
-  const { organizationId, athleteName } = useParams();
+  const { athleteId, athleteName } = useParams();
   
   return (
-    <DashboardLayout userType="Athlete" navItems={navItems} organizationId={organizationId} athleteName={athleteName}>
+    <DashboardLayout userType="Athlete" navItems={navItems} athleteId={athleteId} athleteName={athleteName}>
       <Routes>
         {/* Redirect root to home */}
-        <Route path="/" element={<Navigate to="home" replace />} />
+        <Route path="/" element={<Home/>} />
         <Route path="home" element={<Home />} />
         <Route path="performance" element={<Performance />} />
         <Route path="training" element={<Training />} />

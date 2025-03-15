@@ -108,7 +108,7 @@ function App() {
         
 
 
-        <Route path="/athlete-dashboard/:athleteName/*" element={<AthleteDashboard />}>
+        <Route path="/athlete-dashboard/:athleteId/:athleteName/*" element={<AthleteDashboard />}>
           <Route path="home" element={<Home />} />
           <Route path="finance" element={<Finance />} />
           <Route path="medical" element={<Medical />} />
