@@ -71,7 +71,7 @@ const handleSignIn = async () => {
       endpoint = "http://localhost:8000/api/v1/auth/admin/login";
     } else if (selectedRole === "Coach") {
       endpoint = "http://localhost:8000/api/v1/auth/coach/login";
-    } else if (selectedRole === "Athlete") {
+    } else if (selectedRole === "Player") {
       endpoint = "http://localhost:8000/api/v1/auth/athlete/login";
     } else {
       setLoginError("Invalid role selected");
@@ -113,15 +113,14 @@ const handleSignIn = async () => {
       localStorage.setItem("userData", JSON.stringify(response.data.data.coach));
       
       setSignInOpen(false);
-      navigate(`/coach-dashboard/${organizationId}/${coachName}/teammanagement`);
+      navigate(`/coach-dashboard/${organizationId}/${coachName}/`);
     } 
-    else if (selectedRole === "Athlete") {
+    else if (selectedRole === "Player") {
       const organizationId = response.data.data.athlete.organization;
-      const athleteName = response.data.data.athlete.name.replace(/\s+/g, '-').toLowerCase();
+      const playerName = response.data.data.athlete.name.replace(/\s+/g, '-').toLowerCase();
       localStorage.setItem("userData", JSON.stringify(response.data.data.athlete));
-      
       setSignInOpen(false);
-      navigate(`/athlete-dashboard/${organizationId}/${athleteName}/home`);
+      navigate(`/player-dashboard/${organizationId}/${playerName}/graphs`);
     }
     
   } catch (err) {
@@ -206,7 +205,7 @@ const handleSignIn = async () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-4 sm:mt-5">
-              <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Athlete")}>Athlete</Button>
+              <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Player")}>Player</Button>
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Admin")}>Admin</Button>
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-gray-700 text-gray-700 hover:bg-gray-700 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Coach")}>Coach</Button>
             </div>

@@ -11,7 +11,6 @@ import ViewNutritionalPlans from "./PlayerDashboardPages/ViewNutritionalPlans";
 import ViewStats from "./PlayerDashboardPages/ViewStats";
 
 const navItems = [
-  
   { name: "Graphs", icon: BarChart, path: "graphs" },
   { name: "View Coaches", icon: User, path: "viewcoaches" },
   { name: "View Training Plans", icon: Dumbbell, path: "viewgym" },
@@ -20,7 +19,6 @@ const navItems = [
   { name: "Announcements", icon: MessageSquare, path: "viewannouncements" },
   { name: "Fill Injury forms", icon: BarChart, path: "injuryform" },
   { name: "View Stats", icon: User, path: "viewstats" },
-
 ];
 
 function PlayerDashboard() {

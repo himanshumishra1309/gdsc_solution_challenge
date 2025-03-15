@@ -62,22 +62,22 @@ const loginAdmin = async (req, res) => {
         return res.status(401).json({ error: "Invalid credentials" });
       }
   
-      const accessToken = coach.generateAccessToken();
-      const refreshToken = coach.generateRefreshToken();
+      const coachAccessToken = coach.generateAccessToken();
+      const coachRefreshToken = coach.generateRefreshToken();
   
-      coach.refreshToken = refreshToken;
+      coach.refreshToken = coachRefreshToken;
       await coach.save({ validateBeforeSave: false });
   
-      res.cookie("accessToken", accessToken, { httpOnly: true, secure: true });
-      res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+      res.cookie("coachAccessToken", coachAccessToken, { httpOnly: true, secure: true });
+      res.cookie("coachRefreshToken", coachRefreshToken, { httpOnly: true, secure: true });
   
       return res.status(200).json(
         new ApiResponse(
             200,
             {
-                coach: { _id: coach._id, email: coach.email, role: coach.role, organization: coach.organization },
-                accessToken,
-                refreshToken
+                coach: { _id: coach._id, name:coach.name, email: coach.email, role: coach.role, organization: coach.organization },
+                coachAccessToken,
+                coachRefreshToken
             },
             "Coach login successful"
         )
@@ -103,22 +103,22 @@ const loginAthlete = async (req, res) => {
         return res.status(401).json({ error: "Invalid credentials" });
       }
   
-      const accessToken = athlete.generateAccessToken();
-      const refreshToken = athlete.generateRefreshToken();
+      const athleteAccessToken = athlete.generateAccessToken();
+      const athleteRefreshToken = athlete.generateRefreshToken();
   
-      athlete.refreshToken = refreshToken;
+      athlete.refreshToken = athleteRefreshToken;
       await athlete.save({ validateBeforeSave: false });
   
-      res.cookie("accessToken", accessToken, { httpOnly: true, secure: true });
-      res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+      res.cookie("athleteAccessToken", athleteAccessToken, { httpOnly: true, secure: true });
+      res.cookie("athleteRefreshToken", athleteRefreshToken, { httpOnly: true, secure: true });
   
       return res.status(200).json(
         new ApiResponse(
             200,
             {
-                athlete: { _id: athlete._id, email: athlete.email, role: athlete.role, organization: athlete.organization },
-                accessToken,
-                refreshToken
+                athlete: { _id: athlete._id, name:athlete.name, email: athlete.email, role: athlete.role, organization: athlete.organization },
+                athleteAccessToken,
+                athleteRefreshToken
             },
             "Athlete login successful"
         )

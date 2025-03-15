@@ -129,7 +129,7 @@ function App() {
           
         </Route>
 
-        <Route path="/assistantcoach-dashboard/:organizationId/*" element={<AssistantCoachDashboard />} >
+        <Route path="/assistantcoach-dashboard/:organizationId/:coachName/*" element={<AssistantCoachDashboard />} >
           <Route path="report" element={<Reports />} />
           <Route path="monitoring" element={<PerformanceMonitor />} />
           <Route path="training" element={<TrainingPl />} />
@@ -137,14 +137,14 @@ function App() {
           <Route path="chat" element={<Comm />} />
           <Route path="team" element={<Team />} />
         </Route>
-        <Route path="/medicalstaff-dashboard/:organizationId/*" element={<MedicalStaffDashboard />} >
+        <Route path="/medicalstaff-dashboard/:organizationId/:coachName/*" element={<MedicalStaffDashboard />} >
           <Route path="diet" element={<Diet />} />
           <Route path="viewplayers" element={<ViewPlayers />} />
           <Route path="injurylogs" element={<InjuryLogs />} />
           <Route path="announcements" element={<Announcements/>} />
           <Route path="medicalrecords" element={<MedicalRecords />} />
         </Route>
-        <Route path="/gymtrainer-dashboard/:organizationId/*" element={<GymTrainerDashboard />} >
+        <Route path="/gymtrainer-dashboard/:organizationId/:coachName/*" element={<GymTrainerDashboard />} >
           <Route path="alerts" element={<Alerts />} />
           <Route path="challenges" element={<Challenges />} />
           <Route path="medicalreports" element={<MedicalReports />} />
@@ -174,15 +174,15 @@ function App() {
           
         </Route>
 
-        <Route path="/player-dashboard/:organizationId/:playerName/*" element={<PlayerDashboard />} >
-          <Route path="injuryform" element={<FillInjuryForms />} />
+        <Route path="/player-dashboard/:organizationId/:playerName/*" element={<PlayerDashboard />}>
           <Route path="graphs" element={<Graphs />} />
-          <Route path="viewannouncements" element={<ViewAnnouncements />} />
           <Route path="viewcoaches" element={<ViewCoaches />} />
           <Route path="viewgym" element={<ViewGymPlans />} />
           <Route path="viewmed" element={<ViewMedicalReports />} />
           <Route path="viewnutri" element={<ViewNutritionalPlans />} />
+          <Route path="viewannouncements" element={<ViewAnnouncements />} />
           <Route path="viewstats" element={<ViewStats />} />
+          <Route path="injuryform" element={<FillInjuryForms />} />
         </Route>
 
 
