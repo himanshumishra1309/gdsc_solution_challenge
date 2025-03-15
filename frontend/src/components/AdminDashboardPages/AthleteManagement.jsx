@@ -33,6 +33,10 @@ const AthleteManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [selectedAthlete, setSelectedAthlete] = useState(null);
+
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -307,11 +311,11 @@ const AthleteManagement = () => {
   };
 
   // View athlete profile
-  const handleViewProfile = (athleteId) => {
-    if (athleteId) {
-      navigate(`/admin-dashboard/${organizationId}/athlete/${athleteId}`);
-    }
+  const handleViewProfile = (athlete) => {
+    setSelectedAthlete(athlete);
+    setProfileDialogOpen(true);
   };
+  
 
   // Handle adding new athlete
   const handleAddAthlete = async () => {
@@ -894,11 +898,11 @@ const AthleteManagement = () => {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                   <Button 
-                                    onClick={() => handleViewProfile(athlete._id)}
+                                    onClick={() => handleViewProfile(athlete)}
                                     size="sm"
                                     className="text-indigo-600 hover:text-indigo-900 mr-2"
                                   >
-                                    View
+                                    View 
                                   </Button>
                                 </td>
                               </tr>
@@ -989,10 +993,55 @@ const AthleteManagement = () => {
                             >
                               <ChevronRight className="h-4 w-4" />
                             </Button>
+                            
                           </nav>
                         </div>
                       </div>
                     </div>
+                    <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+                      <DialogContent className="max-w-4xl p-8 rounded-lg bg-white shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-300">
+                        <DialogHeader>
+                          <DialogTitle className="text-2xl font-semibold">{selectedAthlete?.name}</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex gap-8 items-start w-full">
+                          <div className="w-2/3 bg-gray-50 p-6 rounded-lg shadow-sm">
+                          <img 
+                            src={selectedAthlete?.avatar || "https://www.w3schools.com/howto/img_avatar.png"} 
+                            alt="Athlete" 
+                            className="w-32 h-32 rounded-full object-cover mb-5"
+                          />
+                          <p><strong>Email:</strong> {selectedAthlete?.email}</p>
+                          <p><strong>Date of Birth:</strong> {selectedAthlete?.dob}</p>
+                          <p><strong>Gender:</strong> {selectedAthlete?.gender}</p>
+                          <p><strong>Nationality:</strong> {selectedAthlete?.nationality}</p>
+                          <p><strong>Address:</strong> {selectedAthlete?.address}</p>
+                          <p><strong>Phone Number:</strong> {selectedAthlete?.phoneNumber}</p>
+
+        
+                         </div>
+                         <div className="w-1/3 bg-gray-50 p-12 rounded-lg shadow-sm">
+                          <p><strong>Sports:</strong> {selectedAthlete?.sports?.join(", ") || "N/A"}</p>
+                          <p><strong>Skill Level:</strong> {selectedAthlete?.skillLevel}</p>
+                          <p><strong>Training Start Date:</strong> {selectedAthlete?.trainingStartDate}</p>
+                          <p><strong>Blood Group:</strong> {selectedAthlete?.bloodGroup}</p>
+                          <p><strong>Medical Conditions:</strong> {selectedAthlete?.medicalConditions || "None"}</p>
+                          <p><strong>Allergies:</strong> {selectedAthlete?.allergies || "None"}</p>
+
+                         </div>
+
+
+                        </div>
+                        <div className="mt-6 p-4 bg-gray-100 rounded-lg">
+                         <h3 className="text-lg font-semibold">Emergency Contact</h3>
+                         <p><strong>Name:</strong> {selectedAthlete?.emergencyContactName}</p>
+                         <p><strong>Phone:</strong> {selectedAthlete?.emergencyContactNumber}</p>
+                         <p><strong>Relationship:</strong> {selectedAthlete?.emergencyContactRelationship}</p>
+                        </div>
+                        <DialogFooter className="mt-6">
+                          <Button variant="outline" onClick={() => setProfileDialogOpen(false)}>Close</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                     </div>
                   </>
                 )}

@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react"; 
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
 
 function CLayout({ userType, navItems, children }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { organizationId, coachName } = useParams(); // Capture organizationId and coachName from the URL
 
   const handleSignOut = () => {
     localStorage.removeItem("userType");
@@ -22,7 +23,8 @@ function CLayout({ userType, navItems, children }) {
               className="w-full h-full object-cover"
             />
           </div>
-          <h2 className="text-2xl font-semibold text-white">Rajesh Patil</h2>
+          {/* Use coachName from URL */}
+          <h2 className="text-2xl font-semibold text-white">{coachName}</h2>
           <p className="text-sm text-gray-200">Assistant Coach</p>
         </div>
 
@@ -31,7 +33,7 @@ function CLayout({ userType, navItems, children }) {
             const isActive = location.pathname.includes(item.path);
 
             return (
-              <Link key={index} to={`/assistantcoach-dashboard/${item.path}`}>
+              <Link key={index} to={`/assistantcoach-dashboard/${organizationId}/${coachName}/${item.path}`}>
                 <Button
                   variant="ghost"
                   className={`w-full justify-start text-lg font-medium text-white hover:bg-green-600 hover:text-gray-100 rounded-lg py-3 transition-colors mb-2 ${isActive ? "bg-green-600 text-gray-100" : ""}`}
