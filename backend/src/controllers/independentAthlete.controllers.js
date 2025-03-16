@@ -173,19 +173,51 @@ const updateIndependentAthleteProfile = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Unauthorized request");
   }
 
-  const { name, dob, sex, sport, totalExperience, highestLevelPlayed } =
-    req.body;
+  const { 
+    name, 
+    email,
+    dob, 
+    gender, 
+    sport, 
+    height,
+    weight,
+    bmi,
+    bloodGroup,
+    address,
+    state,
+    number,
+    totalExperience, 
+    highestLevelPlayed 
+  } = req.body;
+
+  // Process name into firstName and lastName
+  let firstName, lastName;
+  if (name) {
+    const nameParts = name.split(" ");
+    firstName = nameParts[0];
+    lastName = nameParts.slice(1).join(" ");
+  }
 
   let avatar;
   if (req.file) {
+    // Upload file to cloud storage and get URL
     avatar = req.file.path;
   }
 
   const updatedFields = {
-    ...(name && { name }),
+    ...(firstName && { firstName }),
+    ...(lastName && { lastName }),
+    ...(email && { email }),
     ...(dob && { dob: new Date(dob) }),
-    ...(sex && { sex }),
+    ...(gender && { gender }),
     ...(sport && { sport }),
+    ...(height && { height: Number(height) }),
+    ...(weight && { weight: Number(weight) }),
+    ...(bmi && { bmi: Number(bmi) }),
+    ...(bloodGroup && { bloodGroup }),
+    ...(address && { address }),
+    ...(state && { state }),
+    ...(number && { number }),
     ...(totalExperience && { totalExperience }),
     ...(highestLevelPlayed && { highestLevelPlayed }),
     ...(avatar && { avatar }),
