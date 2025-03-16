@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react"; 
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation,useParams } from "react-router-dom";
 
 function MLayout({ userType, navItems, children }) {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { organizationId, coachName } = useParams();
 
   const handleSignOut = () => {
     localStorage.removeItem("userType");
@@ -22,7 +24,7 @@ function MLayout({ userType, navItems, children }) {
               className="w-full h-full object-cover"
             />
           </div>
-          <h2 className="text-2xl font-semibold text-white">Dr. Smriti Kapoor</h2>
+          <h2 className="text-2xl font-semibold text-white">{coachName || "Medical Staff"}</h2>
           <p className="text-sm text-gray-200">Medical Staff</p>
         </div>
 
@@ -31,7 +33,7 @@ function MLayout({ userType, navItems, children }) {
             const isActive = location.pathname.includes(item.path);
 
             return (
-              <Link key={index} to={`/medicalstaff-dashboard/${item.path}`}>
+              <Link key={index} to={`/medicalstaff-dashboard/${organizationId}/${coachName}/${item.path}`}>
                 <Button
                   variant="ghost"
                   className={`w-full justify-start text-lg font-medium text-white hover:bg-green-600 hover:text-gray-100 rounded-lg py-3 transition-colors mb-2 ${isActive ? "bg-green-600 text-gray-100" : ""}`}

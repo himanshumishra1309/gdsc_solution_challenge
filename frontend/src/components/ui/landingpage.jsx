@@ -8,8 +8,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { LogIn, Users, UserPlus, TrendingUp, Activity, Star } from "lucide-react";
+import { LogIn, Users, UserPlus, TrendingUp, Activity, Star, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import athleteImage from "@/assets/stadium.jpeg";
 
 const features = [
@@ -29,6 +30,8 @@ const LandingPage = () => {
   const [selectedRole, setSelectedRole] = useState(""); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const navigate = useNavigate();
 
   const handleRoleSelection = (role) => {
@@ -45,31 +48,93 @@ const LandingPage = () => {
 
   const handleRoleSelectionForOrganization = (role) => {
     setSelectedRole(role);
+    setOpen(false);
     setSignInOpen(true); 
   };
 
-  const handleSignIn = () => {
-    if (email && password) {
-      console.log(`Signed in as ${selectedRole}`);
-      setSignInOpen(false); 
-      
-      if (selectedRole === "Athlete") {
-        navigate("/athlete-dashboard/:athleteName/");
-      } else if (selectedRole === "Admin") {
-        navigate("/admin-dashboard");
-      } else if (selectedRole === "Coach") {
-        navigate("/coach-dashboard/:coachName/");
-      }
+  // Replace this part of your handleSignIn function
+const handleSignIn = async () => {
+  // Input validation
+  if (!email || !password) {
+    setLoginError("Please enter both email and password");
+    return;
+  }
+  
+  setIsLoading(true);
+  setLoginError("");
+  
+  try {
+    let endpoint = "";
+    
+    // Set the correct endpoint based on selected role
+    if (selectedRole === "Admin") {
+      endpoint = "http://localhost:8000/api/v1/auth/admin/login";
+    } else if (selectedRole === "Coach") {
+      endpoint = "http://localhost:8000/api/v1/auth/coach/login";
+    } else if (selectedRole === "Player") {
+      endpoint = "http://localhost:8000/api/v1/auth/athlete/login";
     } else {
-      console.log("Please enter valid email and password");
+      setLoginError("Invalid role selected");
+      setIsLoading(false);
+      return;
     }
-  };
+    
+    // Configure axios to include credentials (cookies)
+    const response = await axios.post(endpoint, 
+      { email, password },
+      { 
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    console.log("Login successful:", response.data);
+    
+    // Store user role in localStorage
+    localStorage.setItem("userRole", selectedRole.toLowerCase());
+    
+    // Handle navigation based on role
+    if (selectedRole === "Admin") {
+      
+      console.log("Admin data:", response.data);
+      // Extract organization ID from response
+      const organizationId = response.data.data.admin.organization;
+      localStorage.setItem("userData", JSON.stringify(response.data.data.admin));
+      
+      // Navigate to admin dashboard with organization ID
+      setSignInOpen(false);
+      navigate(`/admin-dashboard/${organizationId}/admin`);
+    } 
+    else if (selectedRole === "Coach") {
+      const organizationId = response.data.data.coach.organization;
+      const coachName = response.data.data.coach.name.replace(/\s+/g, '-').toLowerCase();
+      localStorage.setItem("userData", JSON.stringify(response.data.data.coach));
+      
+      setSignInOpen(false);
+      navigate(`/coach-dashboard/${organizationId}/${coachName}/`);
+    } 
+    else if (selectedRole === "Player") {
+      const organizationId = response.data.data.athlete.organization;
+      const playerName = response.data.data.athlete.name.replace(/\s+/g, '-').toLowerCase();
+      localStorage.setItem("userData", JSON.stringify(response.data.data.athlete));
+      setSignInOpen(false);
+      navigate(`/player-dashboard/${organizationId}/${playerName}/graphs`);
+    }
+    
+  } catch (err) {
+    // Your existing error handling...
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
       {/* Navbar */}
       <nav className="sticky top-0 z-50 flex justify-between items-center p-2 sm:p-3 bg-white shadow-lg">
-        <h1 className="text-xl sm:text-2xl font-extrabold text-green-600">Khel-INDIA</h1>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-green-600">AthleTech</h1>
         <div className="flex space-x-3 sm:space-x-4 font-semibold text-sm sm:text-base text-gray-700">
           <Link to="/performance-tracking">
             <Button variant="link" className="hover:text-blue-600 text-xs sm:text-sm transition-all">Performance Tracking</Button>
@@ -104,7 +169,7 @@ const LandingPage = () => {
 
       {/* Features Section */}
       <section className="py-12 sm:py-14 bg-gray-50 text-center">
-        <h2 className="text-xl sm:text-2xl font-bold text-green-600 mb-6 sm:mb-8">Why Choose Khel-INDIA?</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-green-600 mb-6 sm:mb-8">Why Choose AthleTech?</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6 container mx-auto px-12">
           {features.map(({ title, description, icon }) => (
             <Card key={title} className="shadow-md p-3 sm:p-8 text-center border border-gray-300 rounded-xl hover:bg-gray-50 hover:scale-105 hover:shadow-lg transition-all duration-300 ease-in-out">
@@ -140,7 +205,7 @@ const LandingPage = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-4 sm:mt-5">
-              <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Athlete")}>Athlete</Button>
+              <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Player")}>Player</Button>
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Admin")}>Admin</Button>
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-gray-700 text-gray-700 hover:bg-gray-700 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Coach")}>Coach</Button>
             </div>
@@ -152,7 +217,17 @@ const LandingPage = () => {
       </Dialog>
 
       {/* Sign-In Dialog */}
-      <Dialog open={signInOpen} onOpenChange={setSignInOpen}>
+      <Dialog open={signInOpen} onOpenChange={(isOpen) => {
+        if (!isLoading) {
+          setSignInOpen(isOpen);
+          if (!isOpen) {
+            // Reset form when dialog closes
+            setLoginError("");
+            setEmail("");
+            setPassword("");
+          }
+        }
+      }}>
         <DialogContent className="p-4 sm:p-5 max-w-lg rounded-2xl bg-white shadow-lg border border-gray-200 transform transition-all scale-95">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl font-bold text-center text-gray-900">
@@ -162,12 +237,21 @@ const LandingPage = () => {
               Please enter your email and password to sign in as a {selectedRole}.
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Error message */}
+          {loginError && (
+            <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-2 rounded-lg text-xs sm:text-sm mb-4">
+              {loginError}
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-4 sm:mt-5">
             <input
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
               className="py-2 px-4 text-sm rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none w-full"
             />
             <input
@@ -175,16 +259,43 @@ const LandingPage = () => {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
               className="py-2 px-4 text-sm rounded-xl border-2 border-gray-300 focus:border-blue-500 focus:outline-none w-full"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLoading) {
+                  handleSignIn();
+                }
+              }}
             />
           </div>
           <div className="mt-4 sm:mt-5 flex justify-center">
-            <Button variant="outline" className="py-2 text-sm rounded-xl border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all" onClick={handleSignIn}>
-              Sign In
+            <Button 
+              variant="outline" 
+              className="py-2 text-sm rounded-xl border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all" 
+              onClick={handleSignIn}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing In...
+                </>
+              ) : "Sign In"}
             </Button>
           </div>
           <div className="mt-4 sm:mt-1 flex justify-center">
-            <Button variant="ghost" className="text-gray-600 hover:text-red-500 transition-all" onClick={() => setSignInOpen(false)}>
+            <Button 
+              variant="ghost" 
+              className="text-gray-600 hover:text-red-500 transition-all" 
+              onClick={() => {
+                if (!isLoading) {
+                  setSignInOpen(false);
+                  setLoginError("");
+                  setEmail("");
+                  setPassword("");
+                }
+              }}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
           </div>

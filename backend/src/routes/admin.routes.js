@@ -1,25 +1,58 @@
 import { Router } from "express";
-import { registerOrganizationAthlete, registerCoach, getAllUsers } from "../controllers/admin.controllers.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { authorize } from "../middlewares/authorize.middleware.js"; // New middleware for role-based access
+import { registerOrganizationAthlete,
+  getAllAthletes,
+  registerAdmin,
+  registerCoach,
+  getAllUsers,
+  generateAccessAndRefreshToken,
+  logoutAdmin,
+  getAdminProfile,
+  getRpeInsights,
+  getAllCoaches,
+  getAllAdmins,
+  getAthleteById } from "../controllers/admin.controllers.js";
+import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
+import { upload } from "../middlewares/multer.middleware.js";
 
 
 const router = Router()
 
+router.route("/register").post(
+  upload.single("avatar"),
+  registerAdmin
+); //connected
 
+router.post(
+  "/register-organization-athlete",
+  verifyJWTAdmin, // Ensure only admins can register athletes
+  upload.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "uploadSchoolId", maxCount: 1 },
+    { name: "latestMarksheet", maxCount: 1 }
+  ]),
+  registerOrganizationAthlete
+); //connected
 
-router.post("/register-athlete",verifyJWT,authorize(["admin"]), registerOrganizationAthlete);
-router.post("/register-coach",verifyJWT,authorize(["admin"]), registerCoach);
+router.post(
+  '/register-coach',
+  verifyJWTAdmin,
+  upload.fields([
+    { name: 'profilePhoto', maxCount: 1 },
+    { name: 'idProof', maxCount: 1 },
+    { name: 'certificates', maxCount: 1 }
+  ]),
+  registerCoach
+); // connected
 
+router.get('/athletes', verifyJWTAdmin, getAllAthletes); //connected
+router.get('/administrators', verifyJWTAdmin, getAllAdmins); //connected
+router.get('/coaches', verifyJWTAdmin, getAllCoaches); //connected
+router.post('/logout', verifyJWTAdmin, logoutAdmin); //connected
 
 const sportEnum = ["Football", "Badminton", "Cricket", "Basketball", "Tennis"];
 router.get("/allowed-sports", (req, res) => {
   res.json({ allowedSports: sportEnum });
 });
-
-// router.get("/users", verifyJWTAdmin, getAllUsers);
-// router.post("/login", loginAdmin);
-// router.post("/logout", verifyAdminJWT, logoutAdmin);
 
 export default router;
 

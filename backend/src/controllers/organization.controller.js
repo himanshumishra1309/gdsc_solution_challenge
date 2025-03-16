@@ -1,70 +1,223 @@
 import asyncHandler from "../utils/asyncHandler.js";
-import {Organization} from "../models/organization.model.js";
-import {Admin} from "../models/admin.model.js";
-import ApiError from "../utils/ApiError.js";
+import { Organization } from "../models/organization.model.js";
+import { Admin } from "../models/admin.model.js";
+import { ApiError } from "../utils/ApiError.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+// import { sendEmail } from "../utils/sendEmail.js";
 
-// ✅ Register Organization & Admin Together
- const registerOrganization = asyncHandler(async (req, res) => {
-  const { orgName, sportType, adminName, adminEmail, adminPassword } = req.body;
+const organizationTypeEnum = [
+  "sports_club",
+  "education",
+  "pro_team",
+  "youth",
+  "association",
+  "government",
+  "nonprofit",
+  "company",
+];
 
-    // Validate required fields
-    if (!orgName || !sportType || !adminName || !adminEmail || !adminPassword) {
-      throw new ApiError(400, "All fields are required");
-    }
-  
-    // Validate sportType against predefined enum
-    if (!sportEnum.includes(sportType)) {
-      throw new ApiError(400, `Invalid sport type. Allowed values: ${sportEnum.join(", ")}`);
-    }
+const registerOrganization = asyncHandler(async (req, res) => {
+  const {
+    orgName,
+    orgEmail,
+    organizationType,
+    address,
+    country,
+    state,
+    adminName,
+    adminEmail,
+    adminPassword,
+  } = req.body;
 
-  // Check if organization exists
-  const existingOrg = await Organization.findOne({ name: orgName });
-  if (existingOrg) {
+  console.log("Request body:", req.body);
+  console.log("Files:", req.files);
+
+  if (
+    !orgName ||
+    !orgEmail ||
+    !organizationType ||
+    !address ||
+    !country ||
+    !state
+  ) {
+    throw new ApiError(
+      400,
+      "All required organization fields must be provided"
+    );
+  }
+
+  if (!adminName || !adminEmail || !adminPassword) {
+    throw new ApiError(400, "All required admin fields must be provided");
+  }
+
+  if (!organizationTypeEnum.includes(organizationType)) {
+    throw new ApiError(
+      400,
+      `Invalid organization type. Allowed values: ${organizationTypeEnum.join(", ")}`
+    );
+  }
+
+  const existingOrgByName = await Organization.findOne({ name: orgName });
+  if (existingOrgByName) {
     throw new ApiError(400, "Organization with this name already exists");
   }
 
-  // Check if admin email is already taken
-  const existingAdmin = await Admin.findOne({ email: adminEmail });
-  if (existingAdmin) {
-    throw new ApiError(400, "An admin with this email already exists");
+  const existingOrgByEmail = await Organization.findOne({ email: orgEmail });
+  if (existingOrgByEmail) {
+    throw new ApiError(400, "Organization with this email already exists");
   }
 
+  const existingAdmin = await Admin.findOne({ email: adminEmail });
+  if (existingAdmin) {
+    throw new ApiError(400, "Admin with this email already exists");
+  }
 
-  // Create Organization
+  let logoUrl = "";
+  let certificatesUrl = "";
+  let adminAvatarUrl = "";
+
+  if (req.files?.logo) {
+    const logoLocalPath = req.files.logo[0]?.path;
+    if (logoLocalPath) {
+      const uploadedLogo = await uploadOnCloudinary(logoLocalPath);
+      if (!uploadedLogo)
+        throw new ApiError(400, "Error uploading organization logo");
+      logoUrl = uploadedLogo.url;
+    }
+  }
+
+  if (req.files?.certificates) {
+    const certificatesLocalPath = req.files.certificates[0]?.path;
+    if (certificatesLocalPath) {
+      const uploadedCertificates = await uploadOnCloudinary(
+        certificatesLocalPath
+      );
+      if (!uploadedCertificates)
+        throw new ApiError(400, "Error uploading certificates");
+      certificatesUrl = uploadedCertificates.url;
+    }
+  }
+
+  if (req.files?.adminAvatar) {
+    const avatarLocalPath = req.files.adminAvatar[0]?.path;
+    if (avatarLocalPath) {
+      const uploadedAvatar = await uploadOnCloudinary(avatarLocalPath);
+      if (!uploadedAvatar)
+        throw new ApiError(400, "Error uploading admin avatar");
+      adminAvatarUrl = uploadedAvatar.url;
+    }
+  }
+
+  // First, create the organization **without the admin reference**
   const organization = await Organization.create({
     name: orgName,
-    sportType,
+    email: orgEmail,
+    logo: logoUrl,
+    organizationType,
+    certificates: certificatesUrl,
+    address,
+    country,
+    state,
   });
 
-  // Create Admin (Password hashing handled in Admin model)
+  if (!organization) {
+    throw new ApiError(500, "Error creating organization");
+  }
+
+  // Now, create the admin **with the organization reference**
   const admin = await Admin.create({
     name: adminName,
     email: adminEmail,
-    password: adminPassword, // ✅ No need to hash manually
-    organization: organization._id,
+    password: adminPassword,
+    avatar: adminAvatarUrl,
+    role: "admin",
+    organization: organization._id, // Now we can pass the organization ID
   });
 
-  res.status(201).json({
-    success: true,
-    message: "Organization and Admin registered successfully",
-    organization: {
-      _id: organization._id,
-      name: organization.name,
-      sportType: organization.sportType,
-    },
-    admin: {
-      _id: admin._id,
-      name: admin.name,
-      email: admin.email,
-    },
-  });
+  if (!admin) {
+    throw new ApiError(500, "Error creating admin");
+  }
+
+  try {
+    await sendEmail({
+      email: adminEmail,
+      subject: "Welcome to AMS - Organization Registered",
+      message: `
+        <h3>Hi ${adminName},</h3>
+        <p>Your organization "${orgName}" has been successfully registered in the Athlete Management System.</p>
+        <p>You have been set up as an administrator with the following credentials:</p>
+        <p><strong>Email:</strong> ${adminEmail}</p>
+        <p>Please log in to access your organization's dashboard.</p>
+        <p>Thank you!</p>
+      `,
+    });
+  } catch (emailError) {
+    console.log("Email sending failed:", emailError);
+  }
+
+  res.status(201).json(
+    new ApiResponse(
+      201,
+      {
+        organization: {
+          _id: organization._id,
+          name: organization.name,
+          email: organization.email,
+          logo: organization.logo,
+          organizationType: organization.organizationType,
+          certificates: organization.certificates,
+          address: organization.address,
+          country: organization.country,
+          state: organization.state,
+        },
+        admin: {
+          _id: admin._id,
+          name: admin.name,
+          email: admin.email,
+          role: admin.role,
+        },
+      },
+      "Organization and admin registered successfully."
+    )
+  );
 });
 
-// ✅ Fetch Organization Details
- const getOrganizationDetails = asyncHandler(async (req, res) => {
+const updateOrganizationAdmin = asyncHandler(async (req, res) => {
+  const { organizationId, adminId } = req.body;
+
+  if (!organizationId || !adminId) {
+    throw new ApiError(400, "Organization ID and Admin ID are required");
+  }
+
+  const updatedOrg = await Organization.findByIdAndUpdate(
+    organizationId,
+    { admin: adminId },
+    { new: true }
+  );
+
+  if (!updatedOrg) {
+    throw new ApiError(404, "Organization not found");
+  }
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { organization: updatedOrg },
+        "Organization updated with admin successfully"
+      )
+    );
+});
+
+const getOrganizationDetails = asyncHandler(async (req, res) => {
   const { orgId } = req.params;
 
-  const organization = await Organization.findById(orgId).populate("admin");
+  const organization = await Organization.findById(orgId).populate(
+    "admin",
+    "-password"
+  );
   if (!organization) {
     throw new ApiError(404, "Organization not found");
   }
@@ -75,28 +228,22 @@ import ApiError from "../utils/ApiError.js";
   });
 });
 
-const getAllOrganizations = asyncHandler(async (req, res, next) => {
-  try {
-    const organizations = await Organization.find({}, "_id name sportType"); // Only return necessary fields
+const getAllOrganizations = asyncHandler(async (req, res) => {
+  const organizations = await Organization.find(
+    {},
+    "_id name email organizationType logo country state"
+  );
 
-    res.status(200).json({
-      success: true,
-      count: organizations.length,
-      organizations,
-    });
-  } catch (error) {
-    console.error("Error fetching organizations:", error);
-    res.status(500).json({
-      success: false,
-      statusCode: 500,
-      message: "Internal Server Error",
-      errors: [error.message],
-    });
-  }
+  res.status(200).json({
+    success: true,
+    count: organizations.length,
+    organizations,
+  });
 });
 
 export {
-    registerOrganization,
-    getOrganizationDetails,
-    getAllOrganizations
-}
+  registerOrganization,
+  updateOrganizationAdmin,
+  getOrganizationDetails,
+  getAllOrganizations,
+};

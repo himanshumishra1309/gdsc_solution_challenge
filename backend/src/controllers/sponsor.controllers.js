@@ -5,68 +5,104 @@ import jwt from 'jsonwebtoken'
 import ApiResponse from "../utils/ApiResponse.js"
 
 
-const generateAccessAndRefreshToken = async(userId) => {
-    try {
-      const sponsor = await  Sponsor.findById(userId)
- 
-
-      //we save refresh token in db
-          // If no teacher is found, throw an error
-    if (!sponsor
-    ) {
-        throw new ApiError(404, "Sponsor not found");
-      }
-  
-      const sponsorAccessToken = sponsor.generateAccessToken()
-      const sponsorRefreshToken = sponsor.generateRefreshToken()
-
-      sponsor.refreshToken = sponsorRefreshToken
-      //this is used if it is something other than password wich doesnt need to validate
-      await sponsor.save({validateBeforeSave: false})
-
-      return{sponsorRefreshToken, sponsorAccessToken}
-    } catch (error) {
-        console.error("Error generating tokens:", error); // Optional: for debugging purposes
-
-        throw new ApiError(500, "Something went wrong while generating tokens")
-    }
-}
-
 const registerSponsor = asyncHandler(async (req, res) => {
-    const { name, email, dob, address, state, password } = req.body;
+    // Debug what's being received
+    console.log("Request body received:", req.body);
+    console.log("Request file:", req.file);
 
-    if (!name || !email || !dob || !address || !state || !password) {
-        throw new ApiError(400, "All fields are required");
+    const { 
+      name, 
+      email, 
+      password, 
+      dob, 
+      address, 
+      state, 
+      contactName, 
+      contactNo,
+      sponsorshipStart,
+      sponsorshipEnd
+    } = req.body;
+
+    // Create sponsorshipRange from individual fields if they exist
+    const sponsorshipRange = {
+      start: sponsorshipStart || 0,
+      end: sponsorshipEnd || 0
+    };
+
+    console.log("Extracted fields:", { 
+      name, email, password, dob, address, state, 
+      contactName, contactNo, sponsorshipRange 
+    });
+
+    // Validate required fields with better feedback
+    const missingFields = [];
+    if (!name) missingFields.push("name");
+    if (!email) missingFields.push("email");
+    if (!password) missingFields.push("password");
+    if (!dob) missingFields.push("dob");
+    if (!address) missingFields.push("address");
+    if (!state) missingFields.push("state");
+    if (!contactName) missingFields.push("contactName");
+    if (!contactNo) missingFields.push("contactNo");
+
+    if (missingFields.length > 0) {
+        console.error("Missing required fields:", missingFields);
+        throw new ApiError(400, `Missing required fields: ${missingFields.join(", ")}`);
     }
 
+    // Check if sponsor already exists with this email
     const existingSponsor = await Sponsor.findOne({ email });
-
     if (existingSponsor) {
         throw new ApiError(400, "Sponsor with this email already exists");
     }
 
+    // Handle file upload if avatar is provided
+    let avatarPath;
+    if (req.file) {
+        avatarPath = req.file.path;
+    }
+
+    // Create new sponsor
     const newSponsor = new Sponsor({
-        name,
+        name,              // Company name
         email,
-        dob,
-        address,
+        password,
+        dob,               // Date of birth
+        address,           // Company address
         state,
-        password
+        contactName,       // Contact person's name
+        contactNo,         // Contact number
+        avatar: avatarPath,
+        sponsorshipRange: {
+            start: parseInt(sponsorshipRange.start) || 0,
+            end: parseInt(sponsorshipRange.end) || 0
+        }
     });
 
+    // Save sponsor to database
     await newSponsor.save();
 
+    // Generate tokens
     const sponsorAccessToken = newSponsor.generateAccessToken();
     const sponsorRefreshToken = newSponsor.generateRefreshToken();
 
+    // Save refresh token
     newSponsor.refreshToken = sponsorRefreshToken;
     await newSponsor.save({ validateBeforeSave: false });
 
+    // Remove password from response
+    const sponsorToReturn = newSponsor.toObject();
+    delete sponsorToReturn.password;
+    delete sponsorToReturn.refreshToken;
+
+    // Set cookie options
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict"
     };
 
+    // Return response
     return res
         .status(201)
         .cookie("sponsorAccessToken", sponsorAccessToken, options)
@@ -75,95 +111,83 @@ const registerSponsor = asyncHandler(async (req, res) => {
             new ApiResponse(
                 201,
                 {
-                    user: newSponsor
+                    user: sponsorToReturn
                 },
                 "Sponsor registered successfully"
             )
         );
 });
 
+const loginSponsor = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+        throw new ApiError(400, "Email and password are required");
+    }
+    
+    const sponsor = await Sponsor.findOne({ email });
+    
+    if (!sponsor) {
+        throw new ApiError(400, "Invalid credentials");
+    }
+    
+    const isPasswordValid = await sponsor.isPasswordCorrect(password);
+    
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid credentials");
+    }
+    
+    const { sponsorRefreshToken, sponsorAccessToken } = await generateAccessAndRefreshToken(sponsor._id);
+    
+    const loggedInSponsor = await Sponsor.findById(sponsor._id)
+        .select("-refreshToken -password");
+    
+    const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "Strict"
+    };
+    
+    return res
+        .status(200)
+        .cookie("sponsorAccessToken", sponsorAccessToken, options)
+        .cookie("sponsorRefreshToken", sponsorRefreshToken, options)
+        .json(
+            new ApiResponse(
+                200, {
+                    user: loggedInSponsor
+                },
+                "Sponsor logged in Successfully"
+            )
+        );
+});
 
-const loginSponsor = asyncHandler(async (req,res) => {
-    /*
-    TO DO:
-    req body -> data
-    check if the user is created
-    req.file match the password or username ,
-    Access and refresh token
-    Send them through  secured cookies
-    check if expired if yes then match refresh token
-    */
-    
-    const {email, password} = req.body
-    
-    if(!email){
-        throw new ApiError(400, "Email is required")
-    
+const generateAccessAndRefreshToken = async (sponsorId) => {
+    try {
+        const sponsor = await Sponsor.findById(sponsorId);
+        const sponsorAccessToken = sponsor.generateAccessToken();
+        const sponsorRefreshToken = sponsor.generateRefreshToken();
+        
+        sponsor.refreshToken = sponsorRefreshToken;
+        await sponsor.save({ validateBeforeSave: false });
+        
+        return { sponsorAccessToken, sponsorRefreshToken };
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating tokens");
     }
-    
-    //alternative id you want to check both in the frontend !(username)
-    
-    const user = await Sponsor.findOne({email})
-    
-    if(!user){
-        throw new ApiError(400, "Sponsor doesn't not exist")
-    }
-    
-      // we are not using 'User' rather we will use 'user' which is returned above, because 'User' is an instance of the moongoose of mongoDB and user is the data returned from the data base which signifies a single user and user.models.js file contain all the methods which can be accessed here such as isPasswordCorrect or refreshToken or accessToken
-    const isPasswordValid = await user.isPasswordCorrect(password);
-    
-    if(!isPasswordValid){
-        throw new ApiError(401, "Invalid User Credentials")
-    }
-    
-    const {sponsorRefreshToken, sponsorAccessToken}= await generateAccessAndRefreshToken(user._id)
-    
-    const loggedInUser = await Sponsor.findById(user._id).
-    select("-refreshToken -password")
-    
-     const options = {
-        // now the cookies can only be accessed and changed from the server and not the frontend
-            httpOnly: true,
-            secure: true
-     }
-    
-     //(key,value,options)
-     return res.
-     status(200)
-     .cookie("sponsorAccessToken", sponsorAccessToken, options)
-     .cookie("sponsorRefreshToken", sponsorRefreshToken, options)
-     .json(
-        new ApiResponse(
-            200,{
-                user:loggedInUser
-            },
-            "Sponsor logged in Successfully"
-        )
-     )
-})
-
+};
 
 const logoutSponsor = asyncHandler( async(req,res) => {
-        await Sponsor.findByIdAndUpdate(
-            req.sponsor._id,
-            // {
-            //     $set: {refreshToken : undefined}
-            // },
-             // {
-        //   refreshToken: undefined
-        // }, dont use this approach, this dosent work well
-    
+    await Sponsor.findByIdAndUpdate(
+        req.sponsor._id,
         {
             $unset: {
-              sponsorRefreshToken: 1, // this removes the field from the document
+              refreshToken: 1, // Correct field name
             },
-          },
-            {
-                new: true
-            }
-        )
-        //clear cookies
-        // reset the refresh token in User modelSchema
+        },
+        { new: true }
+    );
+    
     
         const options = {
                 httpOnly: true,
@@ -172,30 +196,103 @@ const logoutSponsor = asyncHandler( async(req,res) => {
     
          return res
          .status(200)
-         .clearCookie("sponsorAcessToken", options)
+         .clearCookie("sponsorAccessToken", options)
          .clearCookie("sponsorRefreshToken", options)
          .json(
             new ApiResponse(200, {}, "User Logged Out")
          )
     
     
-    })
-
-    
-const getSponsorProfile = asyncHandler(async(req,res) => {
-        const sponsor = await Sponsor.findById(req.sponsor._id).select(
-            "-password -refreshToken"
-          );
-    
-          if (!sponsor) {
-            throw new ApiError(404, "Sponsor not found");
-          }
-        
-          return res.status(200).json(new ApiResponse(200, teacher, "Sponsor profile fetched successfully"));
 })
+
+const getSponsorProfile = asyncHandler(async (req, res) => {
+    // Get the sponsor profile using the ID from the authenticated request
+    const sponsor = await Sponsor.findById(req.sponsor?._id).select(
+        "-password -refreshToken"
+    );
+
+    if (!sponsor) {
+        throw new ApiError(404, "Sponsor not found");
+    }
+    
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200, 
+                { sponsor }, 
+                "Sponsor profile fetched successfully"
+            )
+        );
+});
+
+const updateSponsorProfile = asyncHandler(async (req, res) => {
+    // Get fields to update from request body
+    const {
+        name,
+        email,
+        address,
+        state,
+        contactName,
+        contactNo,
+        sponsorshipStart,
+        sponsorshipEnd
+    } = req.body;
+
+    // Create update object with only provided fields
+    const updateFields = {};
+    
+    if (name) updateFields.name = name;
+    if (email) updateFields.email = email;
+    if (address) updateFields.address = address;
+    if (state) updateFields.state = state;
+    if (contactName) updateFields.contactName = contactName;
+    if (contactNo) updateFields.contactNo = contactNo;
+    
+    // Handle sponsorship range updates if either value is provided
+    if (sponsorshipStart !== undefined || sponsorshipEnd !== undefined) {
+        // Get current sponsor to access existing values
+        const currentSponsor = await Sponsor.findById(req.sponsor?._id);
+        
+        updateFields.sponsorshipRange = {
+            start: sponsorshipStart !== undefined ? 
+                parseInt(sponsorshipStart) : 
+                currentSponsor.sponsorshipRange.start,
+            end: sponsorshipEnd !== undefined ? 
+                parseInt(sponsorshipEnd) : 
+                currentSponsor.sponsorshipRange.end
+        };
+    }
+
+    // Handle file/avatar upload if provided
+    if (req.file) {
+        updateFields.avatar = req.file.path;
+    }
+
+    // Update the sponsor profile with new data
+    const updatedSponsor = await Sponsor.findByIdAndUpdate(
+        req.sponsor?._id,
+        { $set: updateFields },
+        { new: true, runValidators: true }
+    ).select("-password -refreshToken");
+
+    if (!updatedSponsor) {
+        throw new ApiError(404, "Sponsor not found");
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                { sponsor: updatedSponsor },
+                "Sponsor profile updated successfully"
+            )
+        );
+});
 
 export {
     registerSponsor,
     loginSponsor,
     logoutSponsor,
- getSponsorProfile}
+ getSponsorProfile, updateSponsorProfile}

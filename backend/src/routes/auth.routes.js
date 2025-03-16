@@ -7,9 +7,9 @@ const router = express.Router();
 
 
 
-router.post("/athlete/login", loginAthlete);
-router.post("/coach/login", loginCoach);
-router.post("/admin/login", loginAdmin);
+router.post("/athlete/login", loginAthlete); //connected
+router.post("/coach/login", loginCoach); //connected
+router.post("/admin/login", loginAdmin); //connected
 
 
 

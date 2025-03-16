@@ -4,7 +4,7 @@ const AnnoncementSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true},
   createddBy: {type: Schema.Types.ObjectId, ref: "Coach"},
-  attachment: [{type: String}]
+  sports: [{type: String}]
 
 }, { timestamps: true });
 

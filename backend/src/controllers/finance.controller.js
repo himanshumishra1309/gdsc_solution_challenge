@@ -5,10 +5,6 @@ import {Admin} from "../models/admin.model.js";
 import FinancialRecord from "../models/financialrecord.model.js"
 import  ApiResponse  from "../utils/ApiResponse.js";
 
-
-
-
-
 /**
  * @desc Add a financial record (Admin only)
  * @route POST /api/v1/finances

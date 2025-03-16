@@ -1,6 +1,5 @@
 import { Users, LineChart, Calendar, Activity, MessageSquare, BarChart } from "lucide-react"; 
-
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useParams } from "react-router-dom";
 import TeamManagement from "./CoachDashboardPages/TeamManagement";
 import PerformanceMonitoring from "./CoachDashboardPages/PerformanceMonitoring";
 import TrainingPlans from "./CoachDashboardPages/TrainingPlans";
@@ -22,8 +21,9 @@ const navItems = [
 ];
 
 function CoachDashboard() {
+  const { organizationId, coachName } = useParams();
   return (
-    <Layout userType="Coach" navItems={navItems}>
+    <Layout userType="Coach" navItems={navItems} organizationId={organizationId} coachName={coachName}>
       <Routes>
         <Route path="/" element={<TeamManagement />} />
         <Route path="performance" element={<PerformanceMonitoring />} />

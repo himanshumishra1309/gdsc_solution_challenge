@@ -1,14 +1,48 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
+import axios from "axios";
+import { useState } from "react";
 
-function ALayout({ userType, navItems = [], children }) {
+function ALayout({ userType, navItems = [], organizationId, children }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const handleSignOut = () => {
-    localStorage.removeItem("userType");
-    navigate("/");
+  const handleSignOut = async () => {
+    try {
+      setLoggingOut(true);
+      
+      // Call the backend logout API
+      const response = await axios.post(
+        "http://localhost:8000/api/v1/admins/logout",
+        {}, // Empty body
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log("Logout successful:", response.data);
+      
+      // Clear all localStorage items
+      localStorage.removeItem("userType");
+      localStorage.removeItem("userData");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("token");
+      
+      // Navigate to landing page
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      
+      localStorage.clear();
+      navigate("/");
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -31,8 +65,8 @@ function ALayout({ userType, navItems = [], children }) {
         {/* Navigation Items */}
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item, index) => {
-            const fullPath = `/${userType.toLowerCase()}-dashboard/${item.path}`;
-            const isActive = location.pathname === fullPath;
+            const fullPath = `/${userType.toLowerCase()}-dashboard/${organizationId}/${item.path}`;
+            const isActive = location.pathname.includes(item.path);
 
             return (
               <Link key={index} to={fullPath}>
@@ -55,9 +89,10 @@ function ALayout({ userType, navItems = [], children }) {
             variant="ghost"
             className="w-full flex items-center justify-start text-lg font-medium rounded-lg py-3 transition-colors hover:bg-red-600"
             onClick={handleSignOut}
+            disabled={loggingOut}
           >
             <LogOut className="mr-3 h-5 w-5 text-white" />
-            Sign Out
+            {loggingOut ? "Signing Out..." : "Sign Out"}
           </Button>
         </div>
       </div>

@@ -1,6 +1,5 @@
 import { Users, LineChart, Calendar, Activity, MessageSquare, BarChart } from "lucide-react"; 
-
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useParams } from "react-router-dom";
 import Alerts from "./GymTrainerDashboardPages/Alerts";
 import Challenges from "./GymTrainerDashboardPages/Challenges";
 import MedicalReports from "./GymTrainerDashboardPages/MedicalReports";
@@ -8,7 +7,6 @@ import RPEManagement from "./GymTrainerDashboardPages/RPEManagement";
 import View from "./GymTrainerDashboardPages/View";
 import WorkoutPlans from "./GymTrainerDashboardPages/WorkoutPlans";
 import GLayout from "./GymTrainerDashboardPages/GLayout";
-
 
 const navItems = [
   { label: "View Athletes", icon: Users, path: "view" },
@@ -20,13 +18,16 @@ const navItems = [
 ];
 
 function GymTrainerDashboard() {
+  // Capture organizationId and coachName from the URL
+  const { organizationId, coachName } = useParams();
+
   return (
-    <GLayout userType="GymTrainer" navItems={navItems}>
+    <GLayout userType="GymTrainer" navItems={navItems} organizationId={organizationId} coachName={coachName}>
       <Routes>
         <Route path="alerts" element={<Alerts />} />
         <Route path="challenges" element={<Challenges />} />
         <Route path="medicalreports" element={<MedicalReports />} />
-        <Route path="rpe" element={<RPEManagement/>} />
+        <Route path="rpe" element={<RPEManagement />} />
         <Route path="/" element={<View />} />
         <Route path="view" element={<View />} />
         <Route path="workout" element={<WorkoutPlans />} />

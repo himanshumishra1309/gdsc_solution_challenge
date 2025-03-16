@@ -40,6 +40,7 @@ import PerformanceMonitor from "./components/AssistantCoachDashboardPages/Perfor
 import Reports from "./components/AssistantCoachDashboardPages/Reports";
 import Team from "./components/AssistantCoachDashboardPages/Team";
 import TrainingPl from "./components/AssistantCoachDashboardPages/TrainingPl";
+import ACProfile from "./components/AssistantCoachDashboardPages/ACProfile";
 
 import MedicalStaffDashboard from "./components/MedicalStaffDashboard";
 import Announcements from "./components/MedicalStaffDashboardPages/Announcements";
@@ -64,6 +65,7 @@ import InvestmentTracking from "./components/SponsorDashboardPages/InvestmentTra
 import ViewMetrics from "./components/SponsorDashboardPages/ViewMetrics";
 import News from "./components/SponsorDashboardPages/News";
 import FindAthlete from "./components/SponsorDashboardPages/FindAthlete";
+import SProfile from "./components/SponsorDashboardPages/SProfile";
 
 import AdminDashboard from "./components/AdminDashboard";
 import AdminManagement from "./components/AdminDashboardPages/AdminManagement";
@@ -73,6 +75,18 @@ import FormManagement from "./components/AdminDashboardPages/FormManagement";
 import SponsorManagement from "./components/AdminDashboardPages/SponsorManagement";
 import VideoAnalysis from "./components/AdminDashboardPages/VideoAnalysis";
 import AdminSignUp from "./components/AdminSignUp";
+import AdminHome from "./components/AdminDashboardPages/AdminHome";
+
+import PlayerDashboard from "./components/PlayerDashboard";
+import FillInjuryForms from "./components/PlayerDashboardPages/FillInjuryForms";
+import Graphs from "./components/PlayerDashboardPages/Graphs";
+import ViewAnnouncements from "./components/PlayerDashboardPages/ViewAnnouncements";
+import ViewCoaches from "./components/PlayerDashboardPages/ViewCoaches";
+import ViewGymPlans from "./components/PlayerDashboardPages/ViewGymPlans";
+import ViewMedicalReports from "./components/PlayerDashboardPages/ViewMedicalReports";
+import ViewNutritionalPlans from "./components/PlayerDashboardPages/ViewNutritionalPlans";
+import ViewStats from "./components/PlayerDashboardPages/ViewStats";
+
 
 function App() {
   return (
@@ -96,43 +110,45 @@ function App() {
         
 
 
-        <Route path="/athlete-dashboard/:athleteName/*" element={<AthleteDashboard />}>
+        <Route path="/athlete-dashboard/:athleteId/:athleteName/*" element={<AthleteDashboard />}>
           <Route path="home" element={<Home />} />
           <Route path="finance" element={<Finance />} />
           <Route path="medical" element={<Medical />} />
           <Route path="nutrition" element={<Nutrition />} />
           <Route path="training" element={<Training />} />
           <Route path="performance" element={<Performance />} />
-          <Route path="profile" element={<Profile />} />
-        
+          <Route path="profile" element={<Profile />} />        
         </Route>
-        <Route path="/coach-dashboard/:coachName/*" element={<CoachDashboard />} >
+
+        <Route path="/coach-dashboard/:organizationId/:coachName/*" element={<CoachDashboard />} >
           <Route path="teammanagement" element={<TeamManagement />} />
           <Route path="performance" element={<PerformanceMonitoring />} />
           <Route path="training" element={<TrainingPlans />} />
           <Route path="injury" element={<InjuryManagementC />} />
           <Route path="communication" element={<Communication />} />
           <Route path="reports" element={<ReportAnalytics />} />
-          <Route path="coach-profile" element={<CoachProfile />} />
-          
+          <Route path="coach-profile" element={<CoachProfile />} />          
         </Route>
 
-        <Route path="/assistantcoach-dashboard/*" element={<AssistantCoachDashboard />} >
+        <Route path="/assistantcoach-dashboard/:organizationId/:coachName/*" element={<AssistantCoachDashboard />} >
           <Route path="report" element={<Reports />} />
           <Route path="monitoring" element={<PerformanceMonitor />} />
           <Route path="training" element={<TrainingPl />} />
           <Route path="injury" element={<InjuryRecords />} />
           <Route path="chat" element={<Comm />} />
           <Route path="team" element={<Team />} />
+          <Route path="acprofile" element={<ACProfile />} />
         </Route>
-        <Route path="/medicalstaff-dashboard/*" element={<MedicalStaffDashboard />} >
+
+        <Route path="/medicalstaff-dashboard/:organizationId/:coachName/*" element={<MedicalStaffDashboard />} >
           <Route path="diet" element={<Diet />} />
           <Route path="viewplayers" element={<ViewPlayers />} />
           <Route path="injurylogs" element={<InjuryLogs />} />
           <Route path="announcements" element={<Announcements/>} />
           <Route path="medicalrecords" element={<MedicalRecords />} />
         </Route>
-        <Route path="/gymtrainer-dashboard/*" element={<GymTrainerDashboard />} >
+
+        <Route path="/gymtrainer-dashboard/:organizationId/:coachName/*" element={<GymTrainerDashboard />} >
           <Route path="alerts" element={<Alerts />} />
           <Route path="challenges" element={<Challenges />} />
           <Route path="medicalreports" element={<MedicalReports />} />
@@ -140,6 +156,7 @@ function App() {
           <Route path="view" element={<View />} />
           <Route path="workout" element={<WorkoutPlans />} />
         </Route>
+
         <Route path="/sponsor-dashboard/:sponsorName/*" element={<SponsorDashboard />} >
           <Route path="analytics" element={<Analytics />} />
           <Route path="contact" element={<Contact />} />
@@ -148,17 +165,28 @@ function App() {
           <Route path="viewmetrics" element={<ViewMetrics />} />
           <Route path="news" element={<News />} />
           <Route path="findathlete" element={<FindAthlete />} />
+          <Route path="sprofile" element={<SProfile />} />
         </Route>
 
-        <Route path="/admin-dashboard/*" element={<AdminDashboard />} >
+        <Route path="/admin-dashboard/:organizationId/*" element={<AdminDashboard />} >
           <Route path="admin" element={<AdminManagement />} />
           <Route path="sponsor" element={<SponsorManagement />} />
           <Route path="athlete" element={<AthleteManagement />} />
           <Route path="video" element={<VideoAnalysis />} />
           <Route path="form" element={<FormManagement />} />
           <Route path="coach" element={<CoachManagement />} />
-          
-          
+          <Route path="adminhome" element={<AdminHome />} />          
+        </Route>
+
+        <Route path="/player-dashboard/:organizationId/:playerName/*" element={<PlayerDashboard />}>
+          <Route path="graphs" element={<Graphs />} />
+          <Route path="viewcoaches" element={<ViewCoaches />} />
+          <Route path="viewgym" element={<ViewGymPlans />} />
+          <Route path="viewmed" element={<ViewMedicalReports />} />
+          <Route path="viewnutri" element={<ViewNutritionalPlans />} />
+          <Route path="viewannouncements" element={<ViewAnnouncements />} />
+          <Route path="viewstats" element={<ViewStats />} />
+          <Route path="injuryform" element={<FillInjuryForms />} />
         </Route>
 
 

@@ -1,4 +1,4 @@
-import { Users,Calendar, Clipboard, MessageSquare } from "lucide-react"; 
+import { User,Users,Calendar, Clipboard, MessageSquare } from "lucide-react"; 
 import { Routes, Route } from "react-router-dom";
 import Analytics from "./SponsorDashboardPages/Analytics";
 import Contact from "./SponsorDashboardPages/Contact";
@@ -8,6 +8,7 @@ import ViewMetrics from "./SponsorDashboardPages/ViewMetrics";
 import SLayout from "./SponsorDashboardPages/SLayout";
 import News from "./SponsorDashboardPages/News";
 import FindAthlete from "./SponsorDashboardPages/FindAthlete";
+import SProfile from "./SponsorDashboardPages/SProfile";
 
 
 const navItems = [
@@ -17,6 +18,7 @@ const navItems = [
   { label: "Investment Tracking", icon: Clipboard, path: "investment" },
   { label: "Communication", icon: MessageSquare, path: "contact" },
   { label: "Find Athlete/Organization", icon: Users, path: "findathlete" },
+  { label: "Profile", icon:User,path:"sprofile"},
 ];
 
 function SponsorDashboard() {
@@ -30,6 +32,7 @@ function SponsorDashboard() {
        <Route path="contact" element={<Contact/>} />
        <Route path="investment" element={<InvestmentTracking />} />
        <Route path="findathlete" element={<FindAthlete />} />
+       <Route path="sprofile" element={<SProfile />} />
       </Routes>
     </SLayout>
   );
