@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -14,6 +15,25 @@ enum UserType {
 }
 
 class AuthService {
+  Future<bool> testConnection() async {
+    try {
+      print('Testing API connection to: ${ApiConstants.healthCheck}');
+      
+      final response = await http.get(
+        Uri.parse(ApiConstants.healthCheck),
+      ).timeout(const Duration(seconds: 10)); // Increased timeout
+      
+      print('API Connection test: ${response.statusCode}');
+      print('API Response: ${response.body}');
+      return response.statusCode == 200;
+    } on TimeoutException {
+      print('API Connection test failed: Request timed out');
+      return false;
+    } catch (e) {
+      print('API Connection test failed with error: $e');
+      return false;
+    }
+  }
   // Determine user type from source page
   UserType getUserTypeFromSourcePage(String sourcePage) {
     switch (sourcePage) {
@@ -156,6 +176,9 @@ class AuthService {
   // Independent athlete login
   Future<Map<String, dynamic>> _loginIndependentAthlete(String email, String password) async {
     try {
+      print('Attempting login to: ${ApiConstants.independentAthleteLogin}');
+      print('Device platform specific URL being used');
+      
       final response = await http.post(
         Uri.parse(ApiConstants.independentAthleteLogin),
         headers: {
@@ -165,14 +188,35 @@ class AuthService {
           'email': email,
           'password': password,
         }),
-      );
+      ).timeout(const Duration(seconds: 25)); // Longer timeout for login
       
+      print('Login response status: ${response.statusCode}');
       return _processLoginResponse(response, UserType.independentAthlete);
+    } on TimeoutException {
+      print('Independent athlete login timeout - server unreachable');
+      return {
+        'success': false,
+        'message': 'Server is taking too long to respond. Please try again later.',
+      };
+    } on http.ClientException catch (e) {
+      print('Independent athlete login client error: $e');
+      String errorMessage = 'Network error';
+      
+      if (e.toString().contains('Connection refused')) {
+        errorMessage = 'Cannot connect to server. Please check if the server is running.';
+      } else if (e.toString().contains('Connection timed out')) {
+        errorMessage = 'Connection timed out. Please check your internet connection.';
+      }
+      
+      return {
+        'success': false,
+        'message': errorMessage,
+      };
     } catch (e) {
       print('Independent athlete login error: $e');
       return {
         'success': false,
-        'message': 'Network error: $e',
+        'message': 'An unexpected error occurred. Please try again.',
       };
     }
   }

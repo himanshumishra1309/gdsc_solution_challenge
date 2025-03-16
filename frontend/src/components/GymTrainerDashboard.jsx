@@ -1,4 +1,4 @@
-import { Users, LineChart, Calendar, Activity, MessageSquare, BarChart } from "lucide-react"; 
+import { Users,User, LineChart, Calendar, Activity, MessageSquare, BarChart } from "lucide-react"; 
 import { Routes, Route, useParams } from "react-router-dom";
 import Alerts from "./GymTrainerDashboardPages/Alerts";
 import Challenges from "./GymTrainerDashboardPages/Challenges";
@@ -7,6 +7,7 @@ import RPEManagement from "./GymTrainerDashboardPages/RPEManagement";
 import View from "./GymTrainerDashboardPages/View";
 import WorkoutPlans from "./GymTrainerDashboardPages/WorkoutPlans";
 import GLayout from "./GymTrainerDashboardPages/GLayout";
+import GProfile from "./GymTrainerDashboardPages/GProfile";
 
 const navItems = [
   { label: "View Athletes", icon: Users, path: "view" },
@@ -15,6 +16,7 @@ const navItems = [
   { label: "Challenges", icon: Activity, path: "challenges" },
   { label: "Announcements", icon: MessageSquare, path: "alerts" },
   { label: "Medical Reports", icon: BarChart, path: "medicalreports" },
+  { label: "Profile", icon: User, path: "gprofile" },
 ];
 
 function GymTrainerDashboard() {
@@ -31,6 +33,7 @@ function GymTrainerDashboard() {
         <Route path="/" element={<View />} />
         <Route path="view" element={<View />} />
         <Route path="workout" element={<WorkoutPlans />} />
+        <Route path="gprofile" element={<GProfile />} />
       </Routes>
     </GLayout>
   );

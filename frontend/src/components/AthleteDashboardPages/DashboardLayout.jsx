@@ -36,7 +36,7 @@ function DashboardLayout({ userType, navItems, children }) {
         // Redirect after a short delay to show toast
         setTimeout(() => {
           navigate("/");
-        }, 1500);
+        }, 0);
       } else {
         // Handle unexpected success response
         toast.warning("Logged out with unexpected response");

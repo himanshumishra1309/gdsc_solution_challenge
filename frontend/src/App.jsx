@@ -48,6 +48,8 @@ import Diet from "./components/MedicalStaffDashboardPages/Diet";
 import InjuryLogs from "./components/MedicalStaffDashboardPages/InjuryLogs";
 import MedicalRecords from "./components/MedicalStaffDashboardPages/MedicalRecords";
 import ViewPlayers from "./components/MedicalStaffDashboardPages/ViewPlayers";
+import MProfile from "./components/MedicalStaffDashboardPages/MProfile";
+
 
 import GymTrainerDashboard from "./components/GymTrainerDashboard";
 import Alerts from "./components/GymTrainerDashboardPages/Alerts";
@@ -56,6 +58,7 @@ import MedicalReports from "./components/GymTrainerDashboardPages/MedicalReports
 import RPEManagement from "./components/GymTrainerDashboardPages/RPEManagement";
 import View from "./components/GymTrainerDashboardPages/View";
 import WorkoutPlans from "./components/GymTrainerDashboardPages/WorkoutPlans";
+import GProfile from "./components/GymTrainerDashboardPages/GProfile";
 
 import  SponsorDashboard from "./components/SponsorDashboard";
 import Analytics from "./components/SponsorDashboardPages/Analytics";
@@ -146,6 +149,8 @@ function App() {
           <Route path="injurylogs" element={<InjuryLogs />} />
           <Route path="announcements" element={<Announcements/>} />
           <Route path="medicalrecords" element={<MedicalRecords />} />
+          <Route path="mprofile" element={<MProfile />} />
+
         </Route>
 
         <Route path="/gymtrainer-dashboard/:organizationId/:coachName/*" element={<GymTrainerDashboard />} >
@@ -155,6 +160,7 @@ function App() {
           <Route path="rpe" element={<RPEManagement />} />
           <Route path="view" element={<View />} />
           <Route path="workout" element={<WorkoutPlans />} />
+          <Route path="gprofile" element={<GProfile />} />
         </Route>
 
         <Route path="/sponsor-dashboard/:sponsorName/*" element={<SponsorDashboard />} >

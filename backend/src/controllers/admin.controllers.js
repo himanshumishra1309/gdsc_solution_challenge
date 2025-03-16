@@ -344,7 +344,6 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
   ));
 });
 
-// Add a new function to find athlete by ID
 const getAthleteById = asyncHandler(async (req, res) => {
   const { athleteId } = req.params;
 

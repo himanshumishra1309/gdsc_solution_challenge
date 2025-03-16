@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'dart:io';
 import 'package:gdg_app/constants/routes.dart';
+import 'dart:async';
+import 'dart:math' show min;
+import 'package:http/http.dart' as http;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gdg_app/serivces/auth_service.dart';
+import 'package:gdg_app/widgets/custom_snackbar.dart';
 
 class LoginView extends StatefulWidget {
   final String sourcePage;
@@ -54,7 +59,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  // Modified login handler to work with the auth service
+  // Handle login with the auth service
   void _handleLogin() async {
     // First validate the form
     if (!_formKey.currentState!.validate()) {
@@ -83,7 +88,13 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         });
         
         if (result['success']) {
-          _navigateToHomePage();
+          // Show success message before navigation
+          CustomSnackBar.showSuccess(context, "Login successful!");
+          
+          // Slight delay before navigation
+          Future.delayed(Duration(milliseconds: 500), () {
+            _navigateToHomePage(result['userData']);
+          });
         } else {
           setState(() {
             _errorMessage = result['message'] ?? 'Login failed. Please check your credentials.';
@@ -101,24 +112,68 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     }
   }
 
-  // Navigate based on user type
-  void _navigateToHomePage() {
+  // Navigate based on user type and with user data
+  void _navigateToHomePage([Map<String, dynamic>? userData]) {
     // Navigate to different pages based on the sourcePage
-    if (widget.sourcePage == 'individualRegister') {
-      Navigator.pushReplacementNamed(context, individualHomeRoute);
-    } else if (widget.sourcePage == 'landingPage') {
-      Navigator.pushReplacementNamed(context, landingPageRoute);
-    } else if (widget.sourcePage == 'coachHome') {
-      Navigator.pushReplacementNamed(context, coachHomeRoute);
-    } else if (widget.sourcePage == 'adminHome') {
-      Navigator.pushReplacementNamed(context, adminHomeRoute);
-    } else if (widget.sourcePage == 'playerHome') {
-      Navigator.pushReplacementNamed(context, playerHomeRoute);
-    } else if (widget.sourcePage == 'sponsorRegister') {
-      Navigator.pushReplacementNamed(context, sponsorHomeViewRoute);
-    } else {
-      // Default navigation
-      Navigator.pushReplacementNamed(context, landingPageRoute);
+    switch (widget.sourcePage) {
+      case 'individualRegister':
+        Navigator.pushReplacementNamed(
+          context, 
+          individualHomeRoute,
+          arguments: {
+            'userId': userData?['_id'],
+            'userName': userData?['name'],
+          }
+        );
+        break;
+      case 'landingPage':
+        Navigator.pushReplacementNamed(context, landingPageRoute);
+        break;
+      case 'coachHome':
+        Navigator.pushReplacementNamed(
+          context, 
+          coachHomeRoute,
+          arguments: {
+            'coachId': userData?['_id'],
+            'coachName': userData?['name'],
+            'organizationId': userData?['organization']?['_id'] ?? userData?['organization'],
+          }
+        );
+        break;
+      case 'adminHome':
+        Navigator.pushReplacementNamed(
+          context, 
+          adminHomeRoute,
+          arguments: {
+            'adminId': userData?['_id'],
+            'organizationId': userData?['organization']?['_id'] ?? userData?['organization'],
+          }
+        );
+        break;
+      case 'playerHome':
+        Navigator.pushReplacementNamed(
+          context, 
+          playerHomeRoute,
+          arguments: {
+            'playerId': userData?['_id'],
+            'playerName': userData?['name'],
+            'organizationId': userData?['organization']?['_id'] ?? userData?['organization'],
+          }
+        );
+        break;
+      case 'sponsorRegister':
+        Navigator.pushReplacementNamed(
+          context, 
+          sponsorHomeViewRoute,
+          arguments: {
+            'sponsorId': userData?['_id'],
+            'sponsorName': userData?['name'],
+          }
+        );
+        break;
+      default:
+        // Default navigation
+        Navigator.pushReplacementNamed(context, landingPageRoute);
     }
   }
 
@@ -159,8 +214,11 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
             // Main content
             SafeArea(
               child: SingleChildScrollView(
-                child: Container(
-                  height: size.height - MediaQuery.of(context).padding.top,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top,
+      ),
+                child: IntrinsicHeight(
                   child: Column(
                     children: [
                       // App bar
@@ -241,7 +299,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                               children: [
                                 // Error message if login fails
                                 if (_errorMessage != null)
-                                  Container(
+                                  AnimatedContainer(
+                                    duration: Duration(milliseconds: 300),
                                     padding: const EdgeInsets.all(10),
                                     margin: const EdgeInsets.only(bottom: 20),
                                     width: double.infinity,
@@ -261,6 +320,7 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                 TextFormField(
                                   controller: _email,
                                   style: TextStyle(color: Colors.white),
+                                  keyboardType: TextInputType.emailAddress,
                                   decoration: InputDecoration(
                                     labelText: 'Email',
                                     labelStyle: TextStyle(color: Colors.white70),
@@ -351,7 +411,8 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                   alignment: Alignment.centerRight,
                                   child: TextButton(
                                     onPressed: () {
-                                      // Handle forgot password
+                                      // Handle forgot password - TODO: Implement this
+                                      Navigator.pushNamed(context, '/forgot-password');
                                     },
                                     child: Text(
                                       'Forgot Password?',
@@ -400,10 +461,139 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                                           ),
                                   ),
                                 ),
+
+SizedBox(height: 15),
+
+// Network diagnostics section
+Container(
+  width: double.infinity,
+  padding: EdgeInsets.all(10),
+  decoration: BoxDecoration(
+    color: Colors.black.withOpacity(0.2),
+    borderRadius: BorderRadius.circular(10),
+    border: Border.all(color: Colors.grey.withOpacity(0.3)),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text('Network Diagnostics', 
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      SizedBox(height: 10),
+      
+      // Test internet connectivity first
+      ElevatedButton.icon(
+        onPressed: () async {
+          try {
+            setState(() {
+              _errorMessage = "Checking internet connectivity...";
+            });
+            
+            final result = await InternetAddress.lookup('google.com')
+                .timeout(const Duration(seconds: 5));
+            
+            if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+              setState(() {
+                _errorMessage = null;
+              });
+              CustomSnackBar.showSuccess(
+                context, 
+                'Internet connection available!'
+              );
+            }
+          } on SocketException catch (_) {
+            CustomSnackBar.showError(
+              context, 
+              'No internet connection. Check your WiFi/cellular data'
+            );
+          } catch (e) {
+            print('Internet check failed: $e');
+            CustomSnackBar.showError(
+              context, 
+              'Connectivity error: ${e.toString().substring(0, min(e.toString().length, 50))}'
+            );
+          }
+        },
+        icon: Icon(Icons.network_check, color: Colors.white),
+        label: Text('Check Internet', style: TextStyle(color: Colors.white)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue[700],
+        ),
+      ),
+      
+      SizedBox(height: 8),
+      
+      // Try with alternative URLs
+      Row(
+        children: [
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => _testServerConnection('10.0.2.2', 8000),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber[800],
+              ),
+              child: Text('Test Emulator IP', 
+                style: TextStyle(color: Colors.white, fontSize: 12)),
+            ),
+          ),
+          SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => _testServerConnection('localhost', 8000),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber[800],
+              ),
+              child: Text('Test Localhost', 
+                style: TextStyle(color: Colors.white, fontSize: 12)),
+            ),
+          ),
+        ],
+      ),
+      
+      SizedBox(height: 8),
+      
+      // Add IP input for custom testing
+      Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: TextEditingController(text: '192.168.1.'),
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Custom IP',
+                hintStyle: TextStyle(color: Colors.white70),
+                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                isDense: true,
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.1),
+              ),
+              onSubmitted: (ip) {
+                if (ip.isNotEmpty) {
+                  _testServerConnection(ip, 8000);
+                }
+              },
+            ),
+          ),
+          SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: () => _testServerConnection('192.168.1.', 8000),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.amber[800],
+            ),
+            child: Text('Test Custom IP', 
+              style: TextStyle(color: Colors.white, fontSize: 12)),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
                                 
-                                if (widget.sourcePage != 'coachHome' && 
-                                    widget.sourcePage != 'playerHome' && 
-                                    widget.sourcePage != 'adminHome') ...[
+                                // Social login option (if enabled for certain user types)
+                                
+                                if (_shouldShowRegisterOption()) ...[
                                   SizedBox(height: 30),
                                   
                                   // Register option
@@ -441,12 +631,37 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
                     ],
                   ),
                 ),
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+  
+  // Handle social login (Google, Facebook)
+  void _handleSocialLogin(String provider) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    try {
+      // TODO: Implement social login with AuthService
+      // This would connect to a method in your AuthService for handling social logins
+      
+      // For now, show not implemented message
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Social login with $provider is not yet implemented';
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'An error occurred during social login';
+      });
+    }
   }
   
   // Helper method to get a user-friendly title based on source page
@@ -467,36 +682,76 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
     }
   }
   
-  Widget _buildSocialButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(50),
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black26,
-              offset: Offset(0, 2),
-              blurRadius: 6.0,
-            ),
-          ],
-        ),
-        child: Center(
-          child: FaIcon(
-            icon,
-            color: color,
-            size: 24,
-          ),
-        ),
-      ),
+  // Determine whether to show social login buttons
+  bool _shouldShowSocialLogin() {
+    // Only show social login for individual athletes and sponsors
+    return widget.sourcePage == 'individualRegister' || 
+           widget.sourcePage == 'sponsorRegister';
+  }
+
+  Future<void> _testServerConnection(String host, int port) async {
+  try {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = "Testing connection to $host:$port...";
+    });
+    
+    // First try a simple HTTP GET request
+    final testUrl = 'http://$host:$port/test';
+    print('Testing connection to: $testUrl');
+    
+    final response = await http.get(
+      Uri.parse(testUrl),
+    ).timeout(const Duration(seconds: 10));
+    
+    setState(() {
+      _isLoading = false;
+      _errorMessage = null;
+    });
+    
+    print('Response: ${response.statusCode} - ${response.body}');
+    CustomSnackBar.showSuccess(
+      context, 
+      'Connected to $host:$port! Status: ${response.statusCode}'
     );
+  } on SocketException catch (e) {
+    setState(() {
+      _isLoading = false;
+      _errorMessage = 'Socket error: ${e.message}';
+    });
+    print('Socket error: $e');
+    CustomSnackBar.showError(
+      context, 
+      'Connection refused to $host:$port'
+    );
+  } on TimeoutException catch (e) {
+    setState(() {
+      _isLoading = false;
+      _errorMessage = 'Connection timed out to $host:$port';
+    });
+    print('Timeout connecting to $host:$port: $e');
+    CustomSnackBar.showError(
+      context, 
+      'Timeout connecting to $host:$port'
+    );
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+      _errorMessage = 'Connection error: ${e.toString().substring(0, min(e.toString().length, 100))}';
+    });
+    print('Connection error to $host:$port: $e');
+    CustomSnackBar.showError(
+      context, 
+      'Failed to connect to $host:$port'
+    );
+  }
+}
+  
+  // Determine whether to show register option
+  bool _shouldShowRegisterOption() {
+    // Don't show register option for organizational roles
+    return widget.sourcePage != 'coachHome' && 
+           widget.sourcePage != 'playerHome' && 
+           widget.sourcePage != 'adminHome';
   }
 }
