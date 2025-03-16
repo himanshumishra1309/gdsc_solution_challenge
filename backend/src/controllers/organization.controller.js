@@ -1,7 +1,7 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import {Organization} from "../models/organization.model.js";
 import {Admin} from "../models/admin.model.js";
-import {ApiError} from "../utils/ApiError.js";
+import ApiError from "../utils/ApiError.js";
 
 // ✅ Register Organization & Admin Together
  const registerOrganization = asyncHandler(async (req, res) => {

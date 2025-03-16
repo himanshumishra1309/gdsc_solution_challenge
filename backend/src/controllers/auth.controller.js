@@ -1,10 +1,10 @@
 
 import asyncHandler from "../utils/asyncHandler.js";
-import {ApiResponse} from "../utils/ApiResponse.js"
+import ApiResponse from "../utils/ApiResponse.js"
 import {Admin} from "../models/admin.model.js"
 import {Coach} from "../models/coach.model.js"
 import {Athlete} from "../models/athlete.model.js"
-import {ApiError} from "../utils/ApiError.js"
+import ApiError from "../utils/ApiError.js"
 
 
 const loginAdmin = async (req, res) => {
