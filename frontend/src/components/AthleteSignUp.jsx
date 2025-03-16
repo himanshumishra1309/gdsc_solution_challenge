@@ -165,6 +165,7 @@ export default function AthleteSignUp() {
         }
       );
 
+      // In your handleSignIn function
       if (response.data.success || response.status === 200) {
         toast.success("Login successful!");
         
@@ -172,13 +173,13 @@ export default function AthleteSignUp() {
         const userData = response.data.data.user;
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("userType", "independentAthlete");
-        athleteId = userData._id;
-        athleteName = userData.name.replace(/\s+/g, "-");
+        const athleteId = userData._id;
+        const athleteName = userData.name.replace(/\s+/g, "-");
         
         // Navigate to dashboard with a delay to show success message
         setTimeout(() => {
           navigate(`/athlete-dashboard/${athleteId}/${athleteName}/home`);
-        }, 1500);
+        }, 0);
       }
     } catch (error) {
       console.error("Login error:", error);
