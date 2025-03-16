@@ -310,11 +310,26 @@ const AthleteManagement = () => {
     setActiveTab(value);
   };
 
+  const AthleteProfile = ({ profileDialogOpen, setProfileDialogOpen, selectedAthlete }) => {
+    const [performanceData, setPerformanceData] = useState({
+      consistency: selectedAthlete?.consistency || 0,
+      technique: selectedAthlete?.technique || 0,
+      stamina: selectedAthlete?.stamina || 0,
+    });
+  
+    const consistency = performanceData.consistency || 0;
+    const technique = performanceData.technique || 0;
+    const stamina = performanceData.stamina || 0;
+    const overallRating = consistency && technique && stamina
+      ? Math.round((consistency + technique + stamina) / 3)
+      : "N/A";
+
   // View athlete profile
   const handleViewProfile = (athlete) => {
     setSelectedAthlete(athlete);
     setProfileDialogOpen(true);
   };
+
   
 
   // Handle adding new athlete
@@ -999,45 +1014,65 @@ const AthleteManagement = () => {
                       </div>
                     </div>
                     <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-                      <DialogContent className="max-w-4xl p-8 rounded-lg bg-white shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-300">
+                      <DialogContent className="max-w-5xl p-8 rounded-lg bg-white shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-300">
                         <DialogHeader>
-                          <DialogTitle className="text-2xl font-semibold">{selectedAthlete?.name}</DialogTitle>
+                          <DialogTitle className="text-3xl font-bold text-gray-800">{selectedAthlete?.name}</DialogTitle>
                         </DialogHeader>
-                        <div className="flex gap-8 items-start w-full">
-                          <div className="w-2/3 bg-gray-50 p-6 rounded-lg shadow-sm">
-                          <img 
-                            src={selectedAthlete?.avatar || "https://www.w3schools.com/howto/img_avatar.png"} 
-                            alt="Athlete" 
-                            className="w-32 h-32 rounded-full object-cover mb-5"
-                          />
-                          <p><strong>Email:</strong> {selectedAthlete?.email}</p>
-                          <p><strong>Date of Birth:</strong> {selectedAthlete?.dob}</p>
-                          <p><strong>Gender:</strong> {selectedAthlete?.gender}</p>
-                          <p><strong>Nationality:</strong> {selectedAthlete?.nationality}</p>
-                          <p><strong>Address:</strong> {selectedAthlete?.address}</p>
-                          <p><strong>Phone Number:</strong> {selectedAthlete?.phoneNumber}</p>
+                        <Tabs defaultValue="overview" className="w-full">
+                         <TabsList className="flex justify-around bg-gray-100 p-2 rounded-lg">
+                          <TabsTrigger value="overview">Overview</TabsTrigger>
+                          <TabsTrigger value="performance">Performance</TabsTrigger>
+                          <TabsTrigger value="medical">Medical</TabsTrigger>
+                          <TabsTrigger value="schedule">Schedule</TabsTrigger>
+                          <TabsTrigger value="finances">Finances</TabsTrigger>
+                         </TabsList>
+                         <TabsContent value="overview" className="p-6">
+                          <div className="grid grid-cols-2 gap-6">
+                            <div className="w-2/3 bg-gray-50 p-6 rounded-lg shadow-sm">
+                              <img src={selectedAthlete?.avatar || "https://www.w3schools.com/howto/img_avatar.png"} 
+                                alt="Athlete" 
+                                className="w-32 h-32 rounded-full object-cover border border-gray-300 shadow-md mb-5" />
+                              <p className="text-lg font-semibold text-gray-800">Email:</p>
+                              <p className="text-lg font-medium text-gray-700">{selectedAthlete?.email}</p>
+                              <p className="text-lg font-semibold text-gray-800">Date of Birth:</p>
+                              <p className="text-sm text-gray-500">{selectedAthlete?.dob}</p>
 
-        
-                         </div>
-                         <div className="w-1/3 bg-gray-50 p-12 rounded-lg shadow-sm">
-                          <p><strong>Sports:</strong> {selectedAthlete?.sports?.join(", ") || "N/A"}</p>
-                          <p><strong>Skill Level:</strong> {selectedAthlete?.skillLevel}</p>
-                          <p><strong>Training Start Date:</strong> {selectedAthlete?.trainingStartDate}</p>
-                          <p><strong>Blood Group:</strong> {selectedAthlete?.bloodGroup}</p>
-                          <p><strong>Medical Conditions:</strong> {selectedAthlete?.medicalConditions || "None"}</p>
-                          <p><strong>Allergies:</strong> {selectedAthlete?.allergies || "None"}</p>
+                              
 
-                         </div>
+                            </div>
+                          </div>
+                         </TabsContent>
 
+                         <TabsContent value="performance" className="p-6">
+                          <p className="text-lg font-semibold">Performance Summary</p>
+                          <p><strong>Consistency:</strong> {consistency}%</p>
+                          <p><strong>Technique:</strong> {technique}%</p>
+                          <p><strong>Stamina:</strong> {stamina}%</p>
+                          <p><strong>Overall Rating:</strong> {overallRating}%</p>
+                         </TabsContent>
 
-                        </div>
-                        <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-                         <h3 className="text-lg font-semibold">Emergency Contact</h3>
-                         <p><strong>Name:</strong> {selectedAthlete?.emergencyContactName}</p>
-                         <p><strong>Phone:</strong> {selectedAthlete?.emergencyContactNumber}</p>
-                         <p><strong>Relationship:</strong> {selectedAthlete?.emergencyContactRelationship}</p>
-                        </div>
-                        <DialogFooter className="mt-6">
+                         <TabsContent value="medical" className="p-6">
+                          <p className="text-lg font-semibold">Physical Measurements</p>
+                          <p>Height: {selectedAthlete?.height} cm</p>
+                          <p>Weight: {selectedAthlete?.weight} kg</p>
+                          <p>BMI: {selectedAthlete?.bmi}</p>
+                          <p>Blood Type: {selectedAthlete?.bloodGroup}</p>
+                         </TabsContent>
+
+                         <TabsContent value="schedule" className="p-6">
+                          <p className="text-lg font-semibold">Current Week Schedule</p>
+                          <p>Sessions: 5 | Total Hours: 10 | Rest Days: 2</p>
+                         </TabsContent>
+
+                         <TabsContent value="finances" className="p-6">
+                          <p className="text-lg font-semibold">Account Summary</p>
+                          <p>Balance Due: $500</p>
+                          <p>Credits: $100</p>
+                          <p>Net Due: $400</p>
+                         </TabsContent>
+                        </Tabs>
+                        
+                        <DialogFooter className="mt-6 flex justify-end">
                           <Button variant="outline" onClick={() => setProfileDialogOpen(false)}>Close</Button>
                         </DialogFooter>
                       </DialogContent>
@@ -1048,5 +1083,5 @@ const AthleteManagement = () => {
               </div>
             );
           };
-
+        }
 export default AthleteManagement;

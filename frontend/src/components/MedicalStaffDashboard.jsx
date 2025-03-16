@@ -6,6 +6,7 @@ import InjuryLogs from "./MedicalStaffDashboardPages/InjuryLogs";
 import MedicalRecords from "./MedicalStaffDashboardPages/MedicalRecords";
 import ViewPlayers from "./MedicalStaffDashboardPages/ViewPlayers";
 import MLayout from "./MedicalStaffDashboardPages/MLayout";
+import MProfile from "./MedicalStaffDashboardPages/MProfile";
 
 
 const navItems = [
@@ -14,7 +15,7 @@ const navItems = [
   { label: "Medical Records", icon: Hospital, path: "medicalrecords" },
   { label: "Injury Records", icon: Clipboard, path: "injurylogs" },
   { label: "Announcements", icon: MessageSquare, path: "announcements" },
-  
+  { label: "Profile", icon: Users, path: "mprofile" },
 ];
 
 function MedicalStaffDashboard() {
@@ -30,6 +31,7 @@ function MedicalStaffDashboard() {
        <Route path="injurylogs" element={<InjuryLogs />} />
        <Route path="announcements" element={<Announcements/>} />
        <Route path="medicalrecords" element={<MedicalRecords />} />
+       <Route path="mprofile" element={<MProfile />} />
       </Routes>
     </MLayout>
   );
