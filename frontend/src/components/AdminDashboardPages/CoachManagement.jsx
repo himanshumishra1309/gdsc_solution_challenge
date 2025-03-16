@@ -379,61 +379,256 @@ const CoachManagement = () => {
               )}
 
               {/* Form Fields - Basic Information */}
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
-                <h3 className="font-medium text-lg">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Full Name *</Label>
-                    <Input 
-                      id="name" 
-                      name="name" 
-                      placeholder="Full Name" 
-                      value={newCoach.name} 
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email Address *</Label>
-                    <Input 
-                      id="email" 
-                      name="email" 
-                      type="email" 
-                      placeholder="Email Address" 
-                      value={newCoach.email} 
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-                
-                {/* Rest of the form fields... */}
-                {/* For brevity, I'll keep just the form structure as is */}
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="password">Password *</Label>
-                    <Input 
-                      id="password" 
-                      name="password" 
-                      type="password" 
-                      placeholder="Password" 
-                      value={newCoach.password} 
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dob">Date of Birth *</Label>
-                    <Input 
-                      id="dob" 
-                      name="dob" 
-                      type="date" 
-                      value={newCoach.dob} 
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-                
-                {/* ... other form sections ... */}
-              </div>
+              // Replace the current form fields section with this complete version
+<div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
+  {/* Basic Information */}
+  <h3 className="font-medium text-lg">Basic Information</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <Label htmlFor="name">Full Name *</Label>
+      <Input 
+        id="name" 
+        name="name" 
+        placeholder="Full Name" 
+        value={newCoach.name} 
+        onChange={handleInputChange}
+      />
+    </div>
+    <div>
+      <Label htmlFor="email">Email Address *</Label>
+      <Input 
+        id="email" 
+        name="email" 
+        type="email" 
+        placeholder="Email Address" 
+        value={newCoach.email} 
+        onChange={handleInputChange}
+      />
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <Label htmlFor="password">Password *</Label>
+      <Input 
+        id="password" 
+        name="password" 
+        type="password" 
+        placeholder="Password" 
+        value={newCoach.password} 
+        onChange={handleInputChange}
+      />
+    </div>
+    <div>
+      <Label htmlFor="dob">Date of Birth *</Label>
+      <Input 
+        id="dob" 
+        name="dob" 
+        type="date" 
+        value={newCoach.dob} 
+        onChange={handleInputChange}
+      />
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <Label htmlFor="gender">Gender *</Label>
+      <Select name="gender" value={newCoach.gender} onValueChange={(value) => handleSelectChange("gender", value)}>
+        <SelectTrigger id="gender">
+          <SelectValue placeholder="Select Gender" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="male">Male</SelectItem>
+          <SelectItem value="female">Female</SelectItem>
+          <SelectItem value="other">Other</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+    <div>
+      <Label htmlFor="nationality">Nationality</Label>
+      <Input 
+        id="nationality" 
+        name="nationality" 
+        placeholder="Nationality" 
+        value={newCoach.nationality} 
+        onChange={handleInputChange}
+      />
+    </div>
+  </div>
+  
+  {/* Contact Information */}
+  <h3 className="font-medium text-lg pt-2">Contact Information</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <Label htmlFor="contactNumber">Contact Number *</Label>
+      <Input 
+        id="contactNumber" 
+        name="contactNumber" 
+        placeholder="Contact Number" 
+        value={newCoach.contactNumber} 
+        onChange={handleInputChange}
+      />
+    </div>
+    <div>
+      <Label htmlFor="address">Address *</Label>
+      <Input 
+        id="address" 
+        name="address" 
+        placeholder="Address" 
+        value={newCoach.address} 
+        onChange={handleInputChange}
+      />
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div>
+      <Label htmlFor="city">City</Label>
+      <Input 
+        id="city" 
+        name="city" 
+        placeholder="City" 
+        value={newCoach.city} 
+        onChange={handleInputChange}
+      />
+    </div>
+    <div>
+      <Label htmlFor="state">State *</Label>
+      <Input 
+        id="state" 
+        name="state" 
+        placeholder="State" 
+        value={newCoach.state} 
+        onChange={handleInputChange}
+      />
+    </div>
+    <div>
+      <Label htmlFor="pincode">Pincode</Label>
+      <Input 
+        id="pincode" 
+        name="pincode" 
+        placeholder="Pincode" 
+        value={newCoach.pincode} 
+        onChange={handleInputChange}
+      />
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <Label htmlFor="country">Country *</Label>
+      <Input 
+        id="country" 
+        name="country" 
+        placeholder="Country" 
+        value={newCoach.country} 
+        onChange={handleInputChange}
+      />
+    </div>
+  </div>
+  
+  {/* Professional Information */}
+  <h3 className="font-medium text-lg pt-2">Professional Information</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <Label htmlFor="sport">Sport *</Label>
+      <Select name="sport" value={newCoach.sport} onValueChange={(value) => handleSelectChange("sport", value)}>
+        <SelectTrigger id="sport">
+          <SelectValue placeholder="Select Sport" />
+        </SelectTrigger>
+        <SelectContent>
+          {sportsList.filter(sport => sport !== "All").map((sport) => (
+            <SelectItem key={sport} value={sport}>{sport}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+    <div>
+      <Label htmlFor="designation">Designation *</Label>
+      <Select name="designation" value={newCoach.designation} onValueChange={(value) => handleSelectChange("designation", value)}>
+        <SelectTrigger id="designation">
+          <SelectValue placeholder="Select Designation" />
+        </SelectTrigger>
+        <SelectContent>
+          {designationList.filter(designation => designation !== "All").map((designation) => (
+            <SelectItem key={designation} value={designation}>{designation}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <Label htmlFor="experience">Experience (years)</Label>
+      <Input 
+        id="experience" 
+        name="experience" 
+        placeholder="Years of Experience" 
+        value={newCoach.experience} 
+        onChange={handleInputChange}
+      />
+    </div>
+    <div>
+      <Label htmlFor="certifications">Certifications</Label>
+      <Input 
+        id="certifications" 
+        name="certifications" 
+        placeholder="List key certifications" 
+        value={newCoach.certifications} 
+        onChange={handleInputChange}
+      />
+    </div>
+  </div>
+  
+  <div>
+    <Label htmlFor="previousOrganizations">Previous Organizations</Label>
+    <Input 
+      id="previousOrganizations" 
+      name="previousOrganizations" 
+      placeholder="Previous organizations" 
+      value={newCoach.previousOrganizations} 
+      onChange={handleInputChange}
+    />
+  </div>
+  
+  {/* Document Uploads */}
+  <h3 className="font-medium text-lg pt-2">Document Uploads</h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <Label htmlFor="profilePhoto">Profile Photo</Label>
+      <Input 
+        id="profilePhoto" 
+        name="profilePhoto" 
+        type="file" 
+        onChange={(e) => handleFileChange(e, setProfilePhoto)}
+      />
+      <p className="text-xs text-gray-500 mt-1">Recommended: Square image, max 1MB</p>
+    </div>
+    <div>
+      <Label htmlFor="idProof">ID Proof</Label>
+      <Input 
+        id="idProof" 
+        name="idProof" 
+        type="file" 
+        onChange={(e) => handleFileChange(e, setIdProof)}
+      />
+      <p className="text-xs text-gray-500 mt-1">Acceptable: Passport, Driver's License, Aadhaar</p>
+    </div>
+  </div>
+  
+  <div>
+    <Label htmlFor="certificatesFile">Certificates (PDF)</Label>
+    <Input 
+      id="certificatesFile" 
+      name="certificatesFile" 
+      type="file" 
+      onChange={(e) => handleFileChange(e, setCertificatesFile)}
+    />
+    <p className="text-xs text-gray-500 mt-1">Upload coaching certifications as PDF (optional)</p>
+  </div>
+</div>
 
               <DialogFooter className="mt-6">
                 <Button 
