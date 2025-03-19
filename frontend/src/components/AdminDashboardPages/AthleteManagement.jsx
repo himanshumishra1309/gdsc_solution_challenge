@@ -493,7 +493,7 @@ const AthleteManagement = () => {
       
       // Make API call with 30s timeout - UPDATED ENDPOINT
       const response = await axios.post(
-        'http://localhost:8000/api/v1/admins/athletes', 
+        'http://localhost:8000/api/v1/admins/register-organization-athlete', 
         formData, 
         {
           headers: {
