@@ -2,7 +2,7 @@ import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/ApiError.js"
 import {Sponsor} from "../models/sponsor.model.js"
 import jwt from 'jsonwebtoken'
-import ApiResponse from "../utils/ApiResponse.js"
+import ApiResponse  from "../utils/ApiResponse.js"
 
 
 const registerSponsor = asyncHandler(async (req, res) => {
@@ -108,7 +108,7 @@ const registerSponsor = asyncHandler(async (req, res) => {
         .cookie("sponsorAccessToken", sponsorAccessToken, options)
         .cookie("sponsorRefreshToken", sponsorRefreshToken, options)
         .json(
-            new ApiResponse(
+            new ApiResponse (
                 201,
                 {
                     user: sponsorToReturn
@@ -153,7 +153,7 @@ const loginSponsor = asyncHandler(async (req, res) => {
         .cookie("sponsorAccessToken", sponsorAccessToken, options)
         .cookie("sponsorRefreshToken", sponsorRefreshToken, options)
         .json(
-            new ApiResponse(
+            new ApiResponse (
                 200, {
                     user: loggedInSponsor
                 },
@@ -199,7 +199,7 @@ const logoutSponsor = asyncHandler( async(req,res) => {
          .clearCookie("sponsorAccessToken", options)
          .clearCookie("sponsorRefreshToken", options)
          .json(
-            new ApiResponse(200, {}, "User Logged Out")
+            new ApiResponse (200, {}, "User Logged Out")
          )
     
     
@@ -218,7 +218,7 @@ const getSponsorProfile = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(
-            new ApiResponse(
+            new ApiResponse (
                 200, 
                 { sponsor }, 
                 "Sponsor profile fetched successfully"
@@ -283,7 +283,7 @@ const updateSponsorProfile = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(
-            new ApiResponse(
+            new ApiResponse (
                 200,
                 { sponsor: updatedSponsor },
                 "Sponsor profile updated successfully"

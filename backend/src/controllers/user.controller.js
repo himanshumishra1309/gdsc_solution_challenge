@@ -2,7 +2,7 @@ import asyncHandler from "../utils/asyncHandler.js"
 import ApiError from "../utils/ApiError.js"
 import {User} from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
-import  ApiResponse  from "../utils/ApiResponse.js"
+import  ApiResponse   from "../utils/ApiResponse.js"
 import jwt from 'jsonwebtoken'
 
 
@@ -124,7 +124,7 @@ const registerUser = asyncHandler(async(req,res) =>{
     }
 
     return res.status(201).json(
-        new ApiResponse(200, createdUser, "User Registered Successfully")
+        new ApiResponse (200, createdUser, "User Registered Successfully")
     )
 
 })
@@ -181,7 +181,7 @@ select("-refreshToken -password")
  .cookie("accessToken", accessToken, options)
  .cookie("refreshToken", refreshToken, options)
  .json(
-    new ApiResponse(
+    new ApiResponse (
         200,{
             user:loggedInUser, accessToken, refreshToken
         },
@@ -222,7 +222,7 @@ const logoutUser = asyncHandler( async(req,res) => {
      .clearCookie("acessToken", options)
      .clearCookie("refreshToken", options)
      .json(
-        new ApiResponse(200, {}, "User Logged Out")
+        new ApiResponse (200, {}, "User Logged Out")
      )
 
 
@@ -260,7 +260,7 @@ try {
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", newRefreshToken, options)
     .json(
-        new ApiResponse(
+        new ApiResponse (
             200, 
             {accessToken, refreshToken: newRefreshToken}, 
             "Access Token Refreshed Successfully"
@@ -291,7 +291,7 @@ const changeCurrentPassword = asyncHandler(async (req,res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(
+        new ApiResponse (
             200,
             {
 
@@ -305,7 +305,7 @@ const getCurrentUser = asyncHandler(async (req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(
+        new ApiResponse (
             200,
             req.user,
             "current user fetched successfully"
@@ -335,7 +335,7 @@ const updateAccountDetails = asyncHandler(async (req,res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200, user, "Account details updated successfully")
+        new ApiResponse (200, user, "Account details updated successfully")
     )
 })
 
@@ -473,7 +473,7 @@ const getUserChannelProfile = asyncHandler(async(req,res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200, channel[0], "User channel fetched succesfully")
+        new ApiResponse (200, channel[0], "User channel fetched succesfully")
     )
 
 })
@@ -530,7 +530,7 @@ const getWatchHistory = asyncHandler(async(req,res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(
+        new ApiResponse (
             200,
             user[0].watchHistory,
             "Watch History fetched successfully"

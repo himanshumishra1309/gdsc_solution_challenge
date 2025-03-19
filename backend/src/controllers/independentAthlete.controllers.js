@@ -1,6 +1,6 @@
 import { IndividualAthlete } from "../models/individualAthlete.model.js";
-import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 const registerIndependentAthlete = asyncHandler(async (req, res) => {
@@ -73,7 +73,7 @@ const registerIndependentAthlete = asyncHandler(async (req, res) => {
     .cookie("individualAthleteAccessToken", individualAthleteAccessToken, options)
     .cookie("individualAthleteRefreshToken", individualAthleteRefreshToken, options)
     .json(
-      new ApiResponse(
+      new ApiResponse (
         201,
         {
           user: athleteResponse,
@@ -131,7 +131,7 @@ const loginIndependentAthlete = asyncHandler(async (req, res) => {
     .cookie("individualAthleteAccessToken", individualAthleteAccessToken, options)
     .cookie("individualAthleteRefreshToken", individualAthleteRefreshToken, options)
     .json(
-      new ApiResponse(
+      new ApiResponse (
         200,
         {
           user: athleteData,
@@ -161,7 +161,7 @@ const getIndependentAthleteProfile = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, athlete, "Athlete profile fetched successfully")
+      new ApiResponse (200, athlete, "Athlete profile fetched successfully")
     );
 });
 
@@ -240,7 +240,7 @@ const updateIndependentAthleteProfile = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(
+      new ApiResponse (
         200,
         updatedAthlete,
         "Athlete profile updated successfully"
@@ -271,7 +271,7 @@ const logoutIndependentAthlete = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("individualAthleteAccessToken", options)
     .clearCookie("individualAthleteRefreshToken", options)
-    .json(new ApiResponse(200, {}, "Athlete logged out successfully"));
+    .json(new ApiResponse (200, {}, "Athlete logged out successfully"));
 });
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -315,7 +315,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       .cookie("individualAthleteAccessToken", accessToken, options)
       .cookie("individualAthleteRefreshToken", refreshToken, options)
       .json(
-        new ApiResponse(
+        new ApiResponse (
           200,
           {
             individualAthleteAccessToken: accessToken,

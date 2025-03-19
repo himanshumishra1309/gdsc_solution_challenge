@@ -1,6 +1,6 @@
 
 import asyncHandler from "../utils/asyncHandler.js";
-import ApiResponse from "../utils/ApiResponse.js"
+import ApiResponse  from "../utils/ApiResponse.js"
 import {Admin} from "../models/admin.model.js"
 import {Coach} from "../models/coach.model.js"
 import {Athlete} from "../models/athlete.model.js"
@@ -31,7 +31,7 @@ const loginAdmin = async (req, res) => {
       res.cookie("adminRefreshToken", adminRefreshToken, { httpOnly: true, secure: true });
   
       res.json(
-        new ApiResponse(
+        new ApiResponse (
             200,
             {
                 admin: { _id: admin._id, email: admin.email, role: admin.role, organization: admin.organization },
@@ -72,7 +72,7 @@ const loginAdmin = async (req, res) => {
       res.cookie("coachRefreshToken", coachRefreshToken, { httpOnly: true, secure: true });
   
       return res.status(200).json(
-        new ApiResponse(
+        new ApiResponse (
             200,
             {
                 coach: { _id: coach._id, name:coach.name, email: coach.email, role: coach.role, organization: coach.organization },
@@ -113,7 +113,7 @@ const loginAthlete = async (req, res) => {
       res.cookie("athleteRefreshToken", athleteRefreshToken, { httpOnly: true, secure: true });
   
       return res.status(200).json(
-        new ApiResponse(
+        new ApiResponse (
             200,
             {
                 athlete: { _id: athlete._id, name:athlete.name, email: athlete.email, role: athlete.role, organization: athlete.organization },

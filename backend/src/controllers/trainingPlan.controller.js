@@ -1,6 +1,6 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import TrainingPlan from "../models/trainingPlan.model.js";
-import ApiResponse from "../utils/ApiResponse.js";
+import ApiResponse  from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 import TrainingSession from "../models/trainingSession.model.js";
 import {Athlete} from "../models/athlete.model.js";
@@ -25,7 +25,7 @@ const createTrainingPlan = asyncHandler(async (req, res) => {
         assignedAthletes: []
     });
 
-    res.status(201).json(new ApiResponse(201, newPlan, "Training Plan created successfully."));
+    res.status(201).json(new ApiResponse (201, newPlan, "Training Plan created successfully."));
 });
 
 const assignAthletesToPlan = asyncHandler(async (req, res) => {
@@ -71,7 +71,7 @@ const assignAthletesToPlan = asyncHandler(async (req, res) => {
     plan.assignedAthletes.push(...newAthleteIds);
     await plan.save();
 
-    res.status(200).json(new ApiResponse(200, plan, "Athletes assigned successfully."));
+    res.status(200).json(new ApiResponse (200, plan, "Athletes assigned successfully."));
 });
 
 
@@ -85,7 +85,7 @@ const getAllTrainingPlans = asyncHandler(async (req, res) => {
     // Fetch plans associated with the user's organization
     const plans = await TrainingPlan.find({ organization: user.organization }).lean();
 
-    res.status(200).json(new ApiResponse(200, plans, "Training Plans retrieved successfully."));
+    res.status(200).json(new ApiResponse (200, plans, "Training Plans retrieved successfully."));
 });
 
 
@@ -160,7 +160,7 @@ const createTrainingSession = asyncHandler(async (req, res) => {
         createdBy: user._id
     });
 
-    res.status(201).json(new ApiResponse(201, session, "Training Session created successfully."));
+    res.status(201).json(new ApiResponse (201, session, "Training Session created successfully."));
 });
 
 
@@ -198,7 +198,7 @@ const getAthleteSessions = asyncHandler(async (req, res) => {
     console.log("Fetched Group Sessions:", JSON.stringify(groupSessions, null, 2));
     console.log("Final Combined Sessions:", JSON.stringify(allSessions, null, 2));
 
-    res.status(200).json(new ApiResponse(200, allSessions, "Filtered Training Sessions retrieved successfully."));
+    res.status(200).json(new ApiResponse (200, allSessions, "Filtered Training Sessions retrieved successfully."));
 });
 
 
@@ -233,7 +233,7 @@ const markSessionAsCompleted = asyncHandler(async (req, res) => {
 
     await session.save();
 
-    res.status(200).json(new ApiResponse(200, session, "Training session marked as completed."));
+    res.status(200).json(new ApiResponse (200, session, "Training session marked as completed."));
 });
 
 

@@ -5,9 +5,9 @@ import  {Admin} from "../models/admin.model.js"
 import {Athlete} from "../models/athlete.model.js"
 import {Coach} from "../models/coach.model.js"
 import {Organization} from "../models/organization.model.js"
-import {sendEmail} from "../utils/sendEmail.js"
+// import {sendEmail} from "../utils/sendEmail.js"
 import {RPE} from "../models/rpe.model.js"
-import ApiResponse from "../utils/ApiResponse.js"
+import ApiResponse  from "../utils/ApiResponse.js"
 import {CustomForm} from "../models/customForm.model.js"
 
 import mongoose from "mongoose"
@@ -323,7 +323,7 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
   }
 
   // Return success response
-  res.status(201).json(new ApiResponse(
+  res.status(201).json(new ApiResponse (
     201,
     {
       athlete: {
@@ -374,7 +374,7 @@ const getAthleteById = asyncHandler(async (req, res) => {
   }
 
   return res.status(200).json(
-    new ApiResponse(200, { athlete }, "Athlete details retrieved successfully")
+    new ApiResponse (200, { athlete }, "Athlete details retrieved successfully")
   );
 });
 
@@ -459,7 +459,7 @@ const getAllAthletes = asyncHandler(async (req, res) => {
 
     // Return response
     return res.status(200).json(
-      new ApiResponse(
+      new ApiResponse (
         200, 
         {
           athletes,
@@ -607,7 +607,7 @@ const getAllAdmins = asyncHandler(async (req, res) => {
 
     // Return response
     return res.status(200).json(
-      new ApiResponse(
+      new ApiResponse (
         200, 
         {
           admins,
@@ -867,7 +867,7 @@ const getAllCoaches = asyncHandler(async (req, res) => {
 
     // Return response
     return res.status(200).json(
-      new ApiResponse(
+      new ApiResponse (
         200, 
         {
           coaches,
@@ -948,7 +948,7 @@ const logoutAdmin = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("adminAccessToken", options)
     .clearCookie("adminRefreshToken", options)
-    .json(new ApiResponse(200, {}, "Admin logged out successfully"));
+    .json(new ApiResponse (200, {}, "Admin logged out successfully"));
 });
 
 const getAdminProfile = asyncHandler(async (req, res) => {
@@ -962,7 +962,7 @@ const getAdminProfile = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, admin, "Admin profile fetched successfully"));
+    .json(new ApiResponse (200, admin, "Admin profile fetched successfully"));
 });
 
 const getRpeInsights = asyncHandler(async (req, res) => {
