@@ -44,10 +44,10 @@ const registerIndependentAthlete = asyncHandler(async (req, res) => {
     highestLevelPlayed: highestLevelPlayed || undefined,
   });
 
-  const athleteAccessToken = athlete.generateAccessToken();
-  const athleteRefreshToken = athlete.generateRefreshToken();
+  const individualAthleteAccessToken = athlete.generateAccessToken();
+  const individualAthleteRefreshToken = athlete.generateRefreshToken();
 
-  athlete.refreshToken = athleteRefreshToken;
+  athlete.refreshToken = individualAthleteRefreshToken;
   await athlete.save({ validateBeforeSave: false });
 
   const athleteResponse = {
@@ -70,15 +70,15 @@ const registerIndependentAthlete = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .cookie("individualAthleteAccessToken", athleteAccessToken, options)
-    .cookie("individualAthleteRefreshToken", athleteRefreshToken, options)
+    .cookie("individualAthleteAccessToken", individualAthleteAccessToken, options)
+    .cookie("individualAthleteRefreshToken", individualAthleteRefreshToken, options)
     .json(
       new ApiResponse(
         201,
         {
           user: athleteResponse,
-          individualAthleteAccessToken: athleteAccessToken,
-          individualAthleteRefreshToken: athleteRefreshToken,
+          individualAthleteAccessToken: individualAthleteAccessToken,
+          individualAthleteRefreshToken: individualAthleteRefreshToken,
         },
         "Independent athlete registered successfully"
       )
@@ -103,10 +103,10 @@ const loginIndependentAthlete = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid credentials");
   }
 
-  const athleteAccessToken = athlete.generateAccessToken();
-  const athleteRefreshToken = athlete.generateRefreshToken();
+  const individualAthleteAccessToken = athlete.generateAccessToken();
+  const individualAthleteRefreshToken = athlete.generateRefreshToken();
 
-  athlete.refreshToken = athleteRefreshToken;
+  athlete.refreshToken = individualAthleteRefreshToken;
   await athlete.save({ validateBeforeSave: false });
 
   const athleteData = {
@@ -123,21 +123,20 @@ const loginIndependentAthlete = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
+    secure: true,
   };
 
   return res
     .status(200)
-    .cookie("individualAthleteAccessToken", athleteAccessToken, options)
-    .cookie("individualAthleteRefreshToken", athleteRefreshToken, options)
+    .cookie("individualAthleteAccessToken", individualAthleteAccessToken, options)
+    .cookie("individualAthleteRefreshToken", individualAthleteRefreshToken, options)
     .json(
       new ApiResponse(
         200,
         {
           user: athleteData,
-          individualAthleteAccessToken: athleteAccessToken,
-          individualAthleteRefreshToken: athleteRefreshToken,
+          individualAthleteAccessToken: individualAthleteAccessToken,
+          individualAthleteRefreshToken: individualAthleteRefreshToken,
         },
         "Independent athlete logged in successfully"
       )

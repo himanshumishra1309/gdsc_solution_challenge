@@ -1,10 +1,17 @@
 import 'dart:io';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:gdg_app/serivces/admin_services.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:gdg_app/popups/alert_message.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
+import 'package:gdg_app/widgets/custom_snackbar.dart';
+import 'package:http/http.dart' as http;
+import 'package:gdg_app/constants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http_parser/http_parser.dart';
 import 'package:intl/intl.dart';
 
 class AdminRegisterAdminView extends StatefulWidget {
@@ -15,568 +22,1268 @@ class AdminRegisterAdminView extends StatefulWidget {
 }
 
 class _AdminRegisterAdminViewState extends State<AdminRegisterAdminView> {
+  // Search and filter state
   String _searchQuery = '';
-  final List<Map<String, dynamic>> _admins = [
-    {
-      'name': 'John Doe', 
-      'email': 'john.doe@example.com',
-      'role': 'Admin',
-      'dateCreated': '2023-01-15',
-      'lastLogin': '2023-03-04',
-      'isActive': true
-    },
-    {
-      'name': 'Jane Smith', 
-      'email': 'jane.smith@example.com',
-      'role': 'Admin',
-      'dateCreated': '2023-02-10',
-      'lastLogin': '2023-03-05',
-      'isActive': true
-    },
-    {
-      'name': 'Mike Johnson', 
-      'email': 'mike.j@example.com',
-      'role': 'Admin',
-      'dateCreated': '2023-02-20',
-      'lastLogin': '2023-02-28',
-      'isActive': false
-    },
-  ];
+  
+  // Admin data state
+  List<Map<String, dynamic>> _admins = [];
+  bool _isLoading = false;
+  bool _isError = false;
+  String _errorMessage = '';
+  
+  // Pagination state
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalAdmins = 0;
+  int _itemsPerPage = 10;
+  
+  final AuthService _authService = AuthService();
 
-  List<Map<String, dynamic>> get _filteredAdmins {
-    return _admins.where((admin) {
-      final matchesName = admin['name']!.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesEmail = admin['email']!.toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesRole = admin['role']!.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesName || matchesEmail || matchesRole;
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadAdmins();
+    _debugSharedPreferences(); // Debug to check organization ID
+  }
+  
+  // Debug function to check SharedPreferences
+  Future<void> _debugSharedPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      print('🔍 DEBUG SHARED PREFERENCES:');
+      final keys = prefs.getKeys();
+      if (keys.isEmpty) {
+        print('No keys found in SharedPreferences');
+      } else {
+        for (String key in keys) {
+          print('$key: ${prefs.get(key)}');
+        }
+      }
+      
+      // Specifically check for organization ID
+      final organizationId = prefs.getString('organizationId');
+      print('organizationId from prefs: $organizationId');
+      
+      final userData = prefs.getString('userData');
+      if (userData != null) {
+        try {
+          final userDataMap = jsonDecode(userData);
+          print('userData parsed: $userDataMap');
+          
+          // Check if organization exists directly
+          if (userDataMap.containsKey('organization')) {
+            print('Found organization directly: ${userDataMap['organization']}');
+          }
+        } catch (e) {
+          print('Error parsing userData: $e');
+        }
+      }
+      
+      // Also check adminResponseData which should contain complete admin details
+      final adminResponseData = prefs.getString('adminResponseData');
+      if (adminResponseData != null) {
+        try {
+          final adminDataMap = jsonDecode(adminResponseData);
+          print('Found admin response data: $adminDataMap');
+          
+          if (adminDataMap['admin'] != null && 
+              adminDataMap['admin']['organization'] != null) {
+            print('Found organization in adminResponseData: ${adminDataMap['admin']['organization']}');
+          }
+        } catch (e) {
+          print('Error parsing adminResponseData: $e');
+        }
+      }
+    } catch (e) {
+      print('Error debugging SharedPreferences: $e');
+    }
   }
 
-  void _onSearchChanged(String query) {
+  // Load admins from API
+  Future<void> _loadAdmins({bool refresh = false}) async {
+    if (refresh) {
+      setState(() {
+        _currentPage = 1;
+      });
+    }
+
     setState(() {
-      _searchQuery = query;
+      _isLoading = true;
+      _isError = false;
+      _errorMessage = '';
     });
+
+    try {
+      final result = await AdminService().getAllAdmins(
+        page: _currentPage,
+        limit: _itemsPerPage,
+        search: _searchQuery,
+      );
+
+      setState(() {
+        _isLoading = false;
+        
+        if (result['success']) {
+          if (refresh) {
+            _admins = [];
+          }
+          
+          final List<dynamic> adminsData = result['admins'];
+          // Map API data to UI format
+          _admins = adminsData.map<Map<String, dynamic>>((admin) => {
+            'id': admin['_id'],
+            'name': admin['name'] ?? 'Unknown',
+            'email': admin['email'] ?? '',
+            'role': admin['role'] == 'superadmin' ? 'Super Admin' : 'Admin',
+            'dateCreated': admin['createdAt'] != null 
+                ? DateFormat('yyyy-MM-dd').format(DateTime.parse(admin['createdAt']))
+                : '-',
+            'lastLogin': admin['lastLogin'] != null 
+                ? DateFormat('yyyy-MM-dd').format(DateTime.parse(admin['lastLogin']))
+                : '-',
+            'isActive': admin['isActive'] ?? true,
+            'organization': admin['organization'] != null ? 
+                (admin['organization'] is Map ? admin['organization']['name'] : '-') : '-',
+            'avatar': admin['avatar']
+          }).toList();
+          
+          // Update pagination info
+          if (result['pagination'] != null) {
+            _totalPages = result['pagination']['totalPages'] ?? 1;
+            _currentPage = result['pagination']['currentPage'] ?? 1;
+            _totalAdmins = result['pagination']['totalAdmins'] ?? 0;
+          }
+        } else {
+          _isError = true;
+          _errorMessage = result['message'] ?? 'Failed to load administrators';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = 'Error: ${e.toString()}';
+      });
+    }
   }
 
-  void _showRegisterAdminForm() {
+  // Show dialog for registering a new admin
+  void _showRegisterAdminDialog() {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        return RegisterAdminForm(
-          onRegister: (name, email, avatar, role) {
-            setState(() {
-              _admins.add({
-                'name': name, 
-                'email': email, 
-                'avatar': avatar,
-                'role': role,
-                'dateCreated': DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                'lastLogin': '-',
-                'isActive': true
-              });
-            });
-            
-            // Show success message
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(Icons.check_circle, color: Colors.white),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text('$name has been registered as an admin successfully'),
-                    ),
-                  ],
-                ),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                duration: const Duration(seconds: 4),
-                action: SnackBarAction(
-                  label: 'DISMISS',
-                  textColor: Colors.white,
-                  onPressed: () {},
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (context) => RegisterAdminForm(
+        onRegister: _handleRegisterAdmin,
+      ),
     );
   }
 
-  Future<bool> _onWillPop() async {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-      return Future.value(false);
+  // Handle registering a new admin
+  Future<void> _handleRegisterAdmin(
+    String name, 
+    String email, 
+    String password,
+    String? avatarPath, 
+    String role
+  ) async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Use the fixed AdminService implementation
+      final result = await FixedAdminService().registerAdmin(
+        name: name,
+        email: email,
+        password: password,
+        role: role.toLowerCase() == 'super admin' ? 'superadmin' : 'admin',
+        avatarFile: avatarPath != null ? File(avatarPath) : null,
+      );
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (result['success']) {
+        _loadAdmins(refresh: true);
+        
+        CustomSnackBar.showSuccess(
+          context, 
+          '${name} has been registered as an admin successfully',
+        );
+      } else {
+        String errorMessage = result['message'] ?? 'Failed to register admin';
+        
+        // Add specific error guidance for organization ID issues
+        if (errorMessage.contains('Organization ID not found')) {
+          errorMessage += '\n\nTry logging out and logging back in to refresh your session.';
+        }
+        
+        CustomSnackBar.showError(
+          context,
+          errorMessage,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = false;
+      });
+      
+      CustomSnackBar.showError(
+        context,
+        'Unexpected error: ${e.toString()}',
+      );
     }
-    return Future.value(true);
-  }
-
-  void _handleLogout(BuildContext context) {
-    Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Admin Management'),
-          backgroundColor: Colors.deepPurple,
-          iconTheme: const IconThemeData(color: Colors.white),
-          titleTextStyle: const TextStyle(
-            fontSize: 20,
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Administrator Management'),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: () => _loadAdmins(refresh: true),
           ),
-          toolbarHeight: 65.0,
-          elevation: 4,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.help_outline),
-              onPressed: () {
-                // Show help dialog about admin management
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Admin Management Help'),
-                    content: const SingleChildScrollView(
-                      child: Text(
-                        'This screen allows you to manage administrators who have access to the system. '
-                        'You can add new admins, view existing ones, and manage their access privileges.\n\n'
-                        'Use the search bar to filter admins by name, email or role.',
-                      ),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('GOT IT'),
-                      ),
+        ],
+      ),
+      drawer: CustomDrawer(
+        selectedDrawerItem: registerAdminRoute,
+        onSelectDrawerItem: (route) {
+          Navigator.pop(context);
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
+        },
+        drawerItems: [
+          DrawerItem(icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
+          DrawerItem(icon: Icons.person_add, title: 'Register Admin', route: registerAdminRoute),
+          DrawerItem(icon: Icons.person_add, title: 'Register Coach', route: registerCoachRoute),
+          DrawerItem(icon: Icons.person_add, title: 'Register Player', route: registerPlayerRoute),
+          DrawerItem(icon: Icons.people, title: 'View All Players', route: viewAllPlayersRoute),
+          DrawerItem(icon: Icons.people, title: 'View All Coaches', route: viewAllCoachesRoute),
+          DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
+          DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
+          DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
+          DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
+        ],
+        onLogout: () async {
+        final shouldLogout = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Logout'),
+            content: const Text('Are you sure you want to logout?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+                child: const Text('Yes'),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldLogout == true) {
+          // Show loading indicator
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return Dialog(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      CircularProgressIndicator(color: Colors.deepPurple),
+                      SizedBox(height: 16),
+                      Text('Logging out...'),
                     ],
                   ),
-                );
-              },
-            ),
-          ],
-        ),
-        drawer: CustomDrawer(
-          selectedDrawerItem: registerAdminRoute,
-          onSelectDrawerItem: (route) {
-            Navigator.pop(context); // Close the drawer
-            if (ModalRoute.of(context)?.settings.name != route) {
-              Navigator.pushNamed(context, route);
+                ),
+              );
+            },
+          );
+          
+          try {
+            // First clear local data directly - don't rely on server response
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.clear();
+            
+            // Then try server-side logout, but don't block on it
+            _authService.logout().catchError((e) {
+              print('Server logout error: $e');
+              // We still proceed with local logout
+            });
+            
+            // Close loading dialog and navigate to login
+            if (context.mounted) {
+              Navigator.pop(context); // Close loading dialog
+              
+              // Navigate to login page rather than coachAdminPlayerRoute
+              Navigator.pushNamedAndRemoveUntil(
+                context, 
+                coachAdminPlayerRoute, // Change this to your login route constant
+                (route) => false,
+              );
             }
-          },
-          drawerItems: [
-            DrawerItem(icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
-            DrawerItem(icon: Icons.person_add, title: 'Register Admin', route: registerAdminRoute),
-            DrawerItem(icon: Icons.person_add, title: 'Register Coach', route: registerCoachRoute),
-            DrawerItem(icon: Icons.person_add, title: 'Register Player', route: registerPlayerRoute),
-            DrawerItem(icon: Icons.people, title: 'View All Players', route: viewAllPlayersRoute),
-            DrawerItem(icon: Icons.people, title: 'View All Coaches', route: viewAllCoachesRoute),
-            DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
-            DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
-            DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-            DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
-          ],
-          onLogout: () => _handleLogout(context),
-        ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.grey.shade100, Colors.white],
-            ),
+          } catch (e) {
+            if (context.mounted) {
+              Navigator.pop(context); // Close loading dialog
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error during logout: ${e.toString()}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        }
+      },
+      ),
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
+                : _isError
+                    ? _buildErrorView()
+                    : _buildAdminList(),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top stats section
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.shade200,
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      _buildStatCard(
-                        icon: Icons.admin_panel_settings,
-                        color: Colors.deepPurple,
-                        title: 'Total Admins',
-                        value: _admins.length.toString(),
-                      ),
-                      const Spacer(),
-                      _buildStatCard(
-                        icon: Icons.person,
-                        color: Colors.green,
-                        title: 'Active',
-                        value: _admins.where((admin) => admin['isActive'] == true).length.toString(),
-                      ),
-                      const Spacer(),
-                      _buildStatCard(
-                        icon: Icons.person_off,
-                        color: Colors.red,
-                        title: 'Inactive',
-                        value: _admins.where((admin) => admin['isActive'] == false).length.toString(),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Search bar with title
-                Row(
-                  children: [
-                    const Text(
-                      'Administrator List',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        // Sort or filter functionality
-                        showDialog(
-                          context: context,
-                          builder: (context) => SimpleDialog(
-                            title: const Text('Sort by'),
-                            children: [
-                              ListTile(
-                                leading: const Icon(Icons.sort_by_alpha),
-                                title: const Text('Name'),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  // Implement sorting
-                                },
-                              ),
-                              ListTile(
-                                leading: const Icon(Icons.date_range),
-                                title: const Text('Date Added'),
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  // Implement sorting
-                                },
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.sort, size: 18),
-                      label: const Text('Sort'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.deepPurple,
-                        side: const BorderSide(color: Colors.deepPurple),
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Enhanced search bar
-                TextField(
-                  onChanged: _onSearchChanged,
-                  decoration: InputDecoration(
-                    hintText: 'Search by name, email or role...',
-                    prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
-                    suffixIcon: _searchQuery.isNotEmpty 
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.grey),
-                            onPressed: () {
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Admin list
-                Expanded(
-                  child: _filteredAdmins.isEmpty 
-                      ? _buildEmptyState()
-                      : ListView.builder(
-                          itemCount: _filteredAdmins.length,
-                          itemBuilder: (context, index) {
-                            final admin = _filteredAdmins[index];
-                            return Card(
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              margin: const EdgeInsets.symmetric(vertical: 8.0),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.all(12),
-                                leading: Stack(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 28,
-                                      backgroundColor: Colors.grey.shade200,
-                                      backgroundImage: admin['avatar'] != null
-                                          ? FileImage(File(admin['avatar']!))
-                                          : null,
-                                      child: admin['avatar'] == null
-                                          ? const Icon(Icons.person, size: 32, color: Colors.deepPurple)
-                                          : null,
-                                    ),
-                                    if (admin['isActive'] == true)
-                                      Positioned(
-                                        right: 0,
-                                        bottom: 0,
-                                        child: Container(
-                                          width: 14,
-                                          height: 14,
-                                          decoration: BoxDecoration(
-                                            color: Colors.green,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(color: Colors.white, width: 2),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                title: Text(
-                                  admin['name']!,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      admin['email']!,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: _getRoleColor(admin['role']).withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            admin['role']!,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: _getRoleColor(admin['role']),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        Icon(
-                                          Icons.calendar_today,
-                                          size: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Added: ${admin['dateCreated']}',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                trailing: PopupMenuButton(
-                                  icon: const Icon(Icons.more_vert),
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(
-                                      value: 'edit',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.edit, size: 18),
-                                          SizedBox(width: 8),
-                                          Text('Edit'),
-                                        ],
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: admin['isActive'] ? 'deactivate' : 'activate',
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            admin['isActive'] ? Icons.block : Icons.check_circle,
-                                            size: 18,
-                                            color: admin['isActive'] ? Colors.red : Colors.green,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(admin['isActive'] ? 'Deactivate' : 'Activate'),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                  onSelected: (value) {
-                                    // Handle popup menu actions
-                                    if (value == 'edit') {
-                                      // Edit admin
-                                    } else if (value == 'deactivate') {
-                                      setState(() {
-                                        admin['isActive'] = false;
-                                      });
-                                    } else if (value == 'activate') {
-                                      setState(() {
-                                        admin['isActive'] = true;
-                                      });
-                                    }
-                                  },
-                                ),
-                                onTap: () {
-                                  // View admin details
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _showRegisterAdminForm,
-          backgroundColor: Colors.deepPurple,
-          icon: const Icon(Icons.person_add, color: Colors.white),
-          label: const Text('Add Admin', style: TextStyle(color: Colors.white)),
-        ),
+          _buildPagination(),
+        ],
       ),
     );
   }
-  
-  Widget _buildStatCard({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String value,
-  }) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 3),
           ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 28,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildEmptyState() {
-    return Center(
+        ],
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.search_off,
-            size: 64,
-            color: Colors.grey.shade400,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Administrators',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _showRegisterAdminDialog,
+                icon: const Icon(Icons.add),
+                label: const Text('Add Admin'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
-          Text(
-            'No administrators found',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchQuery.isEmpty
-                ? 'You haven\'t added any administrators yet'
-                : 'Try adjusting your search term',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search administrators...',
+                prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+                if (value.isEmpty || value.length > 2) {
+                  _loadAdmins(refresh: true);
+                }
+              },
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
+
+  Widget _buildAdminList() {
+    if (_admins.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.group,
+              size: 80,
+              color: Colors.grey.shade300,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No administrators found',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchQuery.isNotEmpty 
+                  ? 'Try a different search term'
+                  : 'Add your first admin to get started',
+              style: TextStyle(
+                color: Colors.grey.shade500,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: _showRegisterAdminDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add New Admin'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => _loadAdmins(refresh: true),
+      color: Colors.deepPurple,
+      backgroundColor: Colors.white,
+      edgeOffset: 16,
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _admins.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final admin = _admins[index];
+          return AdminCard(
+            admin: admin,
+            onDelete: () => _showDeleteConfirmation(admin['id'], admin['name']),
+            onEdit: () => _showEditAdminDialog(admin),
+            onViewDetails: () => _showAdminDetails(admin),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 60,
+                color: Colors.red.shade700,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Error Loading Administrators',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Text(
+                _errorMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => _loadAdmins(refresh: true),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Try Again'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPagination() {
+    if (_totalAdmins == 0) return const SizedBox.shrink();
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Showing ${_admins.length} of $_totalAdmins',
+            style: TextStyle(
+              color: Colors.grey.shade700,
+            ),
+          ),
+          Row(
+            children: [
+              _buildPaginationButton(
+                icon: Icons.chevron_left,
+                onTap: _currentPage > 1 ? () {
+                  setState(() {
+                    _currentPage--;
+                  });
+                  _loadAdmins();
+                } : null,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '$_currentPage of $_totalPages',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              _buildPaginationButton(
+                icon: Icons.chevron_right,
+                onTap: _currentPage < _totalPages ? () {
+                  setState(() {
+                    _currentPage++;
+                  });
+                  _loadAdmins();
+                } : null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaginationButton({
+    required IconData icon,
+    VoidCallback? onTap,
+  }) {
+    final isEnabled = onTap != null;
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isEnabled ? Colors.grey.shade100 : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isEnabled ? Colors.grey.shade300 : Colors.grey.shade200,
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: 20,
+          color: isEnabled ? Colors.deepPurple : Colors.grey.shade400,
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(String adminId, String adminName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete $adminName?'),
+        content: Text('Are you sure you want to remove $adminName from administrators? This action cannot be undone.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Implement delete functionality here
+              CustomSnackBar.showInfo(context, 'Delete functionality coming soon');
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditAdminDialog(Map<String, dynamic> admin) {
+    // In a real app, you'd prepopulate the form with admin data
+    CustomSnackBar.showInfo(context, 'Edit functionality coming soon');
+  }
+
+  void _showAdminDetails(Map<String, dynamic> admin) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 50,
+                    backgroundColor: Colors.deepPurple.shade100,
+                    backgroundImage: admin['avatar'] != null && admin['avatar'].toString().isNotEmpty
+                        ? NetworkImage('${ApiConstants.baseUrl}/${admin['avatar']}')
+                        : null,
+                    child: admin['avatar'] == null || admin['avatar'].toString().isEmpty
+                        ? Text(
+                            admin['name'].substring(0, 1).toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
+                          )
+                        : null,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: admin['isActive'] ? Colors.green : Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: Text(
+                      admin['isActive'] ? 'Active' : 'Inactive',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                admin['name'],
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  admin['role'],
+                  style: TextStyle(
+                    color: Colors.deepPurple.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    _buildDetailRow('Email', admin['email'], Icons.email),
+                    _buildDetailRow('Organization', admin['organization'], Icons.business),
+                    _buildDetailRow('Registered On', admin['dateCreated'], Icons.calendar_today),
+                    _buildDetailRow('Last Login', admin['lastLogin'], Icons.login),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showEditAdminDialog(admin);
+                    },
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.deepPurple,
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: Colors.deepPurple,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Admin card widget with improved styling
+class AdminCard extends StatelessWidget {
+  final Map<String, dynamic> admin;
+  final VoidCallback onDelete;
+  final VoidCallback onEdit;
+  final VoidCallback onViewDetails;
+
+  const AdminCard({
+    super.key,
+    required this.admin,
+    required this.onDelete,
+    required this.onEdit,
+    required this.onViewDetails,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: onViewDetails,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Avatar section
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: Colors.deepPurple.shade100,
+                backgroundImage: admin['avatar'] != null && admin['avatar'].toString().isNotEmpty
+                    ? NetworkImage('${ApiConstants.baseUrl}/${admin['avatar']}')
+                    : null,
+                child: admin['avatar'] == null || admin['avatar'].toString().isEmpty
+                    ? Text(
+                        admin['name'].substring(0, 1).toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              
+              // Admin details section - wrapped in Expanded to prevent overflow
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Name and role row
+                    Row(
+                      children: [
+                        // Name with overflow handling
+                        Expanded(
+                          child: Text(
+                            admin['name'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Role badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.deepPurple.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                                                    child: Text(
+                            admin['role'],
+                            style: TextStyle(
+                              color: Colors.deepPurple.shade700,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12, // Reduced font size to avoid overflow
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Email - with overflow handling
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        admin['email'],
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    
+                    // Organization and date info - with overflow protection
+                    Row(
+                      children: [
+                        // We use Expanded to prevent overflow
+                        Expanded(
+                          child: Text(
+                            'Organization: ${admin['organization']}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Registration date and active status 
+                    Row(
+                      children: [
+                        Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade500),
+                        const SizedBox(width: 4),
+                        Text(
+                          admin['dateCreated'],
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: admin['isActive'] ? Colors.green : Colors.red,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          admin['isActive'] ? 'Active' : 'Inactive',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: admin['isActive'] ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Action menu
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert, color: Colors.grey.shade700),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    onEdit();
+                  } else if (value == 'delete') {
+                    onDelete();
+                  } else if (value == 'view') {
+                    onViewDetails();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'view',
+                    child: Row(
+                      children: [
+                        Icon(Icons.visibility, size: 18),
+                        SizedBox(width: 8),
+                        Text('View Details'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit, size: 18),
+                        SizedBox(width: 8),
+                        Text('Edit'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red, size: 18),
+                        SizedBox(width: 8),
+                        Text('Delete', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Fixed version of AdminService with better organization ID handling
+class FixedAdminService {
+  // Get authentication token from shared preferences
+  Future<Map<String, String>> _getHeaders() async {
+    final prefs = await SharedPreferences.getInstance();
+    final accessToken = prefs.getString('accessToken');
+    
+    return {
+      'Content-Type': 'application/json',
+      if (accessToken != null) 'Authorization': 'Bearer $accessToken',
+    };
+  }
   
-  Color _getRoleColor(String role) {
-    switch (role) {
-      case 'Super Admin':
-        return Colors.deepPurple;
-      case 'Admin':
-        return Colors.blue;
-      default:
-        return Colors.grey;
+  // Register a new admin with improved organization ID handling
+  Future<Map<String, dynamic>> registerAdmin({
+    required String name,
+    required String email,
+    required String password,
+    required String role,
+    File? avatarFile,
+  }) async {
+    try {
+      // Debug - print available data to help troubleshoot
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Look for organization ID in multiple places
+      String? organizationId = prefs.getString('organizationId');
+      
+      // If organizationId is not found directly, try to get it from userData
+      if (organizationId == null) {
+        final userData = prefs.getString('userData');
+        if (userData != null) {
+          try {
+            final Map<String, dynamic> userDataMap = jsonDecode(userData);
+            
+            if (userDataMap['organization'] != null) {
+              if (userDataMap['organization'] is String) {
+                organizationId = userDataMap['organization'];
+              } else if (userDataMap['organization'] is Map && 
+                         userDataMap['organization']['_id'] != null) {
+                organizationId = userDataMap['organization']['_id'];
+              }
+            }
+          } catch (e) {
+            print('Error parsing userData: $e');
+          }
+        }
+      }
+      
+      // If still not found, try adminResponseData
+      if (organizationId == null) {
+        final adminData = prefs.getString('adminResponseData');
+        if (adminData != null) {
+          try {
+            final Map<String, dynamic> adminDataMap = jsonDecode(adminData);
+            
+            if (adminDataMap['admin'] != null && 
+                adminDataMap['admin']['organization'] != null) {
+              organizationId = adminDataMap['admin']['organization'].toString();
+            }
+          } catch (e) {
+            print('Error parsing adminResponseData: $e');
+          }
+        }
+      }
+      
+      // If organization ID is still null, return error
+      if (organizationId == null) {
+        return {
+          'success': false,
+          'message': 'Organization ID not found. Please try logging out and logging back in.',
+        };
+      }
+      
+      print('Using organization ID for admin registration: $organizationId');
+      
+      // Create the request
+      final uri = Uri.parse('${ApiConstants.baseUrl}/api/v1/admins/register');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add headers
+      final headers = await _getHeaders();
+      request.headers.addAll(headers);
+      
+      // Add text fields
+      request.fields['name'] = name;
+      request.fields['email'] = email;
+      request.fields['password'] = password;
+      request.fields['organizationId'] = organizationId;
+      request.fields['role'] = role;
+      
+      // Add avatar file if provided
+      if (avatarFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'avatar',
+            avatarFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+      }
+      
+      // Send request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      print('Register admin response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+      
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'admin': data['admin'],
+          'message': data['message'] ?? 'Admin registered successfully',
+        };
+      } else {
+        try {
+          final error = jsonDecode(response.body);
+          return {
+            'success': false,
+            'message': error['message'] ?? 'Failed to register admin',
+          };
+        } catch (e) {
+          return {
+            'success': false,
+            'message': 'Server error: ${response.statusCode}',
+          };
+        }
+      }
+    } catch (e) {
+      print('Error registering admin: $e');
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred: ${e.toString()}',
+      };
+    }
+  }
+  
+  // Get all admins with pagination and filtering (no changes needed here)
+  Future<Map<String, dynamic>> getAllAdmins({
+    int page = 1,
+    int limit = 10,
+    String sort = 'name',
+    String order = 'asc',
+    String search = '',
+  }) async {
+    try {
+      final queryParams = {
+        'page': page.toString(),
+        'limit': limit.toString(),
+        'sort': sort,
+        'order': order,
+        if (search.isNotEmpty) 'search': search,
+      };
+      
+      final uri = Uri.parse('${ApiConstants.baseUrl}/api/v1/admins/administrators')
+          .replace(queryParameters: queryParams);
+      
+      final response = await http.get(
+        uri,
+        headers: await _getHeaders(),
+      );
+      
+      print('Get admins response status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'success': true,
+          'admins': data['data']['admins'] ?? [],
+          'pagination': data['data']['pagination'] ?? {},
+          'message': data['message'] ?? 'Administrators fetched successfully',
+        };
+      } else {
+        final error = jsonDecode(response.body);
+        return {
+          'success': false,
+          'message': error['message'] ?? 'Failed to fetch administrators',
+        };
+      }
+    } catch (e) {
+      print('Error fetching admins: $e');
+      return {
+        'success': false,
+        'message': 'An unexpected error occurred: ${e.toString()}',
+      };
     }
   }
 }
 
+// Form to register a new admin - the success message is already handled in _handleRegisterAdmin
 class RegisterAdminForm extends StatefulWidget {
-  final Function(String, String, String, String) onRegister;
-
+  final Function(String, String, String, String?, String) onRegister;
+  
   const RegisterAdminForm({required this.onRegister, super.key});
-
+  
   @override
   _RegisterAdminFormState createState() => _RegisterAdminFormState();
 }
@@ -587,583 +1294,304 @@ class _RegisterAdminFormState extends State<RegisterAdminForm> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  String? _avatarPath;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String _selectedRole = 'Admin';
-  bool _showPassword = false;
-  bool _showConfirmPassword = false;
-  bool _agreeToTerms = false;
-  
-  Color _getRoleColor(String role) {
-    switch (role) {
-      case 'Super Admin':
-        return Colors.deepPurple;
-      case 'Admin':
-        return Colors.blue;
-      default:
-        return Colors.grey;
+  String? _avatarPath;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickAvatar() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+      
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _avatarPath = result.files.first.path;
+        });
+      }
+    } catch (e) {
+      print('Error picking avatar: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error selecting image. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
-  final List<String> _availableRoles = ['Admin', 'Super Admin'];
-
-  Future<void> _pickImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-    );
-
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        _avatarPath = result.files.single.path!;
-      });
+  void _submitForm() {
+    if (_formKey.currentState?.validate() ?? false) {
+      _showConfirmationDialog();
     }
   }
 
   void _showConfirmationDialog() {
-    AlertMessage.showAlert(
-      context,
-      message: 'Register ${_nameController.text} as a new ${_selectedRole}?',
-      options: [
-        AlertOption(
-          label: 'Yes',
-          onPressed: () {
-            widget.onRegister(
-              _nameController.text, 
-              _emailController.text, 
-              _avatarPath ?? '',
-              _selectedRole
-            );
-            Navigator.of(context).pop(); // Close the confirmation dialog
-            Navigator.of(context).pop(); // Close the form dialog
-          },
-        ),
-        AlertOption(
-          label: 'No',
-          onPressed: () {
-            Navigator.of(context).pop(); // Close the confirmation dialog
-          },
-        ),
-      ],
-    );
-  }
+  AlertMessage.showAlert(
+    context,
+    message: 'Register ${_nameController.text} as a new $_selectedRole?',
+    options: [
+      AlertOption(
+        label: 'Yes',
+        onPressed: () {
+          // First close the confirmation dialog
+          Navigator.of(context).pop();
+          
+          // Then close the form dialog
+          Navigator.of(context).pop();
+          
+          // AFTER closing dialogs, register the admin
+          // This prevents any navigation issues as dialogs are already gone
+          widget.onRegister(
+            _nameController.text,
+            _emailController.text,
+            _passwordController.text,
+            _avatarPath,
+            _selectedRole,
+          );
+        },
+      ),
+      AlertOption(
+        label: 'No',
+        onPressed: () {
+          Navigator.of(context).pop(); // Close the confirmation dialog
+        },
+      ),
+    ],
+  );
+}
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Container(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 500),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.person_add,
-                        color: Colors.deepPurple,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Register New Administrator',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Create a new admin account with appropriate access privileges',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              const Center(
+                child: Text(
+                  'Register New Administrator',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
                 ),
-                
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
-                
-                // Avatar and name section
-                Center(
-                  child: Column(
+              ),
+              const SizedBox(height: 24),
+              // Avatar selection
+              Center(
+                child: GestureDetector(
+                  onTap: _pickAvatar,
+                  child: Stack(
                     children: [
-                      InkWell(
-                        onTap: _pickImage,
-                        child: Stack(
-                          children: [
-                            CircleAvatar(
-                              backgroundImage: _avatarPath != null
-                                  ? FileImage(File(_avatarPath!))
-                                  : null,
-                              radius: 50,
-                              backgroundColor: Colors.grey.shade200,
-                              child: _avatarPath == null
-                                  ? const Icon(Icons.person, size: 50, color: Colors.deepPurple)
-                                  : null,
-                            ),
-                            Positioned(
-                              right: 0,
-                              bottom: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.deepPurple,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage: _avatarPath != null
+                            ? FileImage(File(_avatarPath!))
+                            : null,
+                        child: _avatarPath == null
+                            ? const Icon(
+                                Icons.person,
+                                size: 50,
+                                color: Colors.grey,
+                              )
+                            : null,
                       ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Upload Administrator Photo',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.deepPurple,
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.deepPurple,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 20,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                
-                const SizedBox(height: 24),
-                
-                // Personal Information section
-                const Text(
-                  'Personal Information',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+              ),
+              const SizedBox(height: 24),
+              // Name field
+              TextFormField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Full Name',
+                  prefixIcon: Icon(Icons.person),
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 16),
-                
-                // Full name field
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: const Icon(Icons.person, color: Colors.deepPurple),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter the name';
-                    }
-                    return null;
-                  },
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter a name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Email field
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email Address',
+                  prefixIcon: Icon(Icons.email),
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 16),
-                
-                // Email field
-                TextFormField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    labelText: 'Email Address',
-                    prefixIcon: const Icon(Icons.email, color: Colors.deepPurple),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter an email address';
+                  }
+                  // Basic email validation
+                  if (!value.contains('@') || !value.contains('.')) {
+                    return 'Please enter a valid email address';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Password field
+              TextFormField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: const Icon(Icons.lock),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter the email';
-                    }
-                    if (!value.contains('@') || !value.contains('.')) {
-                      return 'Please enter a valid email address';
-                    }
-                    return null;
-                  },
+                  border: const OutlineInputBorder(),
                 ),
-                const SizedBox(height: 24),
-                
-                // Account Security section
-                const Text(
-                  'Account Security',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a password';
+                  }
+                  if (value.length < 6) {
+                    return 'Password must be at least 6 characters';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Confirm password field
+              TextFormField(
+                controller: _confirmPasswordController,
+                obscureText: _obscureConfirmPassword,
+                decoration: InputDecoration(
+                  labelText: 'Confirm Password',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                      });
+                    },
                   ),
+                  border: const OutlineInputBorder(),
                 ),
-                const SizedBox(height: 16),
-                
-                // Password field
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_showPassword,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock, color: Colors.deepPurple),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _showPassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _showPassword = !_showPassword;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter the password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please confirm the password';
+                  }
+                  if (value != _passwordController.text) {
+                    return 'Passwords do not match';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              // Role selection
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  prefixIcon: Icon(Icons.admin_panel_settings),
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(height: 16),
-                
-                // Confirm password field
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: !_showConfirmPassword,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    prefixIcon: const Icon(Icons.lock_outline, color: Colors.deepPurple),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _showConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _showConfirmPassword = !_showConfirmPassword;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm the password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                
-                // Access level section
-                const Text(
-                  'Access Level',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Role selector
-                DropdownButtonFormField<String>(
-                  value: _selectedRole,
-                  decoration: InputDecoration(
-                    labelText: 'Role',
-                    prefixIcon: const Icon(Icons.admin_panel_settings, color: Colors.deepPurple),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
-                    ),
-                  ),
-                  items: _availableRoles.map((role) {
-                    return DropdownMenuItem(
-                      value: role,
-                      child: Text(role),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
+                items: const [
+                  DropdownMenuItem(value: 'Admin', child: Text('Admin')),
+                  DropdownMenuItem(value: 'Super Admin', child: Text('Super Admin')),
+                ],
+                onChanged: (value) {
+                  if (value != null) {
                     setState(() {
-                      _selectedRole = value!;
+                      _selectedRole = value;
                     });
-                  },
-                ),
-                const SizedBox(height: 16),
-                
-                // Role description
-                // Role description container
-Container(
-  padding: const EdgeInsets.all(16),
-  decoration: BoxDecoration(
-    color: Colors.grey.shade100,
-    borderRadius: BorderRadius.circular(10),
-    border: Border.all(
-      color: Colors.grey.shade200,
-    ),
-  ),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        children: [
-          Icon(
-            _selectedRole == 'Super Admin' 
-                ? Icons.security 
-                : Icons.admin_panel_settings,
-            color: _getRoleColor(_selectedRole),
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            "Role Details",
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: _getRoleColor(_selectedRole),
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-      Text(
-        _selectedRole == 'Super Admin'
-            ? 'Super Administrators have full access to all system features and can manage other administrators.'
-            : 'Administrators can manage coaches and players, view reports, and perform most administrative tasks.',
-        style: TextStyle(
-          fontSize: 13,
-          color: Colors.grey.shade700,
-          height: 1.5,
-        ),
-      ),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: _generatePermissionChips(),
-      ),
-    ],
-  ),
-),
-
-const SizedBox(height: 24),
-const Divider(),
-const SizedBox(height: 16),
-
-// Terms and conditions checkbox
-Row(
-  children: [
-    Checkbox(
-      value: _agreeToTerms,
-      activeColor: Colors.deepPurple,
-      onChanged: (value) {
-        setState(() {
-          _agreeToTerms = value!;
-        });
-      },
-    ),
-    Expanded(
-      child: RichText(
-        text: TextSpan(
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade800),
-          children: [
-            const TextSpan(
-              text: 'I confirm that I have read and agree to the ',
-            ),
-            TextSpan(
-              text: 'Terms of Service',
-              style: const TextStyle(
-                color: Colors.deepPurple,
-                fontWeight: FontWeight.bold,
-                decoration: TextDecoration.underline,
-              ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () {
-                  // Show terms of service
+                  }
                 },
-            ),
-            const TextSpan(
-              text: ' and ',
-            ),
-            TextSpan(
-              text: 'Privacy Policy',
-              style: const TextStyle(
-                color: Colors.deepPurple,
-                fontWeight: FontWeight.bold,
-                decoration: TextDecoration.underline,
-              ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = () {
-                  // Show privacy policy
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a role';
+                  }
+                  return null;
                 },
-            ),
-          ],
-        ),
-      ),
-    ),
-  ],
-),
-
-const SizedBox(height: 24),
-
-// Action buttons
-Row(
-  children: [
-    Expanded(
-      child: OutlinedButton(
-        onPressed: () {
-          Navigator.pop(context);
-        },
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.grey.shade800,
-          side: BorderSide(color: Colors.grey.shade300),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-        ),
-        child: const Text('CANCEL'),
-      ),
-    ),
-    const SizedBox(width: 16),
-    Expanded(
-      child: ElevatedButton(
-        onPressed: !_agreeToTerms ? null : () {
-          if (_formKey.currentState!.validate()) {
-            _showConfirmationDialog();
-          }
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.deepPurple,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          disabledBackgroundColor: Colors.grey.shade300,
-        ),
-        child: const Text('REGISTER'),
-      ),
-    ),
-  ],
-),
-
-],
+              ),
+              const SizedBox(height: 24),
+              // Action buttons
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _submitForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    ),
+                    child: const Text('Register Admin'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
-      ),
-    ),
-  );
-}
-
-// Generate permission chips based on selected role
-List<Widget> _generatePermissionChips() {
-  final List<Map<String, dynamic>> permissions = _selectedRole == 'Super Admin'
-      ? [
-          {'name': 'Manage Admins', 'icon': Icons.admin_panel_settings},
-          {'name': 'System Settings', 'icon': Icons.settings},
-          {'name': 'Manage All Users', 'icon': Icons.people},
-          {'name': 'Financial Access', 'icon': Icons.attach_money},
-          {'name': 'Data Analytics', 'icon': Icons.analytics},
-          {'name': 'Sponsor Management', 'icon': Icons.handshake},
-        ]
-      : [
-          {'name': 'Manage Coaches', 'icon': Icons.sports},
-          {'name': 'Manage Players', 'icon': Icons.person},
-          {'name': 'View Reports', 'icon': Icons.bar_chart},
-          {'name': 'Basic Settings', 'icon': Icons.settings_applications},
-        ];
-
-  return permissions.map((permission) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: _getRoleColor(_selectedRole).withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _getRoleColor(_selectedRole).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            permission['icon'],
-            size: 12,
-            color: _getRoleColor(_selectedRole),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            permission['name'],
-            style: TextStyle(
-              fontSize: 11,
-              color: _getRoleColor(_selectedRole),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
-  }).toList();
-}
-
-@override
-void dispose() {
-  _nameController.dispose();
-  _emailController.dispose();
-  _passwordController.dispose();
-  _confirmPasswordController.dispose();
-  super.dispose();
-}
+  }
 }

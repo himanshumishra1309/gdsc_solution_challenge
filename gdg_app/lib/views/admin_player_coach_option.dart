@@ -45,7 +45,7 @@ class _AdminPlayerCoachOptionState extends State<AdminPlayerCoachOption> with Si
             Container(
               decoration: BoxDecoration(
                 image: DecorationImage(
-                  image: const AssetImage('assets/background.jpg'),
+                  image: const AssetImage('assets/images/signupimages.jpg'),
                   fit: BoxFit.cover,
                   colorFilter: ColorFilter.mode(
                     Colors.black.withOpacity(0.6),

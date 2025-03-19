@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 
@@ -64,12 +65,19 @@ class _IndividualHomeViewState extends State<IndividualHomeView> with SingleTick
     Navigator.pushReplacementNamed(context, item);
   }
 
-  void _handleLogout() {
-    Navigator.pushReplacementNamed(context, landingPageRoute);
+  final AuthService _authService = AuthService();
+  
+  // Update your _handleLogout method
+  Future<void> _handleLogout() async {
+    bool success = await _authService.logout();
+    if (success && mounted) {
+      Navigator.pushReplacementNamed(context, landingPageRoute);
+    }
   }
 
-  Future<bool> _onWillPop(BuildContext context) async {
-    bool shouldLogout = await showDialog(
+  // Update your _onWillPop method to use _handleLogout
+  Future<bool> _onWillPop() async {
+    final bool? shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Logout'),
@@ -92,12 +100,12 @@ class _IndividualHomeViewState extends State<IndividualHomeView> with SingleTick
         ],
       ),
     );
-
-    if (shouldLogout) {
-      Navigator.pushReplacementNamed(context, landingPageRoute);
+    
+    if (shouldLogout == true) {
+      await _handleLogout();
     }
-
-    return shouldLogout;
+    
+    return false; // Return false to prevent app from closing
   }
 
   @override
@@ -113,7 +121,7 @@ class _IndividualHomeViewState extends State<IndividualHomeView> with SingleTick
     ];
 
     return WillPopScope(
-      onWillPop: () => _onWillPop(context),
+      onWillPop: () => _onWillPop(),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Performance Dashboard'),
@@ -140,7 +148,7 @@ class _IndividualHomeViewState extends State<IndividualHomeView> with SingleTick
             }
           },
           drawerItems: drawerItems,
-          onLogout: _handleLogout,
+          onLogout: () => _onWillPop(),
         ),
         body: Column(
           children: [
