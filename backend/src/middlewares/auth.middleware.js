@@ -1,6 +1,8 @@
 import asyncHandler from "../utils/asyncHandler.js";
 import jwt from "jsonwebtoken";
 import { ApiError } from "../utils/ApiError.js";
+import jwt from "jsonwebtoken"
+import ApiError from "../utils/ApiError.js"
 import { Admin } from "../models/admin.model.js";
 import { IndividualAthlete } from "../models/individualAthlete.model.js";
 import { Coach } from "../models/coach.model.js";

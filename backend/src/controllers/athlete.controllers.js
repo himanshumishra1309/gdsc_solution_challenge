@@ -3,6 +3,11 @@ import { ApiError } from "../utils/ApiError.js";
 import { Athlete } from "../models/athlete.model.js";
 import jwt from "jsonwebtoken";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import ApiError from "../utils/ApiError.js"
+import {Athlete} from "../models/athlete.model.js"
+import jwt from 'jsonwebtoken'
+import ApiResponse from "../utils/ApiResponse.js"
+
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {

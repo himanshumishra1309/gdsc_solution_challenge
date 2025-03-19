@@ -73,6 +73,7 @@ import sponsorRouter from "./routes/sponsor.routes.js";
 import financesRouter from "./routes/finance.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import { configDotenv } from "dotenv";
+import trainingPlanrouter from "./routes/trainingPlan.routes.js";
 
 app.get("/api/v1/health", (req, res) => {
   res.status(200).json({
@@ -101,6 +102,12 @@ app.use("/api/v1/coaches", coachRouter);
 app.use("/api/v1/sponsors", sponsorRouter);
 app.use("/api/v1/organizations", organizationRouter);
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/finances", financesRouter); 
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/training", trainingPlanrouter);
+
+// ✅ Global Error Handler (Moved to Bottom)
+app.use(errorHandler);
 
 app.use(errorHandler);
 

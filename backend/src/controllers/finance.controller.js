@@ -1,9 +1,9 @@
 import asyncHandler from "../utils/asyncHandler.js";
-import{ApiError} from "../utils/ApiError.js";
+import ApiError from "../utils/ApiError.js";
 import {Athlete} from "../models/athlete.model.js";
 import {Admin} from "../models/admin.model.js";
 import FinancialRecord from "../models/financialrecord.model.js"
-import { ApiResponse } from "../utils/ApiResponse.js";
+import  ApiResponse  from "../utils/ApiResponse.js";
 
 /**
  * @desc Add a financial record (Admin only)
@@ -129,7 +129,6 @@ const getFinancialRecords = asyncHandler(async (req, res) => {
     } else if (["coach", "athlete"].includes(user.role)) {
         // Coaches & Athletes see only their organization's records
 
-        console.log("User Data:", user);
 
 
         if (!user.organization) {

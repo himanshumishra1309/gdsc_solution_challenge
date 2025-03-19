@@ -1,5 +1,5 @@
 import Notification from "../models/notification.model.js";
-import {ApiResponse} from "../utils/ApiResponse.js";
+import ApiResponse from "../utils/ApiResponse.js";
 import {Athlete} from "../models/athlete.model.js";
 import {Coach} from "../models/coach.model.js";
 import {Admin} from "../models/admin.model.js";
