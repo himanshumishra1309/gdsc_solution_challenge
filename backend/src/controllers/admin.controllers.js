@@ -5,8 +5,8 @@ import  {Admin} from "../models/admin.model.js"
 import {Athlete} from "../models/athlete.model.js"
 import {Coach} from "../models/coach.model.js"
 import {Organization} from "../models/organization.model.js"
+import {Sponsor} from "../models/sponsor.model.js"
 // import {sendEmail} from "../utils/sendEmail.js"
-import {RPE} from "../models/rpe.model.js"
 import ApiResponse  from "../utils/ApiResponse.js"
 import {CustomForm} from "../models/customForm.model.js"
 
@@ -1044,6 +1044,38 @@ const createCustomForm = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @desc Get organization overview (Total Athletes, Coaches, Sponsors)
+ * @route GET /api/admin/overview
+ * @access Private (Admin Only)
+ */
+const getOrganizationOverview = asyncHandler(async (req, res, next) => {
+  // Debug log to check the logged-in admin ID
+  console.log("Logged-in admin ID:", req.admin._id);
+
+  if (!req.admin || !req.admin.organization) {
+      return next(new ApiError(400, "Organization not found for this admin"));
+  }
+
+  const organization = req.admin.organization;
+
+  try {
+      // Fetch counts
+      const [totalAthletes, totalCoaches, totalSponsors] = await Promise.all([
+          Athlete.countDocuments({ organization }),
+          Coach.countDocuments({ organization }),
+          Sponsor.countDocuments({ organization }),
+      ]);
+
+      return res
+          .status(200)
+          .json(new ApiResponse(200, { totalAthletes, totalCoaches, totalSponsors }, "Organization overview fetched successfully"));
+  } catch (error) {
+      console.error("Error fetching organization overview:", error);
+      return next(new ApiError(500, "Failed to fetch organization overview"));
+  }
+});
+
 export {
   registerOrganizationAthlete,
   getAllAthletes,
@@ -1056,5 +1088,6 @@ export {
   getRpeInsights,
   getAllAdmins,
   getAllCoaches,
-  getAthleteById
+  getAthleteById,
+  getOrganizationOverview
 };
