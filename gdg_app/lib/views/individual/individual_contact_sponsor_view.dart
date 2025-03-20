@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:url_launcher/url_launcher.dart'; // Add this package for contact actions
@@ -109,8 +110,47 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
     });
   }
 
-  void _handleLogout() {
-    Navigator.pushReplacementNamed(context, landingPageRoute);
+  final AuthService _authService = AuthService();
+  
+  // Update your _handleLogout method
+  Future<void> _handleLogout() async {
+    bool success = await _authService.logout();
+    if (success && mounted) {
+      Navigator.pushReplacementNamed(context, landingPageRoute);
+    }
+  }
+
+  // Update your _onWillPop method to use _handleLogout
+  Future<bool> _onWillPop() async {
+    final bool? shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Do you want to logout?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    
+    if (shouldLogout == true) {
+      await _handleLogout();
+    }
+    
+    return false; // Return false to prevent app from closing
   }
 
   Future<void> _launchUrl(String url, String type) async {
@@ -183,7 +223,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
           }
         },
         drawerItems: drawerItems,
-        onLogout: _handleLogout,
+        onLogout: () => _onWillPop(),
       ),
       body: Column(
         children: [

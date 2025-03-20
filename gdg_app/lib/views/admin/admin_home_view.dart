@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:intl/intl.dart';
+import 'package:gdg_app/serivces/auth_service.dart'; 
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class AdminHomeView extends StatefulWidget {
@@ -14,6 +15,7 @@ class AdminHomeView extends StatefulWidget {
 class _AdminHomeViewState extends State<AdminHomeView> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   bool _isLoading = false;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -45,72 +47,96 @@ class _AdminHomeViewState extends State<AdminHomeView> with SingleTickerProvider
   };
 
   void _handleLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Confirm Logout'),
-          content: const Text('Are you sure you want to logout?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              
+              // Show loading indicator
+              setState(() => _isLoading = true);
+              
+              // Call the auth service logout method
+              final success = await _authService.logout();
+              
+              setState(() => _isLoading = false);
+              
+              if (success && mounted) {
+                // Navigate to landing page after successful logout
                 Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              child: const Text('Logout'),
+              } else {
+                // Show error if logout failed
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logout failed. Please try again.')),
+                );
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
             ),
-          ],
-        );
-      },
-    );
-  }
+            child: const Text('Logout'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
 Widget build(BuildContext context) {
   return WillPopScope(
     onWillPop: () async {
-      // Show logout confirmation dialog when back button is pressed
-      final shouldPop = await showDialog<bool>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Confirm Logout'),
-            content: const Text('Do you want to logout?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('No'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(true);
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.red,
-                ),
-                child: const Text('Yes'),
-              ),
-            ],
-          );
-        },
+  // Show logout confirmation dialog when back button is pressed
+  final shouldPop = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text('Do you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
       );
-      
-      if (shouldPop == true) {
-        // Navigate to login screen if user confirms logout
-        Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
-        return false;
-      }
-      
-      // Prevent default back button behavior
-      return false;
     },
+  );
+  
+  if (shouldPop == true) {
+    // Show loading indicator
+    setState(() => _isLoading = true);
+    
+    // Call the auth service logout method
+    final success = await _authService.logout();
+    
+    setState(() => _isLoading = false);
+    
+    if (success && mounted) {
+      // Navigate to landing page after successful logout
+      Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
+    }
+  }
+  
+  // Prevent default back button behavior
+  return false;
+},
     child: Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(

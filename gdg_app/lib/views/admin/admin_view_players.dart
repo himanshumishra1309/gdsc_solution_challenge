@@ -5,6 +5,8 @@ import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:gdg_app/views/player/player_home.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart'; // Add this package
+import 'package:gdg_app/serivces/auth_service.dart'; // Add this import
+import 'package:shared_preferences/shared_preferences.dart'; // Add this import
 
 class AdminViewPlayers extends StatefulWidget {
   const AdminViewPlayers({super.key});
@@ -14,6 +16,7 @@ class AdminViewPlayers extends StatefulWidget {
 }
 
 class _AdminViewPlayersState extends State<AdminViewPlayers> with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
   List<dynamic> _players = [];
   List<dynamic> _filteredPlayers = [];
   String _searchQuery = '';
@@ -140,9 +143,85 @@ class _AdminViewPlayersState extends State<AdminViewPlayers> with SingleTickerPr
     );
   }
 
-  void _handleLogout(BuildContext context) {
-    Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
+  void _handleLogout(BuildContext context) async {
+  // Show confirmation dialog
+  final shouldLogout = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Confirm Logout'),
+      content: const Text('Are you sure you want to logout?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.red,
+          ),
+          child: const Text('Yes'),
+        ),
+      ],
+    ),
+  );
+  
+  // If user confirmed logout
+  if (shouldLogout == true) {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                CircularProgressIndicator(color: Colors.deepPurple),
+                SizedBox(height: 16),
+                Text('Logging out...'),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    
+    try {
+      // First clear local data directly
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      
+      // Then try server-side logout, but don't block on it
+      _authService.logout().catchError((e) {
+        print('Server logout error: $e');
+      });
+      
+      // Navigate to login page
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          coachAdminPlayerRoute, // Make sure this constant is defined in your routes file
+          (route) => false, // This clears the navigation stack
+        );
+      }
+    } catch (e) {
+      // Handle errors
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error during logout: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
+}
 
   Widget _buildListView() {
     if (_filteredPlayers.isEmpty) {

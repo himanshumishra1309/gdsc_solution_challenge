@@ -23,6 +23,8 @@ app.use(
         'http://localhost:5173',
         'http://localhost:3000',
         'http://127.0.0.1:5173',
+        'http://192.168.143.13:5173',
+        'http://192.168.143.13:8000',
         '*'
         // Add your production domains when ready
       ];
@@ -61,8 +63,6 @@ app.use(express.static("public"));
 
 app.use(cookieParser());
 
-app.use(errorHandler);
-
 import adminRouter from "./routes/admin.routes.js";
 import athleteRouter from "./routes/athlete.routes.js";
 import coachRouter from "./routes/coach.routes.js";
@@ -72,6 +72,7 @@ import authRouter from "./routes/auth.routes.js";
 import sponsorRouter from "./routes/sponsor.routes.js";
 import financesRouter from "./routes/finance.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import { configDotenv } from "dotenv";
 import trainingPlanrouter from "./routes/trainingPlan.routes.js";
 import sessionRouter from "./routes/session.routes.js";
 
@@ -85,11 +86,13 @@ app.get("/api/v1/health", (req, res) => {
 
 // Add this near the top of your route definitions, before all other routes
 app.get("/test", (req, res) => {
+  console.log("Test endpoint hit from:", req.ip);
   console.log("Basic test endpoint hit!");
   res.send("Server is working");
 });
 
 app.get("/", (req, res) => {
+  console.log("Root endpoint hit from:", req.ip);
   res.send("API is running");
 });
 
@@ -107,6 +110,8 @@ app.use("/api/v1/session", sessionRouter);
 
 
 // ✅ Global Error Handler (Moved to Bottom)
+app.use(errorHandler);
+
 app.use(errorHandler);
 
 export { app };

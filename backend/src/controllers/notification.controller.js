@@ -1,5 +1,5 @@
 import Notification from "../models/notification.model.js";
-import ApiResponse from "../utils/ApiResponse.js";
+import ApiResponse  from "../utils/ApiResponse.js";
 import {Athlete} from "../models/athlete.model.js";
 import {Coach} from "../models/coach.model.js";
 import {Admin} from "../models/admin.model.js";
@@ -18,7 +18,7 @@ const getNotifications = asyncHandler(async (req, res) => {
     } else if (await Admin.exists({ _id: req.user._id })) {
         recipientType = "admin";
     } else {
-        return res.status(403).json(new ApiResponse(403, null, "Unauthorized: User type not recognized."));
+        return res.status(403).json(new ApiResponse (403, null, "Unauthorized: User type not recognized."));
     }
 
     const notifications = await Notification.find({
@@ -26,7 +26,7 @@ const getNotifications = asyncHandler(async (req, res) => {
         recipientType: recipientType
     }).sort({ createdAt: -1 });
 
-    res.status(200).json(new ApiResponse(200, notifications, "Notifications retrieved successfully."));
+    res.status(200).json(new ApiResponse (200, notifications, "Notifications retrieved successfully."));
 });
 
 // ✅ Mark Notification as Read
@@ -35,17 +35,17 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
     const notification = await Notification.findById(id);
 
     if (!notification) {
-        return res.status(404).json(new ApiResponse(404, null, "Notification not found."));
+        return res.status(404).json(new ApiResponse (404, null, "Notification not found."));
     }
 
     if (notification.recipientId.toString() !== req.user._id.toString()) {
-        return res.status(403).json(new ApiResponse(403, null, "Unauthorized: Cannot mark others' notifications."));
+        return res.status(403).json(new ApiResponse (403, null, "Unauthorized: Cannot mark others' notifications."));
     }
 
     notification.isRead = true;
     await notification.save();
 
-    res.status(200).json(new ApiResponse(200, notification, "Notification marked as read."));
+    res.status(200).json(new ApiResponse (200, notification, "Notification marked as read."));
 });
 
 

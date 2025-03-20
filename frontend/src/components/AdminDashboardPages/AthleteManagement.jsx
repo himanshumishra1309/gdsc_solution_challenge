@@ -36,8 +36,14 @@ const AthleteManagement = () => {
 
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedAthlete, setSelectedAthlete] = useState(null);
-
   
+  // Performance data for athlete profile
+  const [performanceData, setPerformanceData] = useState({
+    consistency: 0,
+    technique: 0,
+    stamina: 0
+  });
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -150,17 +156,18 @@ const AthleteManagement = () => {
     } catch (error) {
       console.error("Error fetching athletes:", error);
       setErrorMessage("Failed to load athletes. Please try again.");
+      setAthletes([]); // Set empty array as fallback
     } finally {
       setLoading(false);
     }
   };
   
-  // Function to fetch coaches and staff
+  // Fetch staff (coaches, trainers, medical staff)
   const fetchStaff = async () => {
     try {
-      // Fetch coaches
+      // Fetch coaches - use a single API call for all staff types
       const coachesResponse = await axios.get(
-        "http://localhost:8000/api/v1/admin/coaches", 
+        "http://localhost:8000/api/v1/admins/coaches", 
         {
           params: { organizationId },
           withCredentials: true
@@ -168,28 +175,34 @@ const AthleteManagement = () => {
       );
       
       if (coachesResponse.data && coachesResponse.data.data) {
+        // Set all coaches
         setCoaches(coachesResponse.data.data.coaches || []);
         
-        // Filter for gym trainers (assuming they have a role property)
+        // Filter for gym trainers - staff with fitness-related roles
         setGymTrainers(
-          coachesResponse.data.data.coaches.filter(c => c.specialization === "Fitness" || c.role === "trainer") || []
+          coachesResponse.data.data.coaches.filter(c => 
+            c.specialization === "Fitness" || 
+            c.designation === "Gym Trainer" || 
+            c.role === "trainer"
+          ) || []
         );
-      }
-      
-      // Fetch medical staff
-      const medicalResponse = await axios.get(
-        "http://localhost:8000/api/v1/admin/medical-staff", 
-        {
-          params: { organizationId },
-          withCredentials: true
-        }
-      );
-      
-      if (medicalResponse.data && medicalResponse.data.data) {
-        setMedicalStaff(medicalResponse.data.data.medicalStaff || []);
+        
+        // Filter for medical staff - staff with medical-related roles
+        setMedicalStaff(
+          coachesResponse.data.data.coaches.filter(c => 
+            c.specialization === "Medical" || 
+            c.designation === "Team Doctor" || 
+            c.designation === "Physiotherapist" ||
+            c.role === "medical"
+          ) || []
+        );
       }
     } catch (error) {
       console.error("Error fetching staff data:", error);
+      // Set empty arrays as fallback
+      setCoaches([]);
+      setGymTrainers([]);
+      setMedicalStaff([]);
     }
   };
   
@@ -197,7 +210,12 @@ const AthleteManagement = () => {
   useEffect(() => {
     if (organizationId) {
       fetchAthletes();
-      fetchStaff();
+      fetchStaff().catch(err => {
+        console.error("Failed to fetch staff:", err);
+        setCoaches([]);
+        setGymTrainers([]);
+        setMedicalStaff([]);
+      });
     } else {
       setLoading(false);
     }
@@ -215,6 +233,25 @@ const AthleteManagement = () => {
       clearTimeout(handler);
     };
   }, [searchQuery]);
+  
+  // Update performance data when selected athlete changes
+  useEffect(() => {
+    if (selectedAthlete) {
+      setPerformanceData({
+        consistency: selectedAthlete.consistency || 70, // Default values for demonstration
+        technique: selectedAthlete.technique || 65,
+        stamina: selectedAthlete.stamina || 80
+      });
+    }
+  }, [selectedAthlete]);
+
+  // Calculate performance metrics
+  const consistency = performanceData.consistency || 0;
+  const technique = performanceData.technique || 0;
+  const stamina = performanceData.stamina || 0;
+  const overallRating = consistency && technique && stamina
+    ? Math.round((consistency + technique + stamina) / 3)
+    : "N/A";
   
   // Filter handlers
   const handleSportChange = (sport) => {
@@ -310,28 +347,12 @@ const AthleteManagement = () => {
     setActiveTab(value);
   };
 
-  const AthleteProfile = ({ profileDialogOpen, setProfileDialogOpen, selectedAthlete }) => {
-    const [performanceData, setPerformanceData] = useState({
-      consistency: selectedAthlete?.consistency || 0,
-      technique: selectedAthlete?.technique || 0,
-      stamina: selectedAthlete?.stamina || 0,
-    });
-  
-    const consistency = performanceData.consistency || 0;
-    const technique = performanceData.technique || 0;
-    const stamina = performanceData.stamina || 0;
-    const overallRating = consistency && technique && stamina
-      ? Math.round((consistency + technique + stamina) / 3)
-      : "N/A";
-
   // View athlete profile
   const handleViewProfile = (athlete) => {
     setSelectedAthlete(athlete);
     setProfileDialogOpen(true);
   };
-
   
-
   // Handle adding new athlete
   const handleAddAthlete = async () => {
     // Reset error message
@@ -470,9 +491,9 @@ const AthleteManagement = () => {
         formData.append('latestMarksheet', newAthlete.latestMarksheet);
       }
       
-      // Make API call with 30s timeout
+      // Make API call with 30s timeout - UPDATED ENDPOINT
       const response = await axios.post(
-        'http://localhost:8000/api/v1/admin/register-organization-athlete', 
+        'http://localhost:8000/api/v1/admins/register-organization-athlete', 
         formData, 
         {
           headers: {
@@ -618,9 +639,7 @@ const AthleteManagement = () => {
                     <Button className="bg-green-600 hover:bg-green-700">Register New Athlete</Button>
                   </DialogTrigger>
                   
-                  {/* Registration Dialog - Keep the existing dialog content */}
                   <DialogContent className="max-w-4xl p-6 rounded-lg bg-white shadow-lg overflow-y-auto max-h-[90vh]">
-                    {/* Your existing dialog content - all the tabs, etc. */}
                     <DialogHeader>
                       <DialogTitle className="text-2xl font-semibold text-gray-800">Register New Athlete</DialogTitle>
                     </DialogHeader>
@@ -647,10 +666,7 @@ const AthleteManagement = () => {
                         <TabsTrigger value="emergency">Emergency Contact</TabsTrigger>
                       </TabsList>
                       
-                      {/* Keep all your existing TabsContent components here */}
-                      {/* TabsContent for "basic" tab */}
                       <TabsContent value="basic" className="space-y-4">
-                        {/* Your existing basic info tab content */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-sm font-medium mb-1">Full Name *</label>
@@ -663,7 +679,6 @@ const AthleteManagement = () => {
                             />
                           </div>
                           
-                          {/* ...rest of your basic tab fields... */}
                           <div>
                             <label className="block text-sm font-medium mb-1">Email *</label>
                             <input
@@ -736,7 +751,7 @@ const AthleteManagement = () => {
                             />
                           </div>
                           
-                          <div>
+                          <div className="col-span-2">
                             <label className="block text-sm font-medium mb-1">Phone Number *</label>
                             <input
                               type="tel"
@@ -747,341 +762,814 @@ const AthleteManagement = () => {
                             />
                           </div>
                           
-                          <div>
+                          <div className="col-span-2">
                             <label className="block text-sm font-medium mb-1">Profile Photo</label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              className="w-full p-2 border rounded"
-                              onChange={(e) => handleFileChange(e, 'avatar')}
-                            />
+                            <div className="mt-1 flex items-center">
+                              <div className="flex-shrink-0">
+                                {newAthlete.avatar ? (
+                                  <div className="h-20 w-20 rounded-full overflow-hidden bg-gray-100">
+                                    <img 
+                                      src={URL.createObjectURL(newAthlete.avatar)} 
+                                      alt="Preview" 
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="h-20 w-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-gray-400">
+                                    <svg className="h-12 w-12" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ml-5 flex items-center gap-2">
+                                <label 
+                                  htmlFor="avatar-upload" 
+                                  className="cursor-pointer px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                                >
+                                  Upload
+                                </label>
+                                <input
+                                  id="avatar-upload"
+                                  name="avatar"
+                                  type="file"
+                                  className="sr-only"
+                                  accept="image/*"
+                                  onChange={(e) => handleFileChange(e, 'avatar')}
+                                />
+                                {newAthlete.avatar && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setNewAthlete({...newAthlete, avatar: null})}
+                                    className="px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-red-600 bg-white hover:bg-gray-50 focus:outline-none"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
+                        </div>
+
+                        <div className="flex justify-end mt-4">
+                          <Button 
+                            onClick={() => setActiveTab("school")}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Next: School & Sports
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
                         </div>
                       </TabsContent>
                       
-                      {/* Include the remaining tabs (school, medical, emergency) here */}
-                      {/* ... */}
                       <TabsContent value="school" className="space-y-4">
-                        {/* School tab content here */}
-                        {/* Keep your existing school tab UI */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">School Name *</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.schoolName}
+                              onChange={(e) => setNewAthlete({...newAthlete, schoolName: e.target.value})}
+                              required
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Grade/Year *</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.year}
+                              onChange={(e) => setNewAthlete({...newAthlete, year: e.target.value})}
+                              required
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Student ID *</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.studentId}
+                              onChange={(e) => setNewAthlete({...newAthlete, studentId: e.target.value})}
+                              required
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">School Email (Optional)</label>
+                            <input
+                              type="email"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.schoolEmail}
+                              onChange={(e) => setNewAthlete({...newAthlete, schoolEmail: e.target.value})}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">School Website (Optional)</label>
+                            <input
+                              type="url"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.schoolWebsite}
+                              onChange={(e) => setNewAthlete({...newAthlete, schoolWebsite: e.target.value})}
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Training Start Date *</label>
+                            <input
+                              type="date"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.trainingStartDate}
+                              onChange={(e) => setNewAthlete({...newAthlete, trainingStartDate: e.target.value})}
+                              required
+                            />
+                          </div>
+
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium mb-2">Sports *</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                              {sportsEnum.map((sport) => (
+                                <div 
+                                  key={sport}
+                                  onClick={() => handleSportSelection(sport)}
+                                  className={`px-3 py-2 border rounded-md cursor-pointer text-center text-sm
+                                    ${newAthlete.sports.includes(sport) 
+                                      ? 'bg-blue-500 text-white border-blue-600' 
+                                      : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'
+                                    }`}
+                                >
+                                  {sport}
+                                </div>
+                              ))}
+                            </div>
+                            {newAthlete.sports.length === 0 && (
+                              <p className="text-xs text-red-500 mt-1">Please select at least one sport</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Skill Level *</label>
+                            <Select 
+                              value={newAthlete.skillLevel} 
+                              onValueChange={(value) => setNewAthlete({...newAthlete, skillLevel: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Skill Level" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {skillLevelEnum.map((level) => (
+                                  <SelectItem key={level} value={level}>{level}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Dominant Hand</label>
+                            <Select 
+                              value={newAthlete.dominantHand} 
+                              onValueChange={(value) => setNewAthlete({...newAthlete, dominantHand: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Dominant Hand" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {dominantHandEnum.map((hand) => (
+                                  <SelectItem key={hand} value={hand}>{hand}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          {newAthlete.sports.length > 0 && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Playing Positions</label>
+                              {newAthlete.sports.map((sport) => (
+                                <div key={sport} className="mb-2">
+                                  <p className="text-xs text-gray-600 mb-1">{sport}</p>
+                                  <input
+                                    type="text"
+                                    className="w-full p-2 border rounded"
+                                    placeholder={`Position for ${sport}`}
+                                    value={newAthlete.positions[sport] || ''}
+                                    onChange={(e) => handlePositionChange(sport, e.target.value)}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Head Coach</label>
+                              <Select 
+                                value={newAthlete.headCoachAssigned || "none"} 
+                                onValueChange={(value) => setNewAthlete({...newAthlete, headCoachAssigned: value === "none" ? null : value})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select Coach" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  {coaches.map((coach) => (
+                                    <SelectItem key={coach._id || coach.id} value={coach._id || coach.id}>
+                                      {coach.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Gym Trainer</label>
+                              <Select 
+                                value={newAthlete.gymTrainerAssigned || "none"} 
+                                onValueChange={(value) => setNewAthlete({...newAthlete, gymTrainerAssigned: value === "none" ? null : value})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select Trainer" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  {gymTrainers.map((trainer) => (
+                                    <SelectItem key={trainer._id || trainer.id} value={trainer._id || trainer.id}>
+                                      {trainer.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Medical Staff</label>
+                              <Select 
+                                value={newAthlete.medicalStaffAssigned || "none"} 
+                                onValueChange={(value) => setNewAthlete({...newAthlete, medicalStaffAssigned: value === "none" ? null : value})}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select Medical Staff" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  {medicalStaff.map((staff) => (
+                                    <SelectItem key={staff._id || staff.id} value={staff._id || staff.id}>
+                                      {staff.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between mt-4">
+                          <Button 
+                            onClick={() => setActiveTab("basic")}
+                            variant="outline"
+                          >
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back: Basic Info
+                          </Button>
+                          <Button 
+                            onClick={() => setActiveTab("medical")}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Next: Medical Info
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
                       </TabsContent>
 
                       <TabsContent value="medical" className="space-y-4">
-                        {/* Medical tab content here */}
-                        {/* Keep your existing medical tab UI */}
-                      </TabsContent>
+                        {/* Medical Info Tab */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Height (cm) *</label>
+                            <input
+                              type="number"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.height}
+                              onChange={(e) => setNewAthlete({...newAthlete, height: e.target.value})}
+                              required
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Weight (kg) *</label>
+                            <input
+                              type="number"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.weight}
+                              onChange={(e) => setNewAthlete({...newAthlete, weight: e.target.value})}
+                              required
+                            />
+                          </div>
+                          
+                          {(newAthlete.height && newAthlete.weight) && (
+                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                              <p className="text-sm font-medium text-blue-800">BMI: {calculateBMI()}</p>
+                              <p className="text-xs text-blue-600 mt-1">Body Mass Index</p>
+                            </div>
+                          )}
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Blood Group</label>
+                            <Select 
+                              value={newAthlete.bloodGroup} 
+                              onValueChange={(value) => setNewAthlete({...newAthlete, bloodGroup: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select Blood Group" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {bloodGroupEnum.map((group) => (
+                                  <SelectItem key={group} value={group}>{group}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium mb-1">Allergies (Optional)</label>
+                            <Textarea
+                              placeholder="List allergies separated by commas"
+                              className="w-full p-2"
+                              value={newAthlete.allergies}
+                              onChange={(e) => setNewAthlete({...newAthlete, allergies: e.target.value})}
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium mb-1">Medical Conditions (Optional)</label>
+                            <Textarea
+                              placeholder="List medical conditions separated by commas"
+                              className="w-full p-2"
+                              value={newAthlete.medicalConditions}
+                              onChange={(e) => setNewAthlete({...newAthlete, medicalConditions: e.target.value})}
+                            />
+                          </div>
+                        </div>
 
+                        <div className="flex justify-between mt-4">
+                          <Button 
+                            onClick={() => setActiveTab("school")}
+                            variant="outline"
+                          >
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back: School & Sports
+                          </Button>
+                          <Button 
+                            onClick={() => setActiveTab("emergency")}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            Next: Emergency Contact
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TabsContent>
+                      
                       <TabsContent value="emergency" className="space-y-4">
-                        {/* Emergency contact tab content here */}
-                        {/* Keep your existing emergency tab UI */}
+                        {/* Emergency Contact Tab */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Emergency Contact Name *</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.emergencyContactName}
+                              onChange={(e) => setNewAthlete({...newAthlete, emergencyContactName: e.target.value})}
+                              required
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Emergency Contact Number *</label>
+                            <input
+                              type="tel"
+                              className="w-full p-2 border rounded"
+                              value={newAthlete.emergencyContactNumber}
+                              onChange={(e) => setNewAthlete({...newAthlete, emergencyContactNumber: e.target.value})}
+                              required
+                            />
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <label className="block text-sm font-medium mb-1">Relationship to Athlete *</label>
+                            <input
+                              type="text"
+                              className="w-full p-2 border rounded"
+                              placeholder="e.g. Parent, Guardian, Sibling"
+                              value={newAthlete.emergencyContactRelationship}
+                              onChange={(e) => setNewAthlete({...newAthlete, emergencyContactRelationship: e.target.value})}
+                              required
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between mt-4">
+                          <Button 
+                            onClick={() => setActiveTab("medical")}
+                            variant="outline"
+                          >
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Back: Medical Info
+                          </Button>
+                          <Button 
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={handleAddAthlete}
+                            disabled={registering}
+                          >
+                            {registering ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Registering...
+                              </>
+                            ) : (
+                              <>Register Athlete</>
+                            )}
+                          </Button>
+                        </div>
                       </TabsContent>
                     </Tabs>
-                    <DialogFooter className="mt-6">
-                      <Button 
-                        variant="outline"
-                        type="button"
-                        onClick={() => setDialogOpen(false)}
-                        disabled={registering}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="button"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={handleAddAthlete}
-                        disabled={registering}
-                      >
-                        {registering ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Registering...
-                          </>
-                        ) : (
-                          'Register Athlete'
-                        )}
-                      </Button>
-                    </DialogFooter>
-                    </DialogContent>
-                    </Dialog>
-                    </div>
-                    </div>
-                                
-                    {/* Athletes Table */}
-                    <div className="overflow-x-auto rounded-lg border">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th 
-                              scope="col" 
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                              onClick={() => handleSortChange('name')}
-                            >
-                              Name
-                              {sortField === 'name' && (
-                                <span className="ml-1">
-                                  {sortOrder === 'asc' ? '↑' : '↓'}
-                                </span>
-                              )}
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              ID
-                            </th>
-                            <th 
-                              scope="col" 
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                              onClick={() => handleSortChange('age')}
-                            >
-                              Age
-                              {sortField === 'age' && (
-                                <span className="ml-1">
-                                  {sortOrder === 'asc' ? '↑' : '↓'}
-                                </span>
-                              )}
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Gender
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Sport
-                            </th>
-                            <th 
-                              scope="col" 
-                              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                              onClick={() => handleSortChange('skillLevel')}
-                            >
-                              Level
-                              {sortField === 'skillLevel' && (
-                                <span className="ml-1">
-                                  {sortOrder === 'asc' ? '↑' : '↓'}
-                                </span>
-                              )}
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Coach
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {athletes.length > 0 ? (
-                            athletes.map((athlete) => (
-                              <tr key={athlete._id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center">
-                                    <div className="flex-shrink-0 h-10 w-10">
-                                      <img 
-                                        className="h-10 w-10 rounded-full object-cover" 
-                                        src={athlete.avatar || "https://www.w3schools.com/howto/img_avatar.png"} 
-                                        alt="" 
-                                      />
-                                    </div>
-                                    <div className="ml-4">
-                                      <div className="text-sm font-medium text-gray-900">{athlete.name}</div>
-                                      <div className="text-sm text-gray-500">{athlete.email}</div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-900">{athlete.studentId || '-'}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-900">{athlete.age || calculateAge(athlete.dob)}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-900">{athlete.gender}</div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-900">
-                                    {Array.isArray(athlete.sports) ? athlete.sports.join(', ') : (athlete.sports || '-')}
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span 
-                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                      ${athlete.skillLevel === 'Elite' ? 'bg-purple-100 text-purple-800' : 
-                                        athlete.skillLevel === 'Advanced' ? 'bg-green-100 text-green-800' :
-                                        athlete.skillLevel === 'Intermediate' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-gray-100 text-gray-800'}`}
-                                  >
-                                    {athlete.skillLevel || 'N/A'}
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+            
+            {/* Athletes table */}
+            {loading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-green-600" />
+              </div>
+            ) : athletes.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white">
+                  <thead>
+                    <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3">Name</th>
+                      <th className="px-6 py-3">Sports</th>
+                      <th className="px-6 py-3">Gender</th>
+                      <th className="px-6 py-3">School</th>
+                      <th className="px-6 py-3">Skill Level</th>
+                      <th className="px-6 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {athletes.map((athlete) => (
+                      <tr key={athlete._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 flex-shrink-0">
+                              {athlete.avatar ? (
+                                <img 
+                                  className="h-10 w-10 rounded-full object-cover" 
+                                  src={athlete.avatar} 
+                                  alt={athlete.name} 
+                                />
+                              ) : (
+                                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+                                  <span className="text-gray-500 text-sm font-medium">
+                                    {athlete.name.charAt(0).toUpperCase()}
                                   </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                  {athlete.headCoachAssigned?.name || 'Not assigned'}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                  <Button 
-                                    onClick={() => handleViewProfile(athlete)}
-                                    size="sm"
-                                    className="text-indigo-600 hover:text-indigo-900 mr-2"
-                                  >
-                                    View 
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
-                                No athletes found matching your criteria.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination */}
-                    <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4">
-                      <div className="flex flex-1 justify-between sm:hidden">
-                        <Button 
-                          onClick={goToPreviousPage} 
-                          disabled={currentPage === 1} 
-                          variant="outline"
-                          size="sm"
-                        >
-                          Previous
-                        </Button>
-                        <Button 
-                          onClick={goToNextPage} 
-                          disabled={currentPage === totalPages} 
-                          variant="outline"
-                          size="sm"
-                        >
-                          Next
-                        </Button>
-                      </div>
-                      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-sm text-gray-700">
-                            Showing <span className="font-medium">{athletes.length}</span> of{' '}
-                            <span className="font-medium">{totalAthletes}</span> athletes
-                          </p>
-                        </div>
-                        <div>
-                          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="rounded-l-md" 
-                              onClick={goToPreviousPage} 
-                              disabled={currentPage === 1}
-                            >
-                              <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            {/* Generate page buttons */}
-                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                              let pageNum;
-                              if (totalPages <= 5) {
-                                // Show all pages if 5 or fewer
-                                pageNum = i + 1;
-                              } else if (currentPage <= 3) {
-                                // Show first 5 pages
-                                pageNum = i + 1;
-                              } else if (currentPage >= totalPages - 2) {
-                                // Show last 5 pages
-                                pageNum = totalPages - 4 + i;
-                              } else {
-                                // Show current page and 2 before/after
-                                pageNum = currentPage - 2 + i;
-                              }
-                              return (
-                                <Button 
-                                  key={pageNum} 
-                                  variant={currentPage === pageNum ? "default" : "outline"}
-                                  size="icon"
-                                  className={`${currentPage === pageNum ? 'bg-blue-600 text-white' : ''}`}
-                                  onClick={() => goToPage(pageNum)}
-                                >
-                                  {pageNum}
-                                </Button>
-                              );
-                            })}
-                            <Button 
-                              variant="outline" 
-                              size="icon" 
-                              className="rounded-r-md" 
-                              onClick={goToNextPage} 
-                              disabled={currentPage === totalPages}
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                            
-                          </nav>
-                        </div>
-                      </div>
-                    </div>
-                    <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-                      <DialogContent className="max-w-5xl p-8 rounded-lg bg-white shadow-2xl max-h-[90vh] overflow-y-auto border border-gray-300">
-                        <DialogHeader>
-                          <DialogTitle className="text-3xl font-bold text-gray-800">{selectedAthlete?.name}</DialogTitle>
-                        </DialogHeader>
-                        <Tabs defaultValue="overview" className="w-full">
-                         <TabsList className="flex justify-around bg-gray-100 p-2 rounded-lg">
-                          <TabsTrigger value="overview">Overview</TabsTrigger>
-                          <TabsTrigger value="performance">Performance</TabsTrigger>
-                          <TabsTrigger value="medical">Medical</TabsTrigger>
-                          <TabsTrigger value="schedule">Schedule</TabsTrigger>
-                          <TabsTrigger value="finances">Finances</TabsTrigger>
-                         </TabsList>
-                         <TabsContent value="overview" className="p-6">
-                          <div className="grid grid-cols-2 gap-6">
-                            <div className="w-2/3 bg-gray-50 p-6 rounded-lg shadow-sm">
-                              <img src={selectedAthlete?.avatar || "https://www.w3schools.com/howto/img_avatar.png"} 
-                                alt="Athlete" 
-                                className="w-32 h-32 rounded-full object-cover border border-gray-300 shadow-md mb-5" />
-                              <p className="text-lg font-semibold text-gray-800">Email:</p>
-                              <p className="text-lg font-medium text-gray-700">{selectedAthlete?.email}</p>
-                              <p className="text-lg font-semibold text-gray-800">Date of Birth:</p>
-                              <p className="text-sm text-gray-500">{selectedAthlete?.dob}</p>
-
-                              
-
+                                </div>
+                              )}
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">{athlete.name}</div>
+                              <div className="text-xs text-gray-500">{athlete.email}</div>
                             </div>
                           </div>
-                         </TabsContent>
-
-                         <TabsContent value="performance" className="p-6">
-                          <p className="text-lg font-semibold">Performance Summary</p>
-                          <p><strong>Consistency:</strong> {consistency}%</p>
-                          <p><strong>Technique:</strong> {technique}%</p>
-                          <p><strong>Stamina:</strong> {stamina}%</p>
-                          <p><strong>Overall Rating:</strong> {overallRating}%</p>
-                         </TabsContent>
-
-                         <TabsContent value="medical" className="p-6">
-                          <p className="text-lg font-semibold">Physical Measurements</p>
-                          <p>Height: {selectedAthlete?.height} cm</p>
-                          <p>Weight: {selectedAthlete?.weight} kg</p>
-                          <p>BMI: {selectedAthlete?.bmi}</p>
-                          <p>Blood Type: {selectedAthlete?.bloodGroup}</p>
-                         </TabsContent>
-
-                         <TabsContent value="schedule" className="p-6">
-                          <p className="text-lg font-semibold">Current Week Schedule</p>
-                          <p>Sessions: 5 | Total Hours: 10 | Rest Days: 2</p>
-                         </TabsContent>
-
-                         <TabsContent value="finances" className="p-6">
-                          <p className="text-lg font-semibold">Account Summary</p>
-                          <p>Balance Due: $500</p>
-                          <p>Credits: $100</p>
-                          <p>Net Due: $400</p>
-                         </TabsContent>
-                        </Tabs>
-                        
-                        <DialogFooter className="mt-6 flex justify-end">
-                          <Button variant="outline" onClick={() => setProfileDialogOpen(false)}>Close</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    </div>
-                  </>
-                )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-wrap gap-1">
+                            {athlete.sports?.map((sport, idx) => (
+                              <span 
+                                key={idx} 
+                                className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800"
+                              >
+                                {sport}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {athlete.gender}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                          {athlete.schoolName}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 text-xs rounded-full 
+                            ${athlete.skillLevel === "Beginner" ? "bg-green-100 text-green-800" : 
+                              athlete.skillLevel === "Intermediate" ? "bg-blue-100 text-blue-800" : 
+                              athlete.skillLevel === "Advanced" ? "bg-purple-100 text-purple-800" : 
+                              "bg-red-100 text-red-800"}`}>
+                            {athlete.skillLevel}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">
+                          <Button 
+                            size="sm"
+                            variant="outline"
+                            className="mr-2"
+                            onClick={() => handleViewProfile(athlete)}
+                          >
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            );
-          };
-        }
+            ) : (
+              <div className="text-center py-12 px-4">
+                <p className="text-lg text-gray-500">No athletes found matching your criteria</p>
+                <p className="text-sm text-gray-400 mt-1">Try adjusting your filters or add a new athlete</p>
+              </div>
+            )}
+            
+            {/* Pagination */}
+            {athletes.length > 0 && (
+              <div className="flex items-center justify-between mt-4 px-4">
+                <div className="text-sm text-gray-500">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className="p-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  {/* Page numbers */}
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageToShow = i === 0 
+                        ? Math.max(1, Math.min(currentPage - 2, totalPages - 4))
+                        : Math.max(1, Math.min(currentPage - 2, totalPages - 4)) + i;
+                      
+                      if (pageToShow <= totalPages) {
+                        return (
+                          <Button 
+                            key={i} 
+                            variant={pageToShow === currentPage ? "default" : "outline"} 
+                            size="sm" 
+                            onClick={() => goToPage(pageToShow)}
+                            className={pageToShow === currentPage ? "bg-blue-600" : ""}
+                          >
+                            {pageToShow}
+                          </Button>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className="p-2"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Athlete Profile Dialog */}
+      {selectedAthlete && (
+        <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+          <DialogContent className="max-w-5xl p-8 rounded-lg bg-white shadow-lg overflow-y-auto max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">{selectedAthlete.name}</DialogTitle>
+            </DialogHeader>
+            
+            {/* Profile content here */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Left column - Basic info */}
+              <div className="space-y-6">
+                <div className="flex flex-col items-center">
+                  <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 mb-4">
+                    {selectedAthlete.avatar ? (
+                      <img 
+                        src={selectedAthlete.avatar} 
+                        alt={selectedAthlete.name} 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center">
+                        <span className="text-gray-500 text-3xl font-medium">
+                          {selectedAthlete.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-semibold">{selectedAthlete.name}</h3>
+                  <p className="text-gray-500 text-sm">{selectedAthlete.email}</p>
+                </div>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Personal Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-2">
+                    <div>
+                      <p className="text-sm text-gray-500">Age</p>
+                      <p className="font-medium">{selectedAthlete.dob ? calculateAge(selectedAthlete.dob) : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Gender</p>
+                      <p className="font-medium">{selectedAthlete.gender || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Nationality</p>
+                      <p className="font-medium">{selectedAthlete.nationality || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Phone</p>
+                      <p className="font-medium">{selectedAthlete.phoneNumber || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Address</p>
+                      <p className="font-medium">{selectedAthlete.address || 'N/A'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              {/* Middle column - School & Sports */}
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Academic Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-2">
+  <div>
+    <p className="text-sm text-gray-500">School Name</p>
+    <p className="font-medium">{selectedAthlete.schoolName || 'N/A'}</p>
+  </div>
+  <div>
+    <p className="text-sm text-gray-500">Grade/Year</p>
+    <p className="font-medium">{selectedAthlete.year || 'N/A'}</p>
+  </div>
+  <div>
+    <p className="text-sm text-gray-500">Student ID</p>
+    <p className="font-medium">{selectedAthlete.studentId || 'N/A'}</p>
+  </div>
+  <div>
+    <p className="text-sm text-gray-500">School Email</p>
+    <p className="font-medium">{selectedAthlete.schoolEmail || 'N/A'}</p>
+  </div>
+  <div>
+    <p className="text-sm text-gray-500">Training Since</p>
+    <p className="font-medium">{selectedAthlete.trainingStartDate ? new Date(selectedAthlete.trainingStartDate).toLocaleDateString() : 'N/A'}</p>
+  </div>
+</CardContent>
+</Card>
+
+<Card>
+  <CardHeader className="pb-2">
+    <CardTitle className="text-lg">Sports Information</CardTitle>
+  </CardHeader>
+  <CardContent className="pt-0 space-y-2">
+    <div>
+      <p className="text-sm text-gray-500">Sports</p>
+      <div className="flex flex-wrap gap-1 mt-1">
+        {selectedAthlete.sports?.map((sport, idx) => (
+          <span key={idx} className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">{sport}</span>
+        )) || <p className="text-gray-500">No sports listed</p>}
+      </div>
+    </div>
+    <div>
+      <p className="text-sm text-gray-500">Skill Level</p>
+      <p className="font-medium">{selectedAthlete.skillLevel || 'N/A'}</p>
+    </div>
+    <div>
+      <p className="text-sm text-gray-500">Dominant Hand</p>
+      <p className="font-medium">{selectedAthlete.dominantHand || 'N/A'}</p>
+    </div>
+    <div>
+      <p className="text-sm text-gray-500">Coach</p>
+      <p className="font-medium">{selectedAthlete.headCoachName || 'Not Assigned'}</p>
+    </div>
+  </CardContent>
+</Card>
+</div>
+
+{/* Right column - Medical & Performance */}
+<div className="space-y-6">
+  <Card>
+    <CardHeader className="pb-2">
+      <CardTitle className="text-lg">Medical Information</CardTitle>
+    </CardHeader>
+    <CardContent className="pt-0 space-y-2">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-sm text-gray-500">Height</p>
+          <p className="font-medium">{selectedAthlete.height ? `${selectedAthlete.height} cm` : 'N/A'}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">Weight</p>
+          <p className="font-medium">{selectedAthlete.weight ? `${selectedAthlete.weight} kg` : 'N/A'}</p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">BMI</p>
+          <p className="font-medium">
+            {selectedAthlete.height && selectedAthlete.weight 
+              ? (selectedAthlete.weight / Math.pow(selectedAthlete.height/100, 2)).toFixed(1)
+              : 'N/A'}
+          </p>
+        </div>
+        <div>
+          <p className="text-sm text-gray-500">Blood Group</p>
+          <p className="font-medium">{selectedAthlete.bloodGroup || 'N/A'}</p>
+        </div>
+      </div>
+      
+      <div>
+        <p className="text-sm text-gray-500">Allergies</p>
+        <p className="font-medium">{selectedAthlete.allergies?.join(', ') || 'None reported'}</p>
+      </div>
+      
+      <div>
+        <p className="text-sm text-gray-500">Medical Conditions</p>
+        <p className="font-medium">{selectedAthlete.medicalConditions?.join(', ') || 'None reported'}</p>
+      </div>
+    </CardContent>
+  </Card>
+
+  <Card>
+    <CardHeader className="pb-2">
+      <CardTitle className="text-lg">Performance Metrics</CardTitle>
+    </CardHeader>
+    <CardContent className="pt-0 space-y-4">
+      <div className="text-center mb-2">
+        <span className="text-3xl font-bold text-blue-600">{overallRating}</span>
+        <p className="text-sm text-gray-500">Overall Rating</p>
+      </div>
+      
+      <div>
+        <div className="flex justify-between mb-1">
+          <span className="text-sm">Consistency</span>
+          <span className="text-sm font-medium">{consistency}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="bg-green-600 h-2 rounded-full" style={{ width: `${consistency}%` }}></div>
+        </div>
+      </div>
+      
+      <div>
+        <div className="flex justify-between mb-1">
+          <span className="text-sm">Technique</span>
+          <span className="text-sm font-medium">{technique}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${technique}%` }}></div>
+        </div>
+      </div>
+      
+      <div>
+        <div className="flex justify-between mb-1">
+          <span className="text-sm">Stamina</span>
+          <span className="text-sm font-medium">{stamina}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${stamina}%` }}></div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</div>
+</div>
+
+<DialogFooter className="mt-6">
+  <Button 
+    variant="outline" 
+    onClick={() => setProfileDialogOpen(false)}
+  >
+    Close
+  </Button>
+</DialogFooter>
+</DialogContent>
+</Dialog>
+)}
+</div>
+);
+};
+
 export default AthleteManagement;

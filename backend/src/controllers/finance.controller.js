@@ -3,7 +3,7 @@ import ApiError from "../utils/ApiError.js";
 import {Athlete} from "../models/athlete.model.js";
 import {Admin} from "../models/admin.model.js";
 import FinancialRecord from "../models/financialrecord.model.js"
-import  ApiResponse  from "../utils/ApiResponse.js";
+import  ApiResponse   from "../utils/ApiResponse.js";
 
 /**
  * @desc Add a financial record (Admin only)
@@ -152,7 +152,7 @@ const getFinancialRecords = asyncHandler(async (req, res) => {
     }
 
     // ✅ Return API Response
-    res.status(200).json(new ApiResponse(200, financialRecords, "Financial records retrieved successfully."));
+    res.status(200).json(new ApiResponse (200, financialRecords, "Financial records retrieved successfully."));
 });
 
 /**
@@ -170,7 +170,7 @@ const updateFinancialRecord = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Financial record not found");
     }
 
-    res.status(200).json(new ApiResponse(200, updatedRecord, "Financial record updated successfully."));
+    res.status(200).json(new ApiResponse (200, updatedRecord, "Financial record updated successfully."));
 });
 
 /**
@@ -208,7 +208,7 @@ const softDeleteFinancialRecord = asyncHandler(async (req, res) => {
     });
 
 
-    res.status(200).json(new ApiResponse(200, null, "Financial record deleted successfully (soft delete)."));
+    res.status(200).json(new ApiResponse (200, null, "Financial record deleted successfully (soft delete)."));
 });
 
 /**
@@ -248,7 +248,7 @@ const restoreFinancialRecord = asyncHandler(async (req, res) => {
             message: `Your financial record (${financialRecord.category}, ${financialRecord.amount} ${financialRecord.currency}) has been restored.`,
         });
         
-    res.status(200).json(new ApiResponse(200, null, "Financial record restored successfully."));
+    res.status(200).json(new ApiResponse (200, null, "Financial record restored successfully."));
 });
 
 const getAuditLogs = asyncHandler(async (req, res) => {
@@ -267,7 +267,7 @@ const getAuditLogs = asyncHandler(async (req, res) => {
     const totalLogs = await AuditLog.countDocuments();
 
     res.status(200).json(
-        new ApiResponse(200, { logs, totalPages: Math.ceil(totalLogs / limit) }, "Audit logs retrieved successfully.")
+        new ApiResponse (200, { logs, totalPages: Math.ceil(totalLogs / limit) }, "Audit logs retrieved successfully.")
     );
 });
 

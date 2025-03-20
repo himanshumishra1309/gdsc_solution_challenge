@@ -28,7 +28,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("coachAccessToken", options)
     .clearCookie("coachRefreshToken", options)
-    .json(new ApiResponse(200, {}, "User Logged Out"));
+    .json(new ApiResponse (200, {}, "User Logged Out"));
 });
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -90,7 +90,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
+    .json(new ApiResponse (200, createdUser, "User Registered Successfully"));
 });
 
 const getCoachProfile = asyncHandler(async (req, res) => {
@@ -104,7 +104,7 @@ const getCoachProfile = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, teacher, "Coah profile fetched successfully"));
+    .json(new ApiResponse (200, teacher, "Coah profile fetched successfully"));
 });
 
 const logRpe = asyncHandler(async (req, res) => {

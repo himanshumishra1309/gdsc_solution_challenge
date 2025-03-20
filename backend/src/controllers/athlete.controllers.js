@@ -1,12 +1,8 @@
 import asyncHandler from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiError.js";
-import { Athlete } from "../models/athlete.model.js";
-import jwt from "jsonwebtoken";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import ApiError from "../utils/ApiError.js"
+import ApiError from "../utils/ApiError.js";
+import ApiResponse from "../utils/ApiResponse.js";
 import {Athlete} from "../models/athlete.model.js"
 import jwt from 'jsonwebtoken'
-import ApiResponse from "../utils/ApiResponse.js"
 
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -55,7 +51,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("athleteAccessToken", options)
     .clearCookie("athleteRefreshToken", options)
-    .json(new ApiResponse(200, {}, "User Logged Out"));
+    .json(new ApiResponse (200, {}, "User Logged Out"));
 });
 
 const getAthleteProfile = asyncHandler(async (req, res) => {
@@ -70,7 +66,7 @@ const getAthleteProfile = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, teacher, "Athlete profile fetched successfully")
+      new ApiResponse (200, teacher, "Athlete profile fetched successfully")
     );
 });
 

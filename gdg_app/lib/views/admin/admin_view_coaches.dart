@@ -5,6 +5,10 @@ import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:gdg_app/views/coach/coach_home_page.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:gdg_app/serivces/admin_services.dart';
+import 'package:gdg_app/constants/api_constants.dart';
 
 class AdminViewCoaches extends StatefulWidget {
   const AdminViewCoaches({super.key});
@@ -13,7 +17,10 @@ class AdminViewCoaches extends StatefulWidget {
   _AdminViewCoachesState createState() => _AdminViewCoachesState();
 }
 
-class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerProviderStateMixin {
+class _AdminViewCoachesState extends State<AdminViewCoaches>
+    with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
+  final _adminService = AdminService();
   List<dynamic> _coaches = [];
   List<dynamic> _filteredCoaches = [];
   String _searchQuery = '';
@@ -22,9 +29,29 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
   bool _isLoading = true;
   bool _isGridView = false;
   late AnimationController _animationController;
-  
-  final List<String> _sportFilters = ['All', 'Football', 'Cricket', 'Basketball', 'Tennis', 'Badminton', 'Swimming', 'Volleyball'];
-  final List<String> _sortOptions = ['Name (A-Z)', 'Name (Z-A)', 'Sport', 'Experience (Most)', 'Experience (Least)'];
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalCoaches = 0;
+  bool _hasNextPage = false;
+  bool _hasPrevPage = false;
+
+  final List<String> _sportFilters = [
+    'All',
+    'Football',
+    'Cricket',
+    'Basketball',
+    'Tennis',
+    'Badminton',
+    'Swimming',
+    'Volleyball'
+  ];
+  final List<String> _sortOptions = [
+    'Name (A-Z)',
+    'Name (Z-A)',
+    'Sport',
+    'Experience (Most)',
+    'Experience (Least)'
+  ];
 
   @override
   void initState() {
@@ -46,56 +73,151 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
-      final String response = await rootBundle.loadString('assets/json_files/coaches_profiles.json');
-      final data = await json.decode(response);
-      
-      setState(() {
-        _coaches = data;
-        _sortCoaches();
-        _isLoading = false;
-      });
+      // Determine sort parameters based on current selection
+      String sortField = 'name';
+      String sortOrder = 'asc';
+
+      switch (_sortBy) {
+        case 'Name (A-Z)':
+          sortField = 'name';
+          sortOrder = 'asc';
+          break;
+        case 'Name (Z-A)':
+          sortField = 'name';
+          sortOrder = 'desc';
+          break;
+        case 'Sport':
+          sortField = 'sport';
+          sortOrder = 'asc';
+          break;
+        case 'Experience (Most)':
+          sortField = 'experience';
+          sortOrder = 'desc';
+          break;
+        case 'Experience (Least)':
+          sortField = 'experience';
+          sortOrder = 'asc';
+          break;
+      }
+
+      // Call the API through AdminService
+      final result = await _adminService.getAllCoaches(
+        page: _currentPage,
+        limit: 10, // You can adjust this as needed
+        sort: sortField,
+        order: sortOrder,
+        search: _searchQuery,
+        sport: _selectedSport,
+      );
+
+      if (result['success']) {
+        setState(() {
+          // Transform the API response to match your UI's expected structure
+          _coaches = result['coaches'].map<Map<String, dynamic>>((coach) {
+            return {
+              'id': coach['_id'],
+              'name': coach['name'] ?? 'No Name',
+              'email': coach['email'] ?? 'No Email',
+              'primarySport': coach['sport'] ?? 'Other',
+              'specialization': coach['designation'] ?? 'Coach',
+              'yearsOfExperience':
+                  int.tryParse(coach['experience']?.toString() ?? '0') ?? 0,
+              'profilePhoto': coach['avatar'] ??
+                  'assets/default_profile.png', // Use a default image path
+              'dateJoined': coach['createdAt'] != null
+                  ? DateTime.parse(coach['createdAt']).toString()
+                  : 'Unknown',
+              'status': coach['status'] ?? 'Active',
+              'contactNumber': coach['contactNumber'] ?? 'N/A',
+              'organization': coach['organization']?['name'] ?? 'N/A',
+              'assignedAthletes': coach['assignedAthletes'] ?? [],
+              'coachId': coach['_id'] ?? 'COACH-XXXX',
+              // Add any other fields your UI needs
+            };
+          }).toList();
+
+          // Update pagination information
+          final pagination = result['pagination'];
+          _totalPages = pagination['totalPages'] ?? 1;
+          _currentPage = pagination['currentPage'] ?? 1;
+          _totalCoaches = pagination['totalCoaches'] ?? 0;
+          _hasNextPage = pagination['hasNextPage'] ?? false;
+          _hasPrevPage = pagination['hasPrevPage'] ?? false;
+
+          // Filter coaches based on any client-side filters you want to keep
+          _filteredCoaches = _coaches;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _coaches = [];
+          _filteredCoaches = [];
+          _isLoading = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error loading coaches: ${result['message']}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     } catch (e) {
+      debugPrint('Error in _loadCoaches: $e');
       setState(() {
         _coaches = [];
         _filteredCoaches = [];
         _isLoading = false;
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error loading coaches: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
   void _sortCoaches() {
     List<dynamic> sortedCoaches = List.from(_coaches);
-    
+
     switch (_sortBy) {
       case 'Name (A-Z)':
-        sortedCoaches.sort((a, b) => a['name'].toString().compareTo(b['name'].toString()));
+        sortedCoaches.sort(
+            (a, b) => a['name'].toString().compareTo(b['name'].toString()));
         break;
       case 'Name (Z-A)':
-        sortedCoaches.sort((a, b) => b['name'].toString().compareTo(a['name'].toString()));
+        sortedCoaches.sort(
+            (a, b) => b['name'].toString().compareTo(a['name'].toString()));
         break;
       case 'Sport':
-        sortedCoaches.sort((a, b) => a['primarySport'].toString().compareTo(b['primarySport'].toString()));
+        sortedCoaches.sort((a, b) => a['primarySport']
+            .toString()
+            .compareTo(b['primarySport'].toString()));
         break;
       case 'Experience (Most)':
-        sortedCoaches.sort((a, b) => (b['yearsOfExperience'] ?? 0).compareTo(a['yearsOfExperience'] ?? 0));
+        sortedCoaches.sort((a, b) => (b['yearsOfExperience'] ?? 0)
+            .compareTo(a['yearsOfExperience'] ?? 0));
         break;
       case 'Experience (Least)':
-        sortedCoaches.sort((a, b) => (a['yearsOfExperience'] ?? 0).compareTo(b['yearsOfExperience'] ?? 0));
+        sortedCoaches.sort((a, b) => (a['yearsOfExperience'] ?? 0)
+            .compareTo(b['yearsOfExperience'] ?? 0));
         break;
     }
-    
+
     _filteredCoaches = sortedCoaches.where((coach) {
-      final matchesName = coach['name']?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false;
-      final matchesSport = _selectedSport == 'All' || coach['primarySport'] == _selectedSport;
+      final matchesName =
+          coach['name']?.toLowerCase().contains(_searchQuery.toLowerCase()) ??
+              false;
+      final matchesSport =
+          _selectedSport == 'All' || coach['primarySport'] == _selectedSport;
       return matchesName && matchesSport;
     }).toList();
   }
@@ -103,21 +225,23 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
-      _sortCoaches();
+      _currentPage = 1; // Reset to first page when searching
+      _loadCoaches(); // Load directly from API instead of filtering locally
     });
   }
 
   void _onSportChanged(String? sport) {
     setState(() {
       _selectedSport = sport!;
-      _sortCoaches();
+      _currentPage = 1; // Reset to first page when filtering
+      _loadCoaches(); // Load directly from API instead of filtering locally
     });
   }
 
   void _onSortByChanged(String? sortOption) {
     setState(() {
       _sortBy = sortOption!;
-      _sortCoaches();
+      _loadCoaches(); // Reload with new sort option
     });
   }
 
@@ -128,192 +252,204 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
   }
 
   void _showFilterBottomSheet() {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true, // This allows the bottom sheet to expand
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setModalState) {
-          return DraggableScrollableSheet(
-            initialChildSize: 0.6, // Initial height (60% of screen)
-            minChildSize: 0.3, // Minimum height when collapsed (30% of screen)
-            maxChildSize: 0.9, // Maximum height when expanded (90% of screen)
-            expand: false,
-            builder: (context, scrollController) {
-              return SingleChildScrollView(
-                controller: scrollController,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Drag handle for better UX
-                      Center(
-                        child: Container(
-                          width: 50,
-                          height: 5,
-                          margin: const EdgeInsets.only(bottom: 20),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                      // Title
-                      const Row(
-                        children: [
-                          Icon(Icons.filter_list, color: Colors.deepPurple),
-                          SizedBox(width: 10),
-                          Text(
-                            'Filter Coaches',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Sport',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _sportFilters.map((sport) {
-                          return FilterChip(
-                            label: Text(sport),
-                            selected: _selectedSport == sport,
-                            selectedColor: Colors.deepPurple.withOpacity(0.2),
-                            checkmarkColor: Colors.deepPurple,
-                            onSelected: (selected) {
-                              setModalState(() {
-                                _selectedSport = sport;
-                              });
-                              setState(() {
-                                _selectedSport = sport;
-                                _sortCoaches();
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Sort By',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _sortOptions.map((option) {
-                          return ChoiceChip(
-                            label: Text(option),
-                            selected: _sortBy == option,
-                            selectedColor: Colors.deepPurple.withOpacity(0.2),
-                            onSelected: (selected) {
-                              setModalState(() {
-                                _sortBy = option;
-                              });
-                              setState(() {
-                                _sortBy = option;
-                                _sortCoaches();
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      
-                      // Additional filters can be added here
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Experience Level',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SliderTheme(
-                        data: SliderTheme.of(context).copyWith(
-                          activeTrackColor: Colors.deepPurple,
-                          inactiveTrackColor: Colors.deepPurple.withOpacity(0.2),
-                          thumbColor: Colors.deepPurple,
-                          overlayColor: Colors.deepPurple.withOpacity(0.1),
-                        ),
-                        child: Slider(
-                          value: 5, // Replace with your actual experience filter value
-                          min: 0,
-                          max: 20,
-                          divisions: 20,
-                          label: '5+ years',
-                          onChanged: (value) {
-                            // Update your experience filter
-                            setModalState(() {
-                              // _experienceFilter = value;
-                            });
-                          },
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 30),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 15),
-                            shape: RoundedRectangleBorder(
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // This allows the bottom sheet to expand
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.6, // Initial height (60% of screen)
+              minChildSize:
+                  0.3, // Minimum height when collapsed (30% of screen)
+              maxChildSize: 0.9, // Maximum height when expanded (90% of screen)
+              expand: false,
+              builder: (context, scrollController) {
+                return SingleChildScrollView(
+                  controller: scrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Drag handle for better UX
+                        Center(
+                          child: Container(
+                            width: 50,
+                            height: 5,
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade300,
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Apply Filters'),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      Center(
-                        child: TextButton(
-                          onPressed: () {
-                            setModalState(() {
-                              _selectedSport = 'All';
-                              _sortBy = 'Name (A-Z)';
-                            });
-                            setState(() {
-                              _selectedSport = 'All';
-                              _sortBy = 'Name (A-Z)';
-                              _sortCoaches();
-                            });
-                          },
-                          child: const Text('Reset All Filters'),
+                        // Title
+                        const Row(
+                          children: [
+                            Icon(Icons.filter_list, color: Colors.deepPurple),
+                            SizedBox(width: 10),
+                            Text(
+                              'Filter Coaches',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Sport',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _sportFilters.map((sport) {
+                            return FilterChip(
+                              label: Text(sport),
+                              selected: _selectedSport == sport,
+                              selectedColor: Colors.deepPurple.withOpacity(0.2),
+                              checkmarkColor: Colors.deepPurple,
+                              onSelected: (selected) {
+                                setModalState(() {
+                                  _selectedSport = sport;
+                                });
+                                setState(() {
+                                  _selectedSport = sport;
+                                  _sortCoaches();
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Sort By',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _sortOptions.map((option) {
+                            return ChoiceChip(
+                              label: Text(option),
+                              selected: _sortBy == option,
+                              selectedColor: Colors.deepPurple.withOpacity(0.2),
+                              onSelected: (selected) {
+                                setModalState(() {
+                                  _sortBy = option;
+                                });
+                                setState(() {
+                                  _sortBy = option;
+                                  _sortCoaches();
+                                });
+                              },
+                            );
+                          }).toList(),
+                        ),
+
+                        // Additional filters can be added here
+                        const SizedBox(height: 20),
+                        const Text(
+                          'Experience Level',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            activeTrackColor: Colors.deepPurple,
+                            inactiveTrackColor:
+                                Colors.deepPurple.withOpacity(0.2),
+                            thumbColor: Colors.deepPurple,
+                            overlayColor: Colors.deepPurple.withOpacity(0.1),
+                          ),
+                          child: Slider(
+                            value:
+                                5, // Replace with your actual experience filter value
+                            min: 0,
+                            max: 20,
+                            divisions: 20,
+                            label: '5+ years',
+                            onChanged: (value) {
+                              // Update your experience filter
+                              setModalState(() {
+                                // _experienceFilter = value;
+                              });
+                            },
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+                        // Replace the Apply Filters button in the _showFilterBottomSheet method (around line 297)
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: () {
+                              // Load data with filters
+                              setState(() {
+                                _currentPage =
+                                    1; // Reset to page 1 when applying filters
+                                _loadCoaches();
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Apply Filters'),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        // Update the reset filters text button in _showFilterBottomSheet (around line 311)
+                        Center(
+                          child: TextButton(
+                            onPressed: () {
+                              setModalState(() {
+                                _selectedSport = 'All';
+                                _sortBy = 'Name (A-Z)';
+                              });
+                              setState(() {
+                                _selectedSport = 'All';
+                                _sortBy = 'Name (A-Z)';
+                                _currentPage = 1; // Reset to page 1
+                                _loadCoaches(); // Re-fetch data from API
+                              });
+                            },
+                            child: const Text('Reset All Filters'),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
-          );
-        },
-      );
-    },
-  );
-}
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _showHelpDialog() {
     showDialog(
@@ -336,7 +472,8 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                         color: Colors.deepPurple.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.help_outline, color: Colors.deepPurple),
+                      child: const Icon(Icons.help_outline,
+                          color: Colors.deepPurple),
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
@@ -366,7 +503,8 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                 _buildHelpItem(
                   icon: Icons.sort,
                   title: 'Sort Coaches',
-                  description: 'Sort coaches by name, sport, or years of experience.',
+                  description:
+                      'Sort coaches by name, sport, or years of experience.',
                 ),
                 const SizedBox(height: 16),
                 _buildHelpItem(
@@ -380,7 +518,8 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                   style: TextButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 30, vertical: 15),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -447,34 +586,132 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
     );
   }
 
-  void _handleLogout(BuildContext context) {
+  void _handleLogout(BuildContext context) async {
     // Show confirmation dialog
-    showDialog(
+    final shouldLogout = await showDialog<bool>(
       context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Confirm Logout'),
-          content: const Text('Are you sure you want to logout?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: const Text('Cancel'),
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-                Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    // If user confirmed logout
+    if (shouldLogout == true) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(color: Colors.deepPurple),
+                  SizedBox(height: 16),
+                  Text('Logging out...'),
+                ],
               ),
-              child: const Text('Logout'),
             ),
-          ],
-        );
-      },
+          );
+        },
+      );
+
+      try {
+        // First clear local data directly
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+
+        // Then try server-side logout, but don't block on it
+        _authService.logout().catchError((e) {
+          print('Server logout error: $e');
+        });
+
+        // Navigate to login page
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            coachAdminPlayerRoute, // Make sure this constant is defined in your routes file
+            (route) => false, // This clears the navigation stack
+          );
+        }
+      } catch (e) {
+        // Handle errors
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error during logout: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Widget _buildPaginationControls() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left),
+            onPressed: _hasPrevPage
+                ? () {
+                    setState(() {
+                      _currentPage--;
+                      _loadCoaches();
+                    });
+                  }
+                : null,
+            color: _hasPrevPage ? Colors.deepPurple : Colors.grey,
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Page $_currentPage of $_totalPages',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chevron_right),
+            onPressed: _hasNextPage
+                ? () {
+                    setState(() {
+                      _currentPage++;
+                      _loadCoaches();
+                    });
+                  }
+                : null,
+            color: _hasNextPage ? Colors.deepPurple : Colors.grey,
+          ),
+        ],
+      ),
     );
   }
 
@@ -522,16 +759,42 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
           }
         },
         drawerItems: [
-          DrawerItem(icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Admin', route: registerAdminRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Coach', route: registerCoachRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Player', route: registerPlayerRoute),
-          DrawerItem(icon: Icons.people, title: 'View All Players', route: viewAllPlayersRoute),
-          DrawerItem(icon: Icons.people, title: 'View All Coaches', route: viewAllCoachesRoute),
-          DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
-          DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
-          DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-          DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
+          DrawerItem(
+              icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
+          DrawerItem(
+              icon: Icons.person_add,
+              title: 'Register Admin',
+              route: registerAdminRoute),
+          DrawerItem(
+              icon: Icons.person_add,
+              title: 'Register Coach',
+              route: registerCoachRoute),
+          DrawerItem(
+              icon: Icons.person_add,
+              title: 'Register Player',
+              route: registerPlayerRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View All Players',
+              route: viewAllPlayersRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View All Coaches',
+              route: viewAllCoachesRoute),
+          DrawerItem(
+              icon: Icons.request_page,
+              title: 'Request/View Sponsors',
+              route: requestViewSponsorsRoute),
+          DrawerItem(
+              icon: Icons.video_library,
+              title: 'Video Analysis',
+              route: videoAnalysisRoute),
+          DrawerItem(
+              icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
+          DrawerItem(
+              icon: Icons.attach_money,
+              title: 'Manage Player Finances',
+              route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
       ),
@@ -561,7 +824,7 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
               ),
             ),
           ),
-          
+
           // Filter pills
           Container(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -586,11 +849,13 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                                   _sortCoaches();
                                 });
                               },
-                              backgroundColor: Colors.deepPurple.withOpacity(0.1),
-                              side: BorderSide(color: Colors.deepPurple.withOpacity(0.3)),
+                              backgroundColor:
+                                  Colors.deepPurple.withOpacity(0.1),
+                              side: BorderSide(
+                                  color: Colors.deepPurple.withOpacity(0.3)),
                             ),
                           ),
-                        
+
                         // Sort by pill
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
@@ -601,10 +866,9 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                             side: BorderSide(color: Colors.grey.shade400),
                           ),
                         ),
-                        
-                        // Total count pill
+
                         Chip(
-                          label: Text('${_filteredCoaches.length} Coaches'),
+                          label: Text('$_totalCoaches Coaches'),
                           backgroundColor: Colors.grey.shade200,
                           side: BorderSide(color: Colors.grey.shade400),
                         ),
@@ -615,11 +879,12 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
               ],
             ),
           ),
-          
-          // Coaches list/grid
+
+          // Replace the Expanded widget in the build method (that contains the coach list) with:
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.deepPurple))
                 : _filteredCoaches.isEmpty
                     ? Center(
                         child: Column(
@@ -649,49 +914,64 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                           ],
                         ),
                       )
-                    : _isGridView
-                        ? AnimationLimiter(
-                            child: GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.75,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                              ),
-                              itemCount: _filteredCoaches.length,
-                              itemBuilder: (context, index) {
-                                return AnimationConfiguration.staggeredGrid(
-                                  position: index,
-                                  columnCount: 2,
-                                  duration: const Duration(milliseconds: 500),
-                                  child: ScaleAnimation(
-                                    child: FadeInAnimation(
-                                      child: _buildCoachGridCard(_filteredCoaches[index]),
+                    : Column(
+                        children: [
+                          Expanded(
+                            child: _isGridView
+                                ? AnimationLimiter(
+                                    child: GridView.builder(
+                                      padding: const EdgeInsets.all(16),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        childAspectRatio: 0.75,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 16,
+                                      ),
+                                      itemCount: _filteredCoaches.length,
+                                      itemBuilder: (context, index) {
+                                        return AnimationConfiguration
+                                            .staggeredGrid(
+                                          position: index,
+                                          columnCount: 2,
+                                          duration:
+                                              const Duration(milliseconds: 500),
+                                          child: ScaleAnimation(
+                                            child: FadeInAnimation(
+                                              child: _buildCoachGridCard(
+                                                  _filteredCoaches[index]),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  )
+                                : AnimationLimiter(
+                                    child: ListView.builder(
+                                      itemCount: _filteredCoaches.length,
+                                      padding: const EdgeInsets.all(16),
+                                      itemBuilder: (context, index) {
+                                        return AnimationConfiguration
+                                            .staggeredList(
+                                          position: index,
+                                          duration:
+                                              const Duration(milliseconds: 500),
+                                          child: SlideAnimation(
+                                            horizontalOffset: 50.0,
+                                            child: FadeInAnimation(
+                                              child: _buildCoachListCard(
+                                                  _filteredCoaches[index]),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
-                                );
-                              },
-                            ),
-                          )
-                        : AnimationLimiter(
-                            child: ListView.builder(
-                              itemCount: _filteredCoaches.length,
-                              padding: const EdgeInsets.all(16),
-                              itemBuilder: (context, index) {
-                                return AnimationConfiguration.staggeredList(
-                                  position: index,
-                                  duration: const Duration(milliseconds: 500),
-                                  child: SlideAnimation(
-                                    horizontalOffset: 50.0,
-                                    child: FadeInAnimation(
-                                      child: _buildCoachListCard(_filteredCoaches[index]),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
                           ),
+                          // Add pagination controls
+                          _buildPaginationControls(),
+                        ],
+                      ),
           ),
         ],
       ),
@@ -708,7 +988,7 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
 
   Widget _buildCoachGridCard(Map<String, dynamic> coach) {
     final sportColor = _getSportColor(coach['primarySport'] ?? '');
-    
+
     return GestureDetector(
       onTap: () => _navigateToCoachProfile(coach),
       child: Container(
@@ -735,7 +1015,8 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                 children: [
                   // Colored gradient background
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(16)),
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -755,7 +1036,8 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                         child: CircleAvatar(
                           radius: 45,
                           backgroundColor: Colors.white,
-                          backgroundImage: AssetImage(coach['profilePhoto'] ?? 'assets/default_profile.png'),
+                          backgroundImage: AssetImage(coach['profilePhoto'] ??
+                              'assets/default_profile.png'),
                         ),
                       ),
                     ],
@@ -763,7 +1045,7 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                 ],
               ),
             ),
-            
+
             // Info section
             Expanded(
               flex: 2,
@@ -785,7 +1067,8 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                     ),
                     const SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: sportColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -819,7 +1102,7 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
 
   Widget _buildCoachListCard(Map<String, dynamic> coach) {
     final sportColor = _getSportColor(coach['primarySport'] ?? '');
-    
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
@@ -831,7 +1114,7 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // Profile photo
+              // Profile photo - FIXED WIDTH
               Hero(
                 tag: 'coach-avatar-${coach['id']}',
                 child: Container(
@@ -842,14 +1125,15 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                     border: Border.all(color: sportColor, width: 2),
                     image: DecorationImage(
                       fit: BoxFit.cover,
-                      image: AssetImage(coach['profilePhoto'] ?? 'assets/default_profile.png'),
+                      image: AssetImage(coach['profilePhoto'] ??
+                          'assets/default_profile.png'),
                     ),
                   ),
                 ),
               ),
               const SizedBox(width: 16),
-              
-              // Coach info
+
+              // Coach info - FIX: ADD EXPANDED HERE TO PREVENT OVERFLOW
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -860,12 +1144,14 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
+                      overflow: TextOverflow.ellipsis, // Add this
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: sportColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -877,14 +1163,19 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
+                            overflow: TextOverflow.ellipsis, // Add this
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          coach['specialization'] ?? 'Coach',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
+                        Flexible(
+                          // Add this wrapper
+                          child: Text(
+                            coach['specialization'] ?? 'Coach',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis, // Add this
                           ),
                         ),
                       ],
@@ -892,13 +1183,18 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.stars, size: 14, color: Colors.amber.shade700),
+                        Icon(Icons.stars,
+                            size: 14, color: Colors.amber.shade700),
                         const SizedBox(width: 4),
-                        Text(
-                          '${coach['yearsOfExperience'] ?? 0} years experience',
-                          style: TextStyle(
-                            color: Colors.grey.shade700,
-                            fontSize: 12,
+                        Flexible(
+                          // Add this wrapper
+                          child: Text(
+                            '${coach['yearsOfExperience'] ?? 0} years experience',
+                            style: TextStyle(
+                              color: Colors.grey.shade700,
+                              fontSize: 12,
+                            ),
+                            overflow: TextOverflow.ellipsis, // Add this
                           ),
                         ),
                       ],
@@ -906,8 +1202,8 @@ class _AdminViewCoachesState extends State<AdminViewCoaches> with SingleTickerPr
                   ],
                 ),
               ),
-              
-              // Arrow icon
+
+              // Arrow icon - FIXED WIDTH
               Container(
                 width: 32,
                 height: 32,
@@ -959,22 +1255,21 @@ class CoachProfileWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     // Ensure coach data has valid values to prevent null reference errors
     final safeCoachData = Map<String, dynamic>.from(coach);
-    
+
     // Set default values for any potentially null properties
     if (safeCoachData['profilePhoto'] == null) {
       safeCoachData['profilePhoto'] = 'assets/images/player1.png';
     }
-    
+
     if (safeCoachData['name'] == null) {
       safeCoachData['name'] = 'Coach Name';
     }
-    
+
     if (safeCoachData['primarySport'] == null) {
       safeCoachData['primarySport'] = 'Default';
     }
 
     return Scaffold(
-      
       body: CoachProfilePage(coachData: safeCoachData),
     );
   }
@@ -989,7 +1284,8 @@ class CoachProfilePage extends StatefulWidget {
   _CoachProfilePageState createState() => _CoachProfilePageState();
 }
 
-class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerProviderStateMixin {
+class _CoachProfilePageState extends State<CoachProfilePage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   bool _isAppBarExpanded = false;
@@ -1003,8 +1299,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
 
   void _onScroll() {
     // Adjusted threshold to avoid overlap with tabs
-    bool isExpanded = _scrollController.hasClients && 
-                    _scrollController.offset > (150 - kToolbarHeight);
+    bool isExpanded = _scrollController.hasClients &&
+        _scrollController.offset > (150 - kToolbarHeight);
     if (isExpanded != _isAppBarExpanded) {
       setState(() {
         _isAppBarExpanded = isExpanded;
@@ -1021,8 +1317,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    final sportColor = _getSportColor(widget.coachData['primarySport'] ?? 'Default');
-    
+    final sportColor =
+        _getSportColor(widget.coachData['primarySport'] ?? 'Default');
+
     return Scaffold(
       body: NestedScrollView(
         controller: _scrollController,
@@ -1033,7 +1330,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               floating: false,
               pinned: true,
               backgroundColor: sportColor,
-              title: _isAppBarExpanded 
+              title: _isAppBarExpanded
                   ? Text(
                       widget.coachData['name'] ?? 'Coach Profile',
                       style: const TextStyle(
@@ -1064,9 +1361,11 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                     ),
                     // Profile image
                     Hero(
-                      tag: 'coach-avatar-${widget.coachData['id'] ?? 'default'}',
+                      tag:
+                          'coach-avatar-${widget.coachData['id'] ?? 'default'}',
                       child: Image.asset(
-                        widget.coachData['profilePhoto'] ?? 'assets/images/player1.png',
+                        widget.coachData['profilePhoto'] ??
+                            'assets/images/player1.png',
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -1094,7 +1393,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            widget.coachData['name']  ?? 'Coach Name',
+                            widget.coachData['name'] ?? 'Coach Name',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 24,
@@ -1112,7 +1411,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: sportColor.withOpacity(0.8),
                                   borderRadius: BorderRadius.circular(12),
@@ -1128,7 +1428,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
@@ -1144,7 +1445,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                               ),
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
@@ -1186,7 +1488,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                   onSelected: (value) {
                     if (value == 'export') {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Exporting coach profile...')),
+                        const SnackBar(
+                            content: Text('Exporting coach profile...')),
                       );
                     } else if (value == 'archive') {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -1222,7 +1525,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(48),
                 child: Container(
-                  color: Colors.black.withOpacity(0.3), // Dark background for tabs
+                  color:
+                      Colors.black.withOpacity(0.3), // Dark background for tabs
                   child: TabBar(
                     controller: _tabController,
                     indicatorColor: Colors.white,
@@ -1275,7 +1579,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
 
   Widget _buildOverviewTab() {
     final sportColor = _getSportColor(widget.coachData['primarySport'] ?? '');
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1284,7 +1588,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
           // Coach Bio Card
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1306,8 +1611,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                   const Divider(),
                   const SizedBox(height: 8),
                   Text(
-                    widget.coachData['bio'] ?? 
-                    'Professional coach with expertise in ${widget.coachData['primarySport']}. Specializing in ${widget.coachData['specialization']}. Passionate about developing athletes to reach their full potential through personalized training and mentorship.',
+                    widget.coachData['bio'] ??
+                        'Professional coach with expertise in ${widget.coachData['primarySport']}. Specializing in ${widget.coachData['specialization']}. Passionate about developing athletes to reach their full potential through personalized training and mentorship.',
                     style: TextStyle(
                       fontSize: 14,
                       height: 1.5,
@@ -1318,13 +1623,14 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Coach Details
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1348,22 +1654,30 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                   _buildInfoRow('Full Name', widget.coachData['name']),
                   _buildInfoRow('Age', '${widget.coachData['age']} years'),
                   _buildInfoRow('Sport', widget.coachData['primarySport']),
-                  _buildInfoRow('Specialization', widget.coachData['specialization']),
-                  _buildInfoRow('Experience', '${widget.coachData['yearsOfExperience']} years'),
-                  _buildInfoRow('Certification', widget.coachData['certification'] ?? 'National Level Coach'),
-                  _buildInfoRow('Email', widget.coachData['email'] ?? 'coach@academysports.com'),
-                  _buildInfoRow('Phone', widget.coachData['phone'] ?? '+91 98765 43210'),
+                  _buildInfoRow(
+                      'Specialization', widget.coachData['specialization']),
+                  _buildInfoRow('Experience',
+                      '${widget.coachData['yearsOfExperience']} years'),
+                  _buildInfoRow(
+                      'Certification',
+                      widget.coachData['certification'] ??
+                          'National Level Coach'),
+                  _buildInfoRow('Email',
+                      widget.coachData['email'] ?? 'coach@academysports.com'),
+                  _buildInfoRow(
+                      'Phone', widget.coachData['phone'] ?? '+91 98765 43210'),
                 ],
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Achievements
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1405,13 +1719,14 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Training Philosophy
           Card(
             elevation: 2,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1433,8 +1748,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                   const Divider(),
                   const SizedBox(height: 8),
                   Text(
-                    widget.coachData['philosophy'] ?? 
-                    "I believe in a holistic approach to training that focuses on technical skill development, physical conditioning, and mental preparation. My coaching methodology emphasizes personalized attention to each athlete's unique needs and talents, fostering an environment of continuous improvement and teamwork.",
+                    widget.coachData['philosophy'] ??
+                        "I believe in a holistic approach to training that focuses on technical skill development, physical conditioning, and mental preparation. My coaching methodology emphasizes personalized attention to each athlete's unique needs and talents, fostering an environment of continuous improvement and teamwork.",
                     style: TextStyle(
                       fontSize: 14,
                       height: 1.5,
@@ -1444,8 +1759,10 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      _buildPhilosophyItem('Technical Excellence', Icons.sports_soccer),
-                      _buildPhilosophyItem('Mental Toughness', Icons.psychology),
+                      _buildPhilosophyItem(
+                          'Technical Excellence', Icons.sports_soccer),
+                      _buildPhilosophyItem(
+                          'Mental Toughness', Icons.psychology),
                       _buildPhilosophyItem('Team Spirit', Icons.people),
                     ],
                   ),
@@ -1498,7 +1815,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: _getSportColor(widget.coachData['primarySport']).withOpacity(0.1),
+            color: _getSportColor(widget.coachData['primarySport'])
+                .withOpacity(0.1),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
@@ -1537,7 +1855,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
 
   Widget _buildPhilosophyItem(String label, IconData icon) {
     final sportColor = _getSportColor(widget.coachData['primarySport']);
-    
+
     return Expanded(
       child: Column(
         children: [
@@ -1597,9 +1915,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
             ageGroup: '18+',
             imagePath: 'assets/team_images/team2.jpg',
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Past Teams section
           Text(
             'Past Teams',
@@ -1640,7 +1958,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
     required String imagePath,
   }) {
     final sportColor = _getSportColor(widget.coachData['primarySport']);
-    
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1651,14 +1969,16 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
           Container(
             height: 150,
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
               image: DecorationImage(
-                image: AssetImage('assets/team_placeholder.jpg'), // Use a placeholder since the actual image might not exist
+                image: AssetImage(
+                    'assets/team_placeholder.jpg'), // Use a placeholder since the actual image might not exist
                 fit: BoxFit.cover,
               ),
             ),
           ),
-          
+
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -1677,7 +1997,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: sportColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
@@ -1753,7 +2074,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(vertical: 8),
       leading: CircleAvatar(
-        backgroundColor: _getSportColor(widget.coachData['primarySport']).withOpacity(0.2),
+        backgroundColor:
+            _getSportColor(widget.coachData['primarySport']).withOpacity(0.2),
         child: const Icon(Icons.history, color: Colors.grey),
       ),
       title: Text(
@@ -1802,8 +2124,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  _getSportColor(widget.coachData['primarySport']), 
-                  _getSportColor(widget.coachData['primarySport']).withAlpha(200)
+                  _getSportColor(widget.coachData['primarySport']),
+                  _getSportColor(widget.coachData['primarySport'])
+                      .withAlpha(200)
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1811,7 +2134,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: _getSportColor(widget.coachData['primarySport']).withOpacity(0.3),
+                  color: _getSportColor(widget.coachData['primarySport'])
+                      .withOpacity(0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -1832,7 +2156,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
@@ -1860,9 +2185,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Today's sessions
           _buildScheduleSection(
             title: 'Today\'s Sessions',
@@ -1889,9 +2214,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               ],
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Weekly schedule overview
           _buildScheduleSection(
             title: 'Weekly Schedule',
@@ -1936,7 +2261,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                       ],
                     ),
                     _buildDaySchedule(
-                                            day: 'WED',
+                      day: 'WED',
                       date: 'Mar 10',
                       sessions: const [
                         {
@@ -2000,9 +2325,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               ),
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Upcoming events
           _buildScheduleSection(
             title: 'Upcoming Events',
@@ -2045,7 +2370,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
 
   Widget _buildPerformanceTab() {
     final sportColor = _getSportColor(widget.coachData['primarySport']);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -2093,8 +2418,10 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildPerformanceStat('92%', 'Success Rate', Icons.trending_up),
-                    _buildPerformanceStat('87%', 'Team Satisfaction', Icons.emoji_emotions),
+                    _buildPerformanceStat(
+                        '92%', 'Success Rate', Icons.trending_up),
+                    _buildPerformanceStat(
+                        '87%', 'Team Satisfaction', Icons.emoji_emotions),
                     _buildPerformanceStat('95%', 'Attendance', Icons.people),
                   ],
                 ),
@@ -2112,7 +2439,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -2141,9 +2469,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Team Performance
           _buildSection(
             title: 'Team Performance',
@@ -2172,9 +2500,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Athlete Development
           _buildSection(
             title: 'Athlete Development',
@@ -2208,9 +2536,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Reviews & Feedback
           _buildSection(
             title: 'Reviews & Feedback',
@@ -2220,29 +2548,32 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                 _buildReviewItem(
                   reviewer: 'Athletics Director',
                   date: 'Feb 28, 2025',
-                  comment: 'Coach demonstrates exceptional technical knowledge and leadership skills. Athletes show consistent improvement under guidance.',
+                  comment:
+                      'Coach demonstrates exceptional technical knowledge and leadership skills. Athletes show consistent improvement under guidance.',
                   rating: 5,
                 ),
                 const Divider(),
                 _buildReviewItem(
                   reviewer: 'Parent Council',
                   date: 'Jan 15, 2025',
-                  comment: 'Excellent communication with parents. Creates positive environment for young athletes while maintaining high standards.',
+                  comment:
+                      'Excellent communication with parents. Creates positive environment for young athletes while maintaining high standards.',
                   rating: 5,
                 ),
                 const Divider(),
                 _buildReviewItem(
                   reviewer: 'Peer Review',
                   date: 'Dec 10, 2024',
-                  comment: 'Strong technical coaching with innovative training methods. Could improve administrative documentation.',
+                  comment:
+                      'Strong technical coaching with innovative training methods. Could improve administrative documentation.',
                   rating: 4,
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Professional Development
           _buildSection(
             title: 'Professional Development',
@@ -2276,7 +2607,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
       ),
     );
   }
-  
+
   Widget _buildScheduleStat(String value, String label, IconData icon) {
     return Column(
       children: [
@@ -2353,7 +2684,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
     required Widget child,
   }) {
     final sportColor = _getSportColor(widget.coachData['primarySport']);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -2409,7 +2740,7 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
     required Widget child,
   }) {
     final sportColor = _getSportColor(widget.coachData['primarySport']);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -2494,7 +2825,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.access_time, size: 14, color: Colors.grey.shade600),
+                    Icon(Icons.access_time,
+                        size: 14, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
                     Text(
                       timeRange,
@@ -2508,7 +2840,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                    Icon(Icons.location_on,
+                        size: 14, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
                     Text(
                       location,
@@ -2533,7 +2866,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: typeColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -2569,10 +2903,14 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
       margin: const EdgeInsets.only(right: 12),
       width: 100,
       decoration: BoxDecoration(
-        color: isToday ? _getSportColor(widget.coachData['primarySport']).withOpacity(0.1) : Colors.white,
+        color: isToday
+            ? _getSportColor(widget.coachData['primarySport']).withOpacity(0.1)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isToday ? _getSportColor(widget.coachData['primarySport']) : Colors.grey.shade200,
+          color: isToday
+              ? _getSportColor(widget.coachData['primarySport'])
+              : Colors.grey.shade200,
         ),
       ),
       child: Column(
@@ -2581,7 +2919,9 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: isToday ? _getSportColor(widget.coachData['primarySport']) : Colors.grey.shade100,
+              color: isToday
+                  ? _getSportColor(widget.coachData['primarySport'])
+                  : Colors.grey.shade100,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(11),
               ),
@@ -2708,8 +3048,11 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
               shape: BoxShape.circle,
             ),
             child: Icon(
-              type == 'Competition' ? Icons.emoji_events : 
-              type == 'Workshop' ? Icons.school : Icons.event,
+              type == 'Competition'
+                  ? Icons.emoji_events
+                  : type == 'Workshop'
+                      ? Icons.school
+                      : Icons.event,
               color: typeColor,
               size: 24,
             ),
@@ -2729,7 +3072,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                    Icon(Icons.calendar_today,
+                        size: 14, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
                     Text(
                       date,
@@ -2743,7 +3087,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                    Icon(Icons.location_on,
+                        size: 14, color: Colors.grey.shade600),
                     const SizedBox(width: 4),
                     Text(
                       location,
@@ -2758,7 +3103,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: typeColor.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -2775,7 +3121,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(12),
@@ -2824,12 +3171,14 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
+                  overflow: TextOverflow.ellipsis, // Add this
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getSportColor(widget.coachData['primarySport']).withOpacity(0.1),
+                  color: _getSportColor(widget.coachData['primarySport'])
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -2864,7 +3213,8 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
-                            color: _getSportColor(widget.coachData['primarySport']),
+                            color: _getSportColor(
+                                widget.coachData['primarySport']),
                           ),
                         ),
                       ],
@@ -2882,9 +3232,12 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
                         ),
                         Container(
                           height: 8,
-                          width: MediaQuery.of(context).size.width * progress * 0.6,
+                          width: MediaQuery.of(context).size.width *
+                              progress *
+                              0.6,
                           decoration: BoxDecoration(
-                            color: _getSportColor(widget.coachData['primarySport']),
+                            color: _getSportColor(
+                                widget.coachData['primarySport']),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -2981,155 +3334,157 @@ class _CoachProfilePageState extends State<CoachProfilePage> with SingleTickerPr
   }
 
   Widget _buildReviewItem({
-  required String reviewer,
-  required String date,
-  required String comment,
-  required int rating,
-}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              reviewer,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            Text(
-              date,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: List.generate(5, (index) {
-            return Icon(
-              index < rating ? Icons.star : Icons.star_border,
-              color: index < rating ? Colors.amber : Colors.grey.shade300,
-              size: 18,
-            );
-          }),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          comment,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey.shade700,
-            height: 1.5,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _buildDevelopmentItem({
-  required String title,
-  required String status,
-  required String date,
-  required Color statusColor,
-}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _getSportColor(widget.coachData['primarySport']).withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.school,
-            size: 16,
-            color: Colors.deepPurple,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    required String reviewer,
+    required String date,
+    required String comment,
+    required int rating,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                title,
+                reviewer,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
               ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    date,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: statusColor.withOpacity(0.3)),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
-                ],
+              Text(
+                date,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-Color _getSportColor(String sport) {
-  switch (sport) {
-    case 'Football':
-      return Colors.green;
-    case 'Cricket':
-      return Colors.blue;
-    case 'Basketball':
-      return Colors.orange;
-    case 'Tennis':
-      return Colors.red;
-    case 'Badminton':
-      return Colors.purple;
-    case 'Swimming':
-      return Colors.cyan;
-    case 'Volleyball':
-      return Colors.amber;
-    default:
-      return Colors.deepPurple;
+          const SizedBox(height: 8),
+          Row(
+            children: List.generate(5, (index) {
+              return Icon(
+                index < rating ? Icons.star : Icons.star_border,
+                color: index < rating ? Colors.amber : Colors.grey.shade300,
+                size: 18,
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            comment,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
-}
+
+  Widget _buildDevelopmentItem({
+    required String title,
+    required String status,
+    required String date,
+    required Color statusColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: _getSportColor(widget.coachData['primarySport'])
+                  .withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.school,
+              size: 16,
+              color: Colors.deepPurple,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      date,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getSportColor(String sport) {
+    switch (sport) {
+      case 'Football':
+        return Colors.green;
+      case 'Cricket':
+        return Colors.blue;
+      case 'Basketball':
+        return Colors.orange;
+      case 'Tennis':
+        return Colors.red;
+      case 'Badminton':
+        return Colors.purple;
+      case 'Swimming':
+        return Colors.cyan;
+      case 'Volleyball':
+        return Colors.amber;
+      default:
+        return Colors.deepPurple;
+    }
+  }
 }

@@ -93,7 +93,7 @@ const handleSignIn = async () => {
     console.log("Login successful:", response.data);
     
     // Store user role in localStorage
-    localStorage.setItem("userRole", selectedRole.toLowerCase());
+    localStorage.setItem("userType", selectedRole.toLowerCase());
     
     // Handle navigation based on role
     if (selectedRole === "Admin") {
