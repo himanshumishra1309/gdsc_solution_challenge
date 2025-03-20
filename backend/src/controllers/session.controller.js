@@ -2,11 +2,6 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 
 
-/**
- * @desc Get RPE for a session
- * @route GET /api/sessions/:sessionId/rpe
- * @access Private (Athlete & Coach)
- */
 const getSessionRPE = async (req, res, next) => {
     try {
       const { sessionId } = req.params;

@@ -57,9 +57,6 @@ router.get("/allowed-sports", (req, res) => {
   res.json({ allowedSports: sportEnum });
 });
 
-// Get Organization Overview Count of athletes,sponsors,coaches (Admin Only)
-router.get("/overview",  verifyJWTAdmin, getOrganizationOverview);
-
 export default router;
 
 
