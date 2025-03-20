@@ -383,9 +383,7 @@ if (certificatesFile != null) {
     }
   }
 
-  // Add these methods at the end of your AdminService class before the closing }
 
-// Register a new athlete with complete details
 Future<Map<String, dynamic>> registerAthlete({
   required String name,
   required String dob,
@@ -433,7 +431,7 @@ Future<Map<String, dynamic>> registerAthlete({
       };
     }
     
-    final uri = Uri.parse('${ApiConstants.baseUrl}/api/v1/admins/athletes');
+    final uri = Uri.parse('${ApiConstants.baseUrl}/api/v1/admins/register-organization-athlete');
     
     // Create multipart request for file uploads
     final request = http.MultipartRequest('POST', uri);
@@ -630,7 +628,7 @@ Future<Map<String, dynamic>> registerAthlete({
   }
 }
 
-// Get all athletes with pagination and filtering
+
 Future<Map<String, dynamic>> getAllAthletes({
   int page = 1,
   int limit = 10,
@@ -686,4 +684,51 @@ Future<Map<String, dynamic>> getAllAthletes({
     };
   }
 }
+
+
+Future<Map<String, dynamic>> getOrganizationStats() async {
+  try {
+    final uri = Uri.parse('${ApiConstants.baseUrl}/api/v1/admins/organization-stats');
+    
+    final response = await http.get(
+      uri,
+      headers: await _getHeaders(),
+    );
+    
+    debugPrint('Get organization stats response status: ${response.statusCode}');
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return {
+        'success': true,
+        'stats': data['data']['stats'] ?? {
+          'adminCount': 0,
+          'coachCount': 0,
+          'athleteCount': 0,
+          'sponsorCount': 0
+        },
+        'message': data['message'] ?? 'Organization statistics fetched successfully',
+      };
+    } else {
+      final error = jsonDecode(response.body);
+      return {
+        'success': false,
+        'message': error['message'] ?? 'Failed to fetch organization statistics',
+      };
+    }
+  } catch (e) {
+    debugPrint('Error fetching organization statistics: $e');
+    return {
+      'success': false,
+      'message': 'An unexpected error occurred: ${e.toString()}',
+      'stats': {
+        'adminCount': 0,
+        'coachCount': 0,
+        'athleteCount': 0,
+        'sponsorCount': 0
+      }
+    };
+  }
+}
+
 }

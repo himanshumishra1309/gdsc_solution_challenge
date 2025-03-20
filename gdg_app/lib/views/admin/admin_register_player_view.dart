@@ -39,9 +39,9 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dobController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _nationalityController = TextEditingController();
   final _addressController = TextEditingController();
-  final _athleteIdController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _schoolController = TextEditingController();
@@ -55,12 +55,11 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
   final _allergiesController = TextEditingController();
   final _medicalConditionsController = TextEditingController();
 
-  String _athleteId = '';
   int _age = 0;
   String _gender = 'Male';
   String _grade = '10th';
-  String _primarySport = 'Football';
-  String? _secondarySport;
+  List<String> _selectedSports = [];
+  Map<String, String> _sportPositions = {};
   String _currentLevel = 'Beginner';
   String _coachAssigned = 'Coach A';
   String _gymTrainerAssigned = 'Trainer A';
@@ -76,7 +75,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
   @override
   void initState() {
     super.initState();
-    _generateSuggestedAthleteId(); // Optional - generates a suggested ID
     _getOrganizationId();
   }
 
@@ -85,13 +83,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
     setState(() {
       _organizationId = prefs.getString('organizationId');
     });
-  }
-
-  void _generateSuggestedAthleteId() {
-    final random = Random();
-    final now = DateTime.now();
-    _athleteIdController.text =
-        'ATH${now.year}${random.nextInt(10000).toString().padLeft(4, '0')}';
   }
 
   Future<void> _pickImage() async {
@@ -199,31 +190,14 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
                   ).animate().fadeIn(delay: 300.ms, duration: 500.ms),
                   const SizedBox(height: 10),
                   Text(
-                    'Player ${_nameController.text} has been registered successfully with ID:  ${_athleteIdController.text}',
+                    'Player ${_nameController.text} has been registered successfully',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
                   ).animate().fadeIn(delay: 500.ms, duration: 500.ms),
                   const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      OutlinedButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _resetForm();
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.deepPurple,
-                          side: const BorderSide(color: Colors.deepPurple),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: const Text('Add Another Player'),
-                      ),
-                      const SizedBox(width: 16),
                       ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).pop();
@@ -232,13 +206,28 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepPurple,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12),
+                          minimumSize: const Size(double.infinity, 45),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                         child: const Text('View All Players'),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _resetForm();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.deepPurple,
+                          side: const BorderSide(color: Colors.deepPurple),
+                          minimumSize: const Size(double.infinity, 45),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('Add Another Player'),
                       ),
                     ],
                   ).animate().fadeIn(delay: 700.ms, duration: 500.ms),
@@ -254,6 +243,7 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
   void _resetForm() {
     _nameController.clear();
     _dobController.clear();
+    _passwordController.clear();
     _nationalityController.clear();
     _addressController.clear();
     _phoneController.clear();
@@ -273,8 +263,8 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
       _age = 0;
       _gender = 'Male';
       _grade = '10th';
-      _primarySport = 'Football';
-      _secondarySport = null;
+      _selectedSports = [];
+      _sportPositions = {};
       _currentLevel = 'Beginner';
       _coachAssigned = 'Coach A';
       _gymTrainerAssigned = 'Trainer A';
@@ -294,7 +284,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
       _emergencyContactRelationshipController.clear();
 
       _formChanged = false;
-      _generateSuggestedAthleteId(); // Updated method name
       _currentSectionIndex = 0;
     });
   }
@@ -310,6 +299,7 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
     int maxLines = 1,
     String? hintText,
     Widget? suffix,
+    bool obscureText = false, // Add this parameter
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -374,6 +364,7 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
         onTap: onTap,
         keyboardType: keyboardType,
         maxLines: maxLines,
+        obscureText: obscureText, // Use the parameter
         onChanged: (value) {
           if (!_formChanged) {
             setState(() {
@@ -556,26 +547,30 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: Colors.deepPurple),
             ),
-            child: Icon(icon, color: Colors.deepPurple),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.deepPurple,
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -785,20 +780,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
       children: [
         _buildSectionHeader('Personal Information', Icons.person),
         _buildEnhancedFormField(
-          controller: _athleteIdController,
-          labelText: 'Athlete ID',
-          hintText: 'Enter unique athlete ID',
-          validator: (value) =>
-              value?.isEmpty ?? true ? 'Please enter an athlete ID' : null,
-          icon: Icons.badge,
-          suffix: IconButton(
-            icon: Icon(Icons.refresh, size: 20, color: Colors.blue),
-            tooltip: 'Generate random ID',
-            onPressed: _generateSuggestedAthleteId,
-          ),
-        ),
-        _buildUploadCard(),
-        _buildEnhancedFormField(
           controller: _nameController,
           labelText: 'Full Name',
           hintText: 'Enter player\'s full name',
@@ -806,6 +787,38 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
               value?.isEmpty ?? true ? 'Please enter the full name' : null,
           icon: Icons.person,
         ),
+        _buildEnhancedFormField(
+          controller: _emailController,
+          labelText: 'Email ID',
+          hintText: 'Enter email address',
+          validator: (value) {
+            if (value?.isEmpty ?? true) {
+              return 'Please enter the email ID';
+            } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                .hasMatch(value!)) {
+              return 'Please enter a valid email address';
+            }
+            return null;
+          },
+          icon: Icons.email,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        _buildEnhancedFormField(
+          controller: _passwordController,
+          labelText: 'Password',
+          hintText: 'Enter password for account login',
+          validator: (value) {
+            if (value?.isEmpty ?? true) {
+              return 'Please enter a password';
+            } else if ((value?.length ?? 0) < 6) {
+              return 'Password must be at least 6 characters';
+            }
+            return null;
+          },
+          icon: Icons.lock_outline,
+          obscureText: true,
+        ),
+        _buildUploadCard(),
         _buildEnhancedFormField(
           controller: _dobController,
           labelText: 'Date of Birth',
@@ -903,22 +916,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
           icon: Icons.phone,
           keyboardType: TextInputType.phone,
         ),
-        _buildEnhancedFormField(
-          controller: _emailController,
-          labelText: 'Email ID',
-          hintText: 'Enter email address',
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'Please enter the email ID';
-            } else if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                .hasMatch(value!)) {
-              return 'Please enter a valid email address';
-            }
-            return null;
-          },
-          icon: Icons.email,
-          keyboardType: TextInputType.emailAddress,
-        ),
       ],
     );
   }
@@ -1006,15 +1003,15 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Upload relevant academic documents such as transcripts, certificates, or ID cards.',
+                'Upload required academic documents (PDF, JPG, JPEG, or PNG)',
                 style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 16),
-              // Document upload buttons with enhanced styling
-              // Document upload buttons with enhanced styling
+              // Document upload buttons with fixed layout
               Row(
                 children: [
                   Expanded(
+                    flex: 1,
                     child: _buildDocumentUploadButton(
                       title: 'School ID',
                       icon: Icons.badge,
@@ -1025,38 +1022,13 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
+                    flex: 1,
                     child: _buildDocumentUploadButton(
-                      title: 'Transcripts',
+                      title: 'Marksheet',
                       icon: Icons.description,
                       color: Colors.green.shade700,
                       selectedFile: _marksheetFile,
                       onTap: () => _pickDocument('marksheet'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDocumentUploadButton(
-                      title: 'Certificates',
-                      icon: Icons.card_membership,
-                      color: Colors.orange.shade700,
-                      onTap: () {
-                        // Implement document upload
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildDocumentUploadButton(
-                      title: 'Other Documents',
-                      icon: Icons.insert_drive_file,
-                      color: Colors.purple.shade700,
-                      onTap: () {
-                        // Implement document upload
-                      },
                     ),
                   ),
                 ],
@@ -1076,6 +1048,14 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
     File? selectedFile,
   }) {
     bool isSelected = selectedFile != null;
+    String fileName = '';
+
+    if (isSelected && selectedFile.path.isNotEmpty) {
+      fileName = selectedFile.path.split('/').last;
+      if (fileName.length > 15) {
+        fileName = fileName.substring(0, 12) + '...';
+      }
+    }
 
     return InkWell(
       onTap: onTap,
@@ -1103,6 +1083,19 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
               ),
               textAlign: TextAlign.center,
             ),
+            if (isSelected && fileName.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  fileName,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
           ],
         ),
       ),
@@ -1125,21 +1118,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
       });
 
       try {
-        // Prepare the positions map
-        Map<String, String> positions = {};
-        if (_playingPositionController.text.isNotEmpty) {
-          positions[_primarySport] = _playingPositionController.text;
-          if (_secondarySport != null && _secondarySport!.isNotEmpty) {
-            positions[_secondarySport!] = _playingPositionController.text;
-          }
-        }
-
-        // Prepare the sports list
-        List<String> sports = [_primarySport];
-        if (_secondarySport != null && _secondarySport!.isNotEmpty) {
-          sports.add(_secondarySport!);
-        }
-
         // Prepare allergies and medical conditions as lists
         List<String> allergies = [];
         if (_allergiesController.text.isNotEmpty) {
@@ -1167,6 +1145,9 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
           address: _addressController.text,
           phoneNumber: _phoneController.text,
           email: _emailController.text,
+          password: _passwordController.text.isNotEmpty
+              ? _passwordController.text
+              : "Player123",
 
           // School information
           schoolName: _schoolController.text,
@@ -1176,16 +1157,16 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
           schoolWebsite: _organizationWebsiteController.text,
 
           // Sports information
-          sports: sports,
+          sports: _selectedSports,
           skillLevel: _currentLevel,
           trainingStartDate: _trainingStartDateController.text,
-          positions: positions,
+          positions: _sportPositions,
           dominantHand: _dominantHandLeg,
 
           // Staff assignments
-          headCoachAssigned: _coachAssigned,
-          gymTrainerAssigned: _gymTrainerAssigned,
-          medicalStaffAssigned: _medicalStaffAssigned,
+          headCoachAssigned: null,
+          gymTrainerAssigned: null,
+          medicalStaffAssigned: null,
 
           // Medical information
           height: _heightController.text,
@@ -1200,13 +1181,10 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
           emergencyContactRelationship:
               _emergencyContactRelationshipController.text,
 
-          // Authentication
-          password: "Player123", // Default password
-
           // Files
           avatarFile: _profilePhotoFile,
           schoolIdFile: _schoolIdFile,
-          marksheetFile: _marksheetFile,
+          marksheetFile: _marksheetFile, // Make sure to include this file
         );
 
         setState(() {
@@ -1214,11 +1192,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
         });
 
         if (result['success']) {
-          // Extract athlete data from result
-          final athlete = result['athlete'];
-          if (athlete != null && athlete['athleteId'] != null) {
-            _athleteIdController.text = athlete['athleteId'];
-          }
           _showSuccessPopup();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1270,11 +1243,19 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Primary Sport',
+                'Select Sports',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.deepPurple,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Select all sports played by the athlete',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
                 ),
               ),
               const SizedBox(height: 12),
@@ -1293,46 +1274,49 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
                   _buildSportSelectionChip('Swimming', Icons.pool),
                 ],
               ),
+
+              // Display position fields for each selected sport
+              if (_selectedSports.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 16),
+                const Text(
+                  'Playing Positions',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ..._selectedSports
+                    .map((sport) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: TextFormField(
+                            decoration: InputDecoration(
+                              labelText: '$sport Position',
+                              hintText: 'E.g., Striker for Football',
+                              prefixIcon: const Icon(Icons.sports_handball,
+                                  color: Colors.deepPurple),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 16),
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _sportPositions[sport] = value;
+                                _formChanged = true;
+                              });
+                            },
+                            initialValue: _sportPositions[sport] ?? '',
+                          ),
+                        ))
+                    .toList(),
+              ],
             ],
           ),
-        ),
-
-        // Secondary sport with dropdown
-        _buildEnhancedDropdown<String?>(
-          labelText: 'Secondary Sport (Optional)',
-          value: _secondarySport,
-          items: [
-            const DropdownMenuItem<String?>(
-                value: null, child: Text('No Secondary Sport')),
-            ...[
-              'Football',
-              'Cricket',
-              'Basketball',
-              'Tennis',
-              'Volleyball',
-              'Badminton',
-              'Swimming'
-            ].where((sport) => sport != _primarySport).map(
-                (sport) => DropdownMenuItem(value: sport, child: Text(sport))),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _secondarySport = value;
-            });
-          },
-          validator: (value) => null, // Optional field
-          icon: Icons.sports,
-        ),
-
-        // Playing position
-        _buildEnhancedFormField(
-          controller: _playingPositionController,
-          labelText: 'Playing Position/Role',
-          hintText: 'E.g., Striker, Bowler, Point Guard',
-          validator: (value) => value?.isEmpty ?? true
-              ? 'Please enter the playing position/role'
-              : null,
-          icon: Icons.person_pin,
         ),
 
         // Skill level
@@ -1485,68 +1469,83 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
     required List<String> options,
     required void Function(String?) onChanged,
   }) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        // Title and icon in a row
+        Row(
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: color,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
               ),
+              child: Icon(icon, color: color, size: 20),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Select from available staff',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Select from available staff',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const Spacer(),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.2)),
-          ),
-          child: DropdownButton<String>(
-            value: value,
-            icon: Icon(Icons.arrow_drop_down, color: color),
-            iconSize: 24,
-            elevation: 16,
-            style: TextStyle(color: color, fontWeight: FontWeight.w500),
-            underline: Container(height: 0),
-            onChanged: onChanged,
-            items: options.map<DropdownMenuItem<String>>((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value, style: const TextStyle(fontSize: 14)),
-              );
-            }).toList(),
+
+        // Dropdown in its own row with padding for better layout
+        Padding(
+          padding:
+              const EdgeInsets.only(top: 8, left: 40), // Align with text above
+          child: Container(
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: color.withOpacity(0.2)),
+            ),
+            child: DropdownButton<String>(
+              value: value,
+              icon: Icon(Icons.arrow_drop_down, color: color),
+              iconSize: 24,
+              elevation: 16,
+              style: TextStyle(color: color, fontWeight: FontWeight.w500),
+              underline: Container(height: 0),
+              onChanged: onChanged,
+              items: options.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value, style: const TextStyle(fontSize: 14)),
+                );
+              }).toList(),
+              isExpanded: true, // Make dropdown take full width
+            ),
           ),
         ),
       ],
     );
   }
 
+  // Replace the _buildSportSelectionChip method with this:
+
   Widget _buildSportSelectionChip(String sport, IconData icon) {
-    final isSelected = _primarySport == sport;
+    final isSelected = _selectedSports.contains(sport);
 
     return ChoiceChip(
       label: Row(
@@ -1563,15 +1562,15 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
       ),
       selected: isSelected,
       onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _primarySport = sport;
-            if (_secondarySport == sport) {
-              _secondarySport = null;
-            }
-            _formChanged = true;
-          });
-        }
+        setState(() {
+          if (selected) {
+            _selectedSports.add(sport);
+          } else {
+            _selectedSports.remove(sport);
+            _sportPositions.remove(sport); // Also remove any position data
+          }
+          _formChanged = true;
+        });
       },
       backgroundColor: Colors.white,
       selectedColor: Colors.deepPurple,
@@ -1908,12 +1907,98 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
         ),
 
         // Blood group info card
-        _buildInfoCard(
-          title: 'Blood Group',
-          value: _bloodGroup,
-          icon: Icons.bloodtype,
-          backgroundColor: Colors.red.shade50,
-          iconColor: Colors.red,
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.red.shade50,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.bloodtype,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Blood Group',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.red.shade200),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.red.shade200),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.red, width: 1.5),
+                    ),
+                  ),
+                  value: _bloodGroup,
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.red),
+                  style: TextStyle(
+                      color: Colors.red.shade800, fontWeight: FontWeight.w500),
+                  items: const [
+                    DropdownMenuItem(value: 'A+', child: Text('A+')),
+                    DropdownMenuItem(value: 'A-', child: Text('A-')),
+                    DropdownMenuItem(value: 'B+', child: Text('B+')),
+                    DropdownMenuItem(value: 'B-', child: Text('B-')),
+                    DropdownMenuItem(value: 'AB+', child: Text('AB+')),
+                    DropdownMenuItem(value: 'AB-', child: Text('AB-')),
+                    DropdownMenuItem(value: 'O+', child: Text('O+')),
+                    DropdownMenuItem(value: 'O-', child: Text('O-')),
+                    DropdownMenuItem(value: 'Unknown', child: Text('Unknown')),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _bloodGroup = value!;
+                      _formChanged = true;
+                    });
+                  },
+                  isExpanded: true,
+                ),
+              ),
+            ],
+          ),
         ),
 
         // Allergies
@@ -1934,68 +2019,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
           validator: (value) => null, // Not mandatory
           icon: Icons.health_and_safety,
           maxLines: 3,
-        ),
-
-        // Medical documents upload
-        Container(
-          margin: const EdgeInsets.symmetric(vertical: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.upload_file, color: Colors.deepPurple),
-                  SizedBox(width: 8),
-                  Text(
-                    'Medical Documents',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Upload any relevant medical documents (optional)',
-                style: TextStyle(fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              _buildMedicalDocumentUploadButton(
-                title: 'Medical Certificate',
-                description: 'General fitness certificate',
-                icon: Icons.health_and_safety,
-                onTap: () {
-                  // Implement document upload
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildMedicalDocumentUploadButton(
-                title: 'Vaccination Records',
-                description: 'Required for certain sports/events',
-                icon: Icons.vaccines,
-                onTap: () {
-                  // Implement document upload
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildMedicalDocumentUploadButton(
-                title: 'Previous Injuries Report',
-                description: 'If applicable',
-                icon: Icons.healing,
-                onTap: () {
-                  // Implement document upload
-                },
-              ),
-            ],
-          ),
         ),
 
         // Emergency contact section
@@ -2065,64 +2088,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildMedicalDocumentUploadButton({
-    required String title,
-    required String description,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.deepPurple.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            color: Colors.deepPurple,
-            size: 20,
-          ),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        subtitle: Text(
-          description,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
-        ),
-        trailing: TextButton.icon(
-          onPressed: onTap,
-          icon: const Icon(Icons.upload_file, size: 16),
-          label: const Text('Upload', style: TextStyle(fontSize: 12)),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.deepPurple,
-            backgroundColor: Colors.deepPurple.withOpacity(0.05),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          ),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        dense: true,
-      ),
     );
   }
 
@@ -2475,14 +2440,6 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
                                 Icon(Icons.sports,
                                     color: Colors.green, size: 12),
                                 const SizedBox(width: 4),
-                                Text(
-                                  _primarySport,
-                                  style: const TextStyle(
-                                    color: Colors.green,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
                               ],
                             ),
                           ),
@@ -2591,14 +2548,11 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
                                   ),
                                 ),
                               )
-                            : ElevatedButton.icon(
+                            : // Replace the Submit Registration button:
+                            ElevatedButton.icon(
                                 onPressed: _isSubmitting
                                     ? null
-                                    : () {
-                                        if (_formKey.currentState!.validate()) {
-                                          _showSuccessPopup();
-                                        }
-                                      },
+                                    : _submitForm, // Call _submitForm directly instead of _showSuccessPopup
                                 icon: _isSubmitting
                                     ? Container(
                                         width: 24,
@@ -2655,7 +2609,7 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
     _weightController.dispose();
     _allergiesController.dispose();
     _medicalConditionsController.dispose();
-    _athleteIdController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 }

@@ -10,7 +10,8 @@ import { registerOrganizationAthlete,
   getRpeInsights,
   getAllCoaches,
   getAllAdmins,
-  getAthleteById } from "../controllers/admin.controllers.js";
+  getAthleteById,
+  getOrganizationStats } from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
 import { upload } from "../middlewares/multer.middleware.js";
 
@@ -43,7 +44,9 @@ router.post(
   ]),
   registerCoach
 ); // connected
+// Add this route with your other admin routes
 
+router.get('/organization-stats', verifyJWTAdmin, getOrganizationStats);
 router.get('/athletes', verifyJWTAdmin, getAllAthletes); //connected
 router.get('/administrators', verifyJWTAdmin, getAllAdmins); //connected
 router.get('/coaches', verifyJWTAdmin, getAllCoaches); //connected
