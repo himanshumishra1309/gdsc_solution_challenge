@@ -11,7 +11,14 @@ import { registerOrganizationAthlete,
   getAllCoaches,
   getAllAdmins,
   getAthleteById,
-  getOrganizationOverview
+  getOrganizationOverview,
+  sendSponsorInvitation,
+  sendPotentialSponsorRequest,
+  getPotentialSponsors,
+  getCurrentSponsors,
+  deleteSponsorRequest,
+  getRequestsLog,
+
 
 } from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
@@ -60,6 +67,21 @@ router.get("/allowed-sports", (req, res) => {
 // Get Organization Overview Count of athletes,sponsors,coaches (Admin Only)
 router.get("/overview",  verifyJWTAdmin, getOrganizationOverview);
 
+
+//direct invitation
+router.post("/sponsors/invite", verifyJWTAdmin, sendSponsorInvitation);
+//invitation via potential sponsors list
+router.post("/sponsors/request", verifyJWTAdmin, sendPotentialSponsorRequest);
+
+
+router.get("/sponsors/potential",verifyJWTAdmin, getPotentialSponsors);
+router.get("/sponsors/current",verifyJWTAdmin,  getCurrentSponsors);
+// ✅ Delete a sponsor request (Only for pending sponsors)
+router.delete("/sponsors/request/:sponsorId", verifyJWTAdmin, deleteSponsorRequest);
+//log of all request sent
+router.get("/sponsors/requests",verifyJWTAdmin, getRequestsLog);
+
 export default router;
+
 
 

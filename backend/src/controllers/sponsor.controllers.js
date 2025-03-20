@@ -292,6 +292,7 @@ const updateSponsorProfile = asyncHandler(async (req, res) => {
 });
 
 
+//Interested Sports
 // Get all sports categorized
 const getSportsList = asyncHandler(async (req, res) => {
     const teamSports = sportsList.filter(sport => sport.type === "Team");
@@ -364,6 +365,110 @@ const removeSportFromSelection = asyncHandler(async (req, res) => {
 });
 
 
+//Sponsor Requests
+
+const getSponsorInvitations = asyncHandler(async (req, res) => {
+    const sponsors = await Sponsor.find({ status: "Pending" });
+    res.status(200).json(new ApiResponse(200, sponsors, "Sponsor invitations fetched successfully"));
+});
+
+const acceptSponsorRequest = asyncHandler(async (req, res, next) => {
+    const sponsor = await Sponsor.findById(req.params.sponsorId);
+
+    if (!sponsor) {
+        return next(new ApiError(404, "Sponsor not found"));
+    }
+
+    if (sponsor.status === "Accepted") {
+        return next(new ApiError(400, "Sponsor is already accepted"));
+    }
+
+    sponsor.status = "Accepted";
+    await sponsor.save();
+
+    res.status(200).json(new ApiResponse(200, sponsor, "Sponsorship request accepted successfully"));
+});
+
+
+
+const getSponsorRequests = asyncHandler(async (req, res, next) => {
+    const sponsorId = req.sponsor._id;
+    const { status } = req.query;
+
+    let filter = { sponsor: sponsorId };
+    if (status) filter.status = status;
+
+    const requests = await SponsorRequest.find(filter).populate("organization", "name").select("title message notes status createdAt requestType viewed");
+    
+    res.status(200).json(new ApiResponse(200, requests, "Sponsorship requests retrieved successfully"));
+});
+
+// Controller: Mark Request as Viewed
+const markRequestAsViewed = asyncHandler(async (req, res, next) => {
+    const { requestId } = req.params;
+    const sponsorId = req.sponsor._id;
+
+    const request = await SponsorRequest.findOneAndUpdate(
+        { _id: requestId, sponsor: sponsorId },
+        { viewed: true },
+        { new: true }
+    );
+
+    if (!request) {
+        return next(new ApiError(404, "Request not found"));
+    }
+
+    res.status(200).json(new ApiResponse(200, request, "Request marked as viewed"));
+});
+
+// Controller: Accept/Decline Sponsorship Request
+const updateRequestStatus = asyncHandler(async (req, res, next) => {
+    const { requestId } = req.params;
+    const { status } = req.body;
+    const sponsorId = req.sponsor._id;
+
+    if (!["Accepted", "Declined"].includes(status)) {
+        return next(new ApiError(400, "Invalid status"));
+    }
+
+    const request = await SponsorRequest.findOneAndUpdate(
+        { _id: requestId, sponsor: sponsorId },
+        { status },
+        { new: true }
+    );
+
+    if (!request) {
+        return next(new ApiError(404, "Request not found"));
+    }
+
+    res.status(200).json(new ApiResponse(200, request, `Request ${status.toLowerCase()} successfully`));
+});
+
+//messages in last 24 hours
+const getNewMessages = asyncHandler(async (req, res, next) => {
+    const sponsorId = req.sponsor._id;
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+    const messages = await SponsorRequest.find({
+        sponsor: sponsorId,
+        createdAt: { $gte: twentyFourHoursAgo }
+    }).select("title message createdAt requestType viewed");
+
+    res.status(200).json(new ApiResponse(200, messages, "New messages retrieved successfully"));
+});
+
+// Controller: Fetch Unread Invitations
+const getUnreadInvitations = asyncHandler(async (req, res, next) => {
+    const sponsorId = req.sponsor._id;
+
+    const unreadInvitations = await SponsorRequest.find({
+        sponsor: sponsorId,
+        viewed: false
+    }).select("title message createdAt requestType viewed");
+
+    res.status(200).json(new ApiResponse(200, unreadInvitations, "Unread invitations retrieved successfully"));
+});
 
 export {
     registerSponsor,
@@ -376,7 +481,13 @@ export {
 getSportsList,
 getSelectedSports,
 addSportToSelection,
-removeSportFromSelection
+removeSportFromSelection,
 
-
+getSponsorInvitations,
+acceptSponsorRequest,
+getSponsorRequests,
+markRequestAsViewed,
+updateRequestStatus,
+getNewMessages,
+getUnreadInvitations,
 }

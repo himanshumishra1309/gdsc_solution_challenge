@@ -42,6 +42,13 @@ const sponsorSchema = new mongoose.Schema({
       type: { type: String, enum: ["Team", "Individual"], required: true }
     }
   ],
+  status: { 
+    type: String, 
+    enum: ["Pending", "Accepted", "Rejected"], 
+    default: "Pending" 
+},
+sponsoredOrganizations: [{ type: mongoose.Schema.Types.ObjectId, ref: "Organization" }], // ✅ Stores approved sponsorships
+
 }, { timestamps: true });
 
 
