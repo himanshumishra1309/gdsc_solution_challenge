@@ -34,7 +34,14 @@ const sponsorSchema = new mongoose.Schema({
   // Auth
   refreshToken: {
     type: String
-  }
+  },
+
+  interestedSports: [
+    {
+      sport: { type: String, required: true },
+      type: { type: String, enum: ["Team", "Individual"], required: true }
+    }
+  ],
 }, { timestamps: true });
 
 

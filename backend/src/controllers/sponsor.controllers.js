@@ -3,7 +3,7 @@ import ApiError from "../utils/ApiError.js"
 import {Sponsor} from "../models/sponsor.model.js"
 import jwt from 'jsonwebtoken'
 import ApiResponse  from "../utils/ApiResponse.js"
-
+import sportsList from "../utils/sportsData.js"
 
 const registerSponsor = asyncHandler(async (req, res) => {
     // Debug what's being received
@@ -291,8 +291,92 @@ const updateSponsorProfile = asyncHandler(async (req, res) => {
         );
 });
 
+
+// Get all sports categorized
+const getSportsList = asyncHandler(async (req, res) => {
+    const teamSports = sportsList.filter(sport => sport.type === "Team");
+    const individualSports = sportsList.filter(sport => sport.type === "Individual");
+  
+    return res.status(200).json(new ApiResponse(200, {
+      allSports: sportsList,
+      teamSports,
+      individualSports
+    }, "Sports data fetched successfully"));
+  });
+
+const getSelectedSports = asyncHandler(async (req, res) => {
+    const sponsor = await Sponsor.findById(req.sponsor._id);
+    if (!sponsor) throw new ApiError(404, "Sponsor not found");
+  
+    return res.status(200).json(new ApiResponse(200, {
+      selectedSports: sponsor.interestedSports
+    }, "Selected sports fetched successfully"));
+  });
+  
+const addSportToSelection = asyncHandler(async (req, res) => {
+    const sponsorId = req.sponsor._id; // Get sponsor ID from logged-in user
+    const { sport, type } = req.body;
+
+    // Validate input
+    if (!sport || !type) {
+        throw new ApiError(400, "Sport and Type are required.");
+    }
+
+    // Validate type value
+    if (!["Team", "Individual"].includes(type)) {
+        throw new ApiError(400, "Invalid sport type. Allowed: 'Team' or 'Individual'.");
+    }
+
+    // Update sponsor document without replacing it
+    const sponsor = await Sponsor.findByIdAndUpdate(
+        sponsorId,
+        { $push: { interestedSports: { sport, type } } }, // Push sport to array
+        { new: true, context: 'query' } // Return updated document & validate
+    );
+
+    if (!sponsor) {
+        throw new ApiError(404, "Sponsor not found.");
+    }
+
+    res.status(200).json(new ApiResponse(200, {}, "Sport added successfully"));
+});
+
+const removeSportFromSelection = asyncHandler(async (req, res) => {
+    const sponsorId = req.sponsor._id;
+    const { sport } = req.body;
+
+    if (!sport) {
+        throw new ApiError(400, "Sport is required.");
+    }
+
+    // Update sponsor by pulling the sport from the array
+    const sponsor = await Sponsor.findByIdAndUpdate(
+        sponsorId,
+        { $pull: { interestedSports: { sport } } }, // Remove the sport
+        { new: true, context: 'query' } // Prevents validation errors
+    );
+
+    if (!sponsor) {
+        throw new ApiError(404, "Sponsor not found.");
+    }
+
+    res.status(200).json(new ApiResponse(200, {}, "Sport removed successfully"));
+});
+
+
+
 export {
     registerSponsor,
     loginSponsor,
     logoutSponsor,
- getSponsorProfile, updateSponsorProfile}
+ getSponsorProfile,
+  updateSponsorProfile,
+ 
+
+getSportsList,
+getSelectedSports,
+addSportToSelection,
+removeSportFromSelection
+
+
+}
