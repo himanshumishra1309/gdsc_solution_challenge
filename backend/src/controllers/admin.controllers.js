@@ -1,5 +1,4 @@
 import asyncHandler from "../utils/asyncHandler.js";
-
 import ApiError from "../utils/ApiError.js"
 import  {Admin} from "../models/admin.model.js"
 import {Athlete} from "../models/athlete.model.js"
@@ -11,13 +10,6 @@ import ApiResponse  from "../utils/ApiResponse.js"
 import {CustomForm} from "../models/customForm.model.js"
 import {SponsorRequest} from "../models/SponsorRequest.model.js"
 import mongoose from "mongoose"
-
-
-
-
-import jwt from 'jsonwebtoken'
-
-
 
 const registerOrganizationAthlete = asyncHandler(async (req, res) => {
   // Extract all fields from request
@@ -899,6 +891,51 @@ const getAllUsers = asyncHandler(async (req, res) => {
     athletes,
     coaches,
   });
+});
+
+const getOrganizationStats = asyncHandler(async (req, res) => {
+  try {
+    // Get organization ID either from the authenticated admin or from query params
+    let organizationId;
+    
+    if (req.admin) {
+      // If request comes from authenticated admin, use their organization
+      organizationId = req.admin.organization;
+    } else if (req.query.organizationId && mongoose.Types.ObjectId.isValid(req.query.organizationId)) {
+      // Otherwise, if provided in query, use that
+      organizationId = req.query.organizationId;
+    } else {
+      throw new ApiError(400, "Valid organization ID is required");
+    }
+    
+    // Count total number of entities for the organization
+    const [adminCount, coachCount, athleteCount, sponsorCount] = await Promise.all([
+      Admin.countDocuments({ organization: organizationId }),
+      Coach.countDocuments({ organization: organizationId }),
+      Athlete.countDocuments({ organization: organizationId }),
+      // If you have a Sponsor model, use the line below. Otherwise, just return 0
+      // Sponsor.countDocuments({ organization: organizationId })
+      Promise.resolve(0) // Placeholder for sponsors if you don't have a model yet
+    ]);
+    
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          stats: {
+            adminCount: adminCount || 0,
+            coachCount: coachCount || 0,
+            athleteCount: athleteCount || 0,
+            sponsorCount: sponsorCount || 0,
+            // You can add more statistics here as needed
+          }
+        },
+        "Organization statistics fetched successfully"
+      )
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error fetching organization statistics: " + error.message);
+  }
 });
 
 const generateAccessAndRefreshToken = async (userId) => {

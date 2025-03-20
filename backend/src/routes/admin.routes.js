@@ -11,16 +11,14 @@ import { registerOrganizationAthlete,
   getAllCoaches,
   getAllAdmins,
   getAthleteById,
+  getOrganizationStats ,
   getOrganizationOverview,
   sendSponsorInvitation,
   sendPotentialSponsorRequest,
   getPotentialSponsors,
   getCurrentSponsors,
   deleteSponsorRequest,
-  getRequestsLog,
-
-
-} from "../controllers/admin.controllers.js";
+  getRequestsLog,} from "../controllers/admin.controllers.js";
 import {verifyJWTAdmin} from "../middlewares/auth.middleware.js"
 import { upload } from "../middlewares/multer.middleware.js";
 
@@ -53,7 +51,9 @@ router.post(
   ]),
   registerCoach
 ); // connected
+// Add this route with your other admin routes
 
+router.get('/organization-stats', verifyJWTAdmin, getOrganizationStats);
 router.get('/athletes', verifyJWTAdmin, getAllAthletes); //connected
 router.get('/administrators', verifyJWTAdmin, getAllAdmins); //connected
 router.get('/coaches', verifyJWTAdmin, getAllCoaches); //connected
