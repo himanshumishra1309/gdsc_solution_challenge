@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
@@ -12,16 +13,40 @@ class CoachMarkSession extends StatefulWidget {
 }
 
 class _CoachMarkSessionState extends State<CoachMarkSession> {
+  final _authService = AuthService();
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
   List<Map<String, dynamic>> _sessions = [];
   Map<DateTime, List<Map<String, dynamic>>> _sessionsByDate = {};
   CalendarFormat _calendarFormat = CalendarFormat.month;
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _loadSampleSessions();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+      
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Coach";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
   }
 
   void _loadSampleSessions() {
@@ -209,6 +234,9 @@ class _CoachMarkSessionState extends State<CoachMarkSession> {
           DrawerItem(icon: Icons.person, title: 'View Profile', route: coachProfileRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail, 
+        userAvatarUrl: _userAvatar,
       ),
       body: Container(
         decoration: BoxDecoration(

@@ -78,7 +78,101 @@ class AuthService {
     }
   }
   
-Future<Map<String, dynamic>> _loginAdmin(String email, String password) async {
+  // Add this method to your AuthService class
+Future<Map<String, dynamic>> getCurrentUser() async {
+  try {
+    // First check if we have cached user data
+    final prefs = await SharedPreferences.getInstance();
+    final userType = await getUserType();
+    
+    // Try to get data from SharedPreferences first for quick loading
+    final cachedUserData = prefs.getString('userData');
+    Map<String, dynamic> userData = {};
+    
+    if (cachedUserData != null) {
+      userData = jsonDecode(cachedUserData);
+      debugPrint("Loaded user data from cache: ${userData['name']}");
+    }
+    
+    // Determine the profile endpoint based on user type
+    String profileEndpoint = '';
+    
+    switch (userType) {
+      case UserType.admin:
+        profileEndpoint = '${ApiConstants.baseUrl}/api/v1/admins/profile';
+        break;
+      case UserType.coach:
+        profileEndpoint = '${ApiConstants.baseUrl}/api/v1/coaches/profile';
+        break;
+      case UserType.athlete:
+        profileEndpoint = '${ApiConstants.baseUrl}/api/v1/athletes/profile';
+        break;
+      case UserType.independentAthlete:
+        profileEndpoint = '${ApiConstants.baseUrl}/api/v1/individual-athletes/profile';
+        break;
+      case UserType.sponsor:
+        profileEndpoint = '${ApiConstants.baseUrl}/api/v1/sponsors/profile';
+        break;
+      default:
+        return userData; // Return cached data if no valid user type
+    }
+    
+    // Make API call to get fresh user data
+    final response = await http.get(
+      Uri.parse(profileEndpoint),
+      headers: await getAuthHeaders(),
+    );
+    
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      
+      // Extract user data differently depending on user type
+      Map<String, dynamic> freshUserData;
+      
+      if (userType == UserType.admin) {
+        freshUserData = responseData['data'] ?? {};
+      } else if (userType == UserType.sponsor) {
+        freshUserData = responseData['data']['sponsor'] ?? {};
+      } else {
+        freshUserData = responseData['data'] ?? {};
+      }
+      
+      // Save the updated user data to cache
+      await prefs.setString('userData', jsonEncode(freshUserData));
+      
+      // Update other user fields
+      if (freshUserData['name'] != null) {
+        await prefs.setString('userName', freshUserData['name']);
+      }
+      
+      if (freshUserData['email'] != null) {
+        await prefs.setString('userEmail', freshUserData['email']);
+      }
+      
+      if (freshUserData['avatar'] != null) {
+        await prefs.setString('userAvatar', freshUserData['avatar']);
+      }
+      
+      return freshUserData;
+    } else {
+      // If API request fails, return cached data
+      debugPrint('Failed to get user profile. Status: ${response.statusCode}');
+      return userData;
+    }
+  } catch (e) {
+    debugPrint('Error getting current user: $e');
+    
+    // Return basic user info from preferences as fallback
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'name': prefs.getString('userName') ?? 'User',
+      'email': prefs.getString('userEmail') ?? '',
+      'avatar': prefs.getString('userAvatar'),
+    };
+  }
+}
+
+  Future<Map<String, dynamic>> _loginAdmin(String email, String password) async {
   try {
     final url = ApiConstants.adminLogin;
     print('Sending admin login request to: $url');
@@ -227,7 +321,7 @@ Future<Map<String, dynamic>> _loginAdmin(String email, String password) async {
     }
   }
 
-Future<void> printAllPrefs() async {
+  Future<void> printAllPrefs() async {
   try {
     print('\n\n🔍🔍🔍 BEGINNING SHARED PREFERENCES INSPECTION 🔍🔍🔍');
     
@@ -267,7 +361,7 @@ Future<void> printAllPrefs() async {
   }
 }
 // Add this method to your AuthService class
-Future<bool> logout() async {
+  Future<bool> logout() async {
   try {
      print('\n🚪 STARTING LOGOUT PROCESS');
     
@@ -346,7 +440,7 @@ Future<bool> logout() async {
 }
 
 // Helper method to get authentication headers
-Future<Map<String, String>> getAuthHeaders() async {
+  Future<Map<String, String>> getAuthHeaders() async {
   final prefs = await SharedPreferences.getInstance();
   final userType = prefs.getString('userType');
   
@@ -373,7 +467,7 @@ Future<Map<String, String>> getAuthHeaders() async {
   
   // Helper method to process login responses
   // Updated _processLoginResponse method with special handling for admin user data
-Future<Map<String, dynamic>> _processLoginResponse(http.Response response, UserType userType) async {
+  Future<Map<String, dynamic>> _processLoginResponse(http.Response response, UserType userType) async {
   try {
     // Check if response is HTML instead of JSON (connection issue)
     if (response.body.trim().toLowerCase().startsWith('<!doctype html') || 
@@ -470,7 +564,7 @@ Future<Map<String, dynamic>> _processLoginResponse(http.Response response, UserT
 }
 
 // Updated _saveAuthData method with enhanced organization ID handling
-Future<void> _saveAuthData(
+  Future<void> _saveAuthData(
   UserType userType, 
   String? accessToken, 
   String? refreshToken,

@@ -44,7 +44,8 @@ router.post(
   ]),
   registerCoach
 ); // connected
-// Add this route with your other admin routes
+
+router.get('/profile', verifyJWTAdmin, getAdminProfile); //connected
 
 router.get('/organization-stats', verifyJWTAdmin, getOrganizationStats);
 router.get('/athletes', verifyJWTAdmin, getAllAthletes); //connected

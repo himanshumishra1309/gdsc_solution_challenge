@@ -14,7 +14,7 @@ import { verifyJWTAthlete } from "../middlewares/auth.middleware.js";
 const router = Router()
 
 
-router.get("/", verifyJWTAthlete, getAthletes);
+router.get("/profile", verifyJWTAthlete, getAthletes);
 router.get("/logout", verifyJWTAthlete, logoutUser); //connected
 
 router.get("/:athleteId/details", getAthleteDetails);

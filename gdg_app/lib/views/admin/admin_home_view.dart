@@ -18,6 +18,11 @@ class _AdminHomeViewState extends State<AdminHomeView> with SingleTickerProvider
   bool _isLoading = false;
   final AuthService _authService = AuthService();
   final AdminService _adminService = AdminService();
+  
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  
   Map<String, dynamic> _organizationStats = {
     'adminCount': 0,
     'coachCount': 0,
@@ -35,8 +40,29 @@ void initState() {
   _animationController.forward();
   
   // Fetch organization stats when the page loads
+  _loadUserInfo();
   _fetchOrganizationStats();
 }
+
+Future<void> _loadUserInfo() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final userData = await _authService.getCurrentUser();
+      
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Admin";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
 // Add a method to fetch the stats:
 Future<void> _fetchOrganizationStats() async {
@@ -220,6 +246,9 @@ Widget build(BuildContext context) {
           DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))

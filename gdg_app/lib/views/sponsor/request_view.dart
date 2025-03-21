@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 
@@ -9,14 +10,17 @@ class RequestsView extends StatefulWidget {
   _RequestsViewState createState() => _RequestsViewState();
 }
 
-class _RequestsViewState extends State<RequestsView> with SingleTickerProviderStateMixin {
+class _RequestsViewState extends State<RequestsView>
+    with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
   List<Map<String, dynamic>> _requests = [
     {
       'name': 'Regional Cricket Association',
       'subject': 'Equipment Sponsorship Request',
       'date': '2023-04-15',
       'type': 'Equipment',
-      'message': 'We are seeking sponsorship for cricket equipment for our youth development program that serves over 200 children in underrepresented communities.',
+      'message':
+          'We are seeking sponsorship for cricket equipment for our youth development program that serves over 200 children in underrepresented communities.',
       'status': 'New',
       'urgent': true,
     },
@@ -25,7 +29,8 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
       'subject': 'Athletic Scholarship Support',
       'date': '2023-04-12',
       'type': 'Financial',
-      'message': 'I am a national-level track athlete seeking sponsorship to continue my training and participation in upcoming international championships.',
+      'message':
+          'I am a national-level track athlete seeking sponsorship to continue my training and participation in upcoming international championships.',
       'status': 'Under Review',
       'urgent': false,
     },
@@ -34,7 +39,8 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
       'subject': 'Court Renovation Partnership',
       'date': '2023-04-10',
       'type': 'Facility',
-      'message': "Our community basketball courts need renovation. We're looking for sponsors to help fund this project which will benefit over 5,000 local youths.",
+      'message':
+          "Our community basketball courts need renovation. We're looking for sponsors to help fund this project which will benefit over 5,000 local youths.",
       'status': 'New',
       'urgent': false,
     },
@@ -43,7 +49,8 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
       'subject': 'Tennis Tournament Sponsorship',
       'date': '2023-04-08',
       'type': 'Event',
-      'message': "I'm organizing a charity tennis tournament and looking for corporate sponsors. All proceeds will support athletic programs for children with disabilities.",
+      'message':
+          "I'm organizing a charity tennis tournament and looking for corporate sponsors. All proceeds will support athletic programs for children with disabilities.",
       'status': 'Pending',
       'urgent': true,
     },
@@ -52,12 +59,13 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
       'subject': 'Youth Program Funding Request',
       'date': '2023-04-05',
       'type': 'Program',
-      'message': "We're expanding our after-school sports program for at-risk youth and seeking sponsors to help with coaching staff and equipment costs.",
+      'message':
+          "We're expanding our after-school sports program for at-risk youth and seeking sponsors to help with coaching staff and equipment costs.",
       'status': 'Under Review',
       'urgent': false,
     },
   ];
-  
+
   List<Map<String, dynamic>> _filteredRequests = [];
   String _searchQuery = '';
   String _selectedDrawerItem = requestToSponsorPageRoute;
@@ -66,13 +74,32 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
   String _selectedStatusFilter = 'All';
   String _selectedTypeFilter = 'All';
   bool _showUrgentOnly = false;
-  
-  final List<String> _statusFilters = ['All', 'New', 'Pending', 'Under Review', 'Accepted', 'Declined'];
-  final List<String> _typeFilters = ['All', 'Equipment', 'Financial', 'Facility', 'Event', 'Program'];
 
+  final List<String> _statusFilters = [
+    'All',
+    'New',
+    'Pending',
+    'Under Review',
+    'Accepted',
+    'Declined'
+  ];
+  final List<String> _typeFilters = [
+    'All',
+    'Equipment',
+    'Financial',
+    'Facility',
+    'Event',
+    'Program'
+  ];
+// Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _filteredRequests = List.from(_requests);
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
@@ -80,6 +107,22 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
         _applyTabFilter();
       }
     });
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Sponsor";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
   }
 
   @override
@@ -118,22 +161,27 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
     setState(() {
       _filteredRequests = _requests.where((request) {
         // First apply search query filter
-        bool matchesQuery = 
-          request['name']!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          request['subject']!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          request['message']!.toLowerCase().contains(_searchQuery.toLowerCase());
-        
+        bool matchesQuery = request['name']!
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase()) ||
+            request['subject']!
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase()) ||
+            request['message']!
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase());
+
         // Then apply status filter
-        bool matchesStatus = _selectedStatusFilter == 'All' || 
-          request['status'] == _selectedStatusFilter;
-        
+        bool matchesStatus = _selectedStatusFilter == 'All' ||
+            request['status'] == _selectedStatusFilter;
+
         // Then apply type filter
-        bool matchesType = _selectedTypeFilter == 'All' || 
-          request['type'] == _selectedTypeFilter;
-          
+        bool matchesType = _selectedTypeFilter == 'All' ||
+            request['type'] == _selectedTypeFilter;
+
         // Then apply urgency filter
         bool matchesUrgency = !_showUrgentOnly || request['urgent'] == true;
-        
+
         return matchesQuery && matchesStatus && matchesType && matchesUrgency;
       }).toList();
     });
@@ -173,15 +221,14 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
 
   void _deleteRequest(int index) {
     final request = _filteredRequests[index];
-    
+
     setState(() {
       _filteredRequests.removeAt(index);
-      _requests.removeWhere((item) => 
-        item['name'] == request['name'] && 
-        item['subject'] == request['subject']
-      );
+      _requests.removeWhere((item) =>
+          item['name'] == request['name'] &&
+          item['subject'] == request['subject']);
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Request from ${request['name']} deleted'),
@@ -230,7 +277,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                   borderRadius: BorderRadius.circular(5),
                 ),
               ),
-              
+
               // Header
               Container(
                 padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
@@ -276,15 +323,18 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                         ],
                       ),
                     ),
-                    
+
                     // Status badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(request['status']).withOpacity(0.1),
+                        color:
+                            _getStatusColor(request['status']).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: _getStatusColor(request['status']).withOpacity(0.5),
+                          color: _getStatusColor(request['status'])
+                              .withOpacity(0.5),
                         ),
                       ),
                       child: Text(
@@ -299,7 +349,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                   ],
                 ),
               ),
-              
+
               // Request details
               Expanded(
                 child: SingleChildScrollView(
@@ -329,9 +379,11 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: _getTypeColor(request['type']).withOpacity(0.1),
+                                  color: _getTypeColor(request['type'])
+                                      .withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
@@ -346,7 +398,8 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                               if (request['urgent'] == true)
                                 Container(
                                   margin: const EdgeInsets.only(left: 8),
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: Colors.red.shade50,
                                     borderRadius: BorderRadius.circular(4),
@@ -375,7 +428,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                         ],
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Message
                       const Text(
                         'Message:',
@@ -401,7 +454,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Additional information (placeholder)
                       const Text(
                         'Additional Information',
@@ -421,15 +474,17 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                           child: Column(
                             children: [
                               _buildInfoRow('Request Type', request['type']),
-                              _buildInfoRow('Received on', _formatDate(request['date'])),
+                              _buildInfoRow(
+                                  'Received on', _formatDate(request['date'])),
                               _buildInfoRow('Status', request['status']),
-                              _buildInfoRow('Priority', request['urgent'] ? 'High' : 'Normal'),
+                              _buildInfoRow('Priority',
+                                  request['urgent'] ? 'High' : 'Normal'),
                             ],
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Notes section (placeholder)
                       const Text(
                         'Notes',
@@ -455,7 +510,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                   ),
                 ),
               ),
-              
+
               // Action buttons
               Container(
                 padding: const EdgeInsets.all(16),
@@ -494,19 +549,19 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                           Navigator.pop(context);
                           // Update request status
                           setState(() {
-                            final index = _requests.indexWhere((item) => 
-                              item['name'] == request['name'] && 
-                              item['subject'] == request['subject']
-                            );
+                            final index = _requests.indexWhere((item) =>
+                                item['name'] == request['name'] &&
+                                item['subject'] == request['subject']);
                             if (index != -1) {
                               _requests[index]['status'] = 'Accepted';
                               _applyFilters();
                             }
                           });
-                          
+
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Request from ${request['name']} accepted'),
+                              content: Text(
+                                  'Request from ${request['name']} accepted'),
                               behavior: SnackBarBehavior.floating,
                               backgroundColor: Colors.green,
                             ),
@@ -547,13 +602,13 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
   void _handleLogout() {
     Navigator.pushReplacementNamed(context, landingPageRoute);
   }
-  
+
   void _toggleFilterOptions() {
     setState(() {
       _showFilterOptions = !_showFilterOptions;
     });
   }
-  
+
   Color _getStatusColor(String status) {
     switch (status) {
       case 'New':
@@ -570,7 +625,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
         return Colors.grey;
     }
   }
-  
+
   Color _getTypeColor(String type) {
     switch (type) {
       case 'Equipment':
@@ -587,7 +642,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
         return Colors.blueGrey;
     }
   }
-  
+
   IconData _getTypeIcon(String type) {
     switch (type) {
       case 'Equipment':
@@ -627,13 +682,13 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
       ),
     );
   }
-  
+
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
       final now = DateTime.now();
       final difference = now.difference(date);
-      
+
       if (difference.inDays == 0) {
         return 'Today';
       } else if (difference.inDays == 1) {
@@ -651,11 +706,26 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
-      DrawerItem(icon: Icons.article, title: 'News and Updates', route: sponsorHomeViewRoute),
-      DrawerItem(icon: Icons.sports, title: 'Sports of Interest', route: sportsOfInterestRoute),
-      DrawerItem(icon: Icons.mail, title: 'Invitations', route: invitationToSponsorRoute),
-      DrawerItem(icon: Icons.request_page, title: 'Requests', route: requestToSponsorPageRoute),
-      DrawerItem(icon: Icons.search, title: 'Find Organization or Players', route: findOrganizationOrPlayersRoute),
+      DrawerItem(
+          icon: Icons.article,
+          title: 'News and Updates',
+          route: sponsorHomeViewRoute),
+      DrawerItem(
+          icon: Icons.sports,
+          title: 'Sports of Interest',
+          route: sportsOfInterestRoute),
+      DrawerItem(
+          icon: Icons.mail,
+          title: 'Invitations',
+          route: invitationToSponsorRoute),
+      DrawerItem(
+          icon: Icons.request_page,
+          title: 'Requests',
+          route: requestToSponsorPageRoute),
+      DrawerItem(
+          icon: Icons.search,
+          title: 'Find Organization or Players',
+          route: findOrganizationOrPlayersRoute),
     ];
 
     return Scaffold(
@@ -695,6 +765,9 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
         },
         drawerItems: drawerItems,
         onLogout: _handleLogout,
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [
@@ -723,10 +796,12 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                       decoration: InputDecoration(
                         hintText: 'Search requests',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
-                        prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                        prefixIcon:
+                            const Icon(Icons.search, color: Colors.deepPurple),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear, color: Colors.deepPurple),
+                                icon: const Icon(Icons.clear,
+                                    color: Colors.deepPurple),
                                 onPressed: () {
                                   setState(() {
                                     _searchQuery = '';
@@ -736,12 +811,13 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                               )
                             : null,
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 15),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 15),
                       ),
                     ),
                   ),
                 ),
-                
+
                 // Tab bar
                 TabBar(
                   controller: _tabController,
@@ -764,7 +840,10 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                               shape: BoxShape.circle,
                             ),
                             child: Text(
-                              _requests.where((req) => req['status'] == 'New').length.toString(),
+                              _requests
+                                  .where((req) => req['status'] == 'New')
+                                  .length
+                                  .toString(),
                               style: const TextStyle(
                                 color: Colors.deepPurple,
                                 fontSize: 10,
@@ -781,7 +860,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
               ],
             ),
           ),
-          
+
           // Filter options panel
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
@@ -814,14 +893,16 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                       child: ChoiceChip(
                                         label: Text(filter),
                                         selected: _selectedTypeFilter == filter,
-                                        selectedColor: Colors.deepPurple.shade100,
+                                        selectedColor:
+                                            Colors.deepPurple.shade100,
                                         labelStyle: TextStyle(
                                           color: _selectedTypeFilter == filter
                                               ? Colors.deepPurple
                                               : Colors.black87,
-                                          fontWeight: _selectedTypeFilter == filter
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
+                                          fontWeight:
+                                              _selectedTypeFilter == filter
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
                                         ),
                                         backgroundColor: Colors.white,
                                         onSelected: (selected) {
@@ -837,9 +918,9 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                             ),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 12),
-                        
+
                         // Status and urgency row
                         Row(
                           children: [
@@ -867,9 +948,9 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                 );
                               }).toList(),
                             ),
-                            
+
                             const Spacer(),
-                            
+
                             // Urgent filter
                             Row(
                               children: [
@@ -881,9 +962,9 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                 const Text('Urgent only'),
                               ],
                             ),
-                            
+
                             const SizedBox(width: 12), // Added space here
-                            
+
                             // Reset button
                             TextButton.icon(
                               icon: const Icon(Icons.refresh),
@@ -900,7 +981,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                   )
                 : null,
           ),
-          
+
           // Request list
           Expanded(
             child: _filteredRequests.isEmpty
@@ -945,12 +1026,13 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                     ),
                                   ],
                                 ),
-                                
+
                                 const SizedBox(height: 8),
-                                
+
                                 // Subject and urgent badge
                                 Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start, // Important: align to top
+                                  crossAxisAlignment: CrossAxisAlignment
+                                      .start, // Important: align to top
                                   children: [
                                     Expanded(
                                       child: Text(
@@ -964,10 +1046,12 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                     const SizedBox(width: 8), // Add space
                                     if (request['urgent'] == true)
                                       Container(
-                                                                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
                                           color: Colors.red.shade50,
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
                                           border: Border.all(
                                             color: Colors.red.shade200,
                                           ),
@@ -994,9 +1078,9 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                       ),
                                   ],
                                 ),
-                                
+
                                 const SizedBox(height: 8),
-                                
+
                                 // Preview of message
                                 Text(
                                   _truncateText(request['message'], 100),
@@ -1007,9 +1091,9 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                                
+
                                 const SizedBox(height: 12),
-                                
+
                                 // Status and type badges with actions
                                 Wrap(
                                   spacing: 8,
@@ -1019,30 +1103,38 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                   children: [
                                     // Status badge
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 5),
                                       decoration: BoxDecoration(
-                                        color: _getStatusColor(request['status']).withOpacity(0.1),
+                                        color:
+                                            _getStatusColor(request['status'])
+                                                .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(16),
                                         border: Border.all(
-                                          color: _getStatusColor(request['status']).withOpacity(0.4),
+                                          color:
+                                              _getStatusColor(request['status'])
+                                                  .withOpacity(0.4),
                                           width: 1,
                                         ),
                                       ),
                                       child: Text(
                                         request['status'],
                                         style: TextStyle(
-                                          color: _getStatusColor(request['status']),
+                                          color: _getStatusColor(
+                                              request['status']),
                                           fontWeight: FontWeight.w500,
                                           fontSize: 12,
                                         ),
                                       ),
                                     ),
-                                    
+
                                     // Type badge
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 5),
                                       decoration: BoxDecoration(
-                                        color: _getTypeColor(request['type']).withOpacity(0.1),
+                                        color: _getTypeColor(request['type'])
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       child: Row(
@@ -1051,22 +1143,25 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                           Icon(
                                             _getTypeIcon(request['type']),
                                             size: 12,
-                                            color: _getTypeColor(request['type']),
+                                            color:
+                                                _getTypeColor(request['type']),
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             request['type'],
                                             style: TextStyle(
-                                              color: _getTypeColor(request['type']),
+                                              color: _getTypeColor(
+                                                  request['type']),
                                               fontSize: 12,
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
-                                    
+
                                     // Quick action buttons - now in a separate Wrap to prevent overflow
-                                    if (request['status'] == 'New' || request['status'] == 'Under Review')
+                                    if (request['status'] == 'New' ||
+                                        request['status'] == 'Under Review')
                                       Wrap(
                                         spacing: 8,
                                         children: [
@@ -1074,24 +1169,33 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                           ElevatedButton(
                                             onPressed: () {
                                               setState(() {
-                                                final index = _requests.indexWhere((item) => 
-                                                  item['name'] == request['name'] && 
-                                                  item['subject'] == request['subject']
-                                                );
+                                                final index = _requests
+                                                    .indexWhere((item) =>
+                                                        item['name'] ==
+                                                            request['name'] &&
+                                                        item['subject'] ==
+                                                            request['subject']);
                                                 if (index != -1) {
-                                                  _requests[index]['status'] = 'Declined';
+                                                  _requests[index]['status'] =
+                                                      'Declined';
                                                   _applyFilters();
                                                 }
                                               });
                                             },
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.grey.shade200,
-                                              foregroundColor: Colors.grey.shade800,
+                                              backgroundColor:
+                                                  Colors.grey.shade200,
+                                              foregroundColor:
+                                                  Colors.grey.shade800,
                                               elevation: 0,
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 0),
                                               minimumSize: const Size(0, 36),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               textStyle: const TextStyle(
                                                 fontSize: 12,
@@ -1100,29 +1204,37 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                             ),
                                             child: const Text('Decline'),
                                           ),
-                                          
+
                                           // Accept button
                                           ElevatedButton(
                                             onPressed: () {
                                               setState(() {
-                                                final index = _requests.indexWhere((item) => 
-                                                  item['name'] == request['name'] && 
-                                                  item['subject'] == request['subject']
-                                                );
+                                                final index = _requests
+                                                    .indexWhere((item) =>
+                                                        item['name'] ==
+                                                            request['name'] &&
+                                                        item['subject'] ==
+                                                            request['subject']);
                                                 if (index != -1) {
-                                                  _requests[index]['status'] = 'Accepted';
+                                                  _requests[index]['status'] =
+                                                      'Accepted';
                                                   _applyFilters();
                                                 }
                                               });
                                             },
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Colors.deepPurple,
+                                              backgroundColor:
+                                                  Colors.deepPurple,
                                               foregroundColor: Colors.white,
                                               elevation: 0,
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 0),
                                               minimumSize: const Size(0, 36),
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(18),
+                                                borderRadius:
+                                                    BorderRadius.circular(18),
                                               ),
                                               textStyle: const TextStyle(
                                                 fontSize: 12,
@@ -1140,7 +1252,8 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
                                           color: Colors.grey,
                                           size: 20,
                                         ),
-                                        onPressed: () => _viewRequestDetails(request),
+                                        onPressed: () =>
+                                            _viewRequestDetails(request),
                                         tooltip: 'More options',
                                         padding: EdgeInsets.zero,
                                         constraints: const BoxConstraints(),
@@ -1181,10 +1294,10 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
           ),
           const SizedBox(height: 8),
           Text(
-            _searchQuery.isNotEmpty || 
-            _selectedStatusFilter != 'All' || 
-            _selectedTypeFilter != 'All' || 
-            _showUrgentOnly
+            _searchQuery.isNotEmpty ||
+                    _selectedStatusFilter != 'All' ||
+                    _selectedTypeFilter != 'All' ||
+                    _showUrgentOnly
                 ? 'Try adjusting your filters'
                 : 'You have no pending requests',
             style: TextStyle(
@@ -1193,9 +1306,9 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
             ),
           ),
           const SizedBox(height: 24),
-          if (_searchQuery.isNotEmpty || 
-              _selectedStatusFilter != 'All' || 
-              _selectedTypeFilter != 'All' || 
+          if (_searchQuery.isNotEmpty ||
+              _selectedStatusFilter != 'All' ||
+              _selectedTypeFilter != 'All' ||
               _showUrgentOnly)
             ElevatedButton.icon(
               onPressed: _resetFilters,
@@ -1204,7 +1317,8 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1214,7 +1328,7 @@ class _RequestsViewState extends State<RequestsView> with SingleTickerProviderSt
       ),
     );
   }
-  
+
   String _truncateText(String text, int maxLength) {
     if (text.length <= maxLength) return text;
     return '${text.substring(0, maxLength)}...';

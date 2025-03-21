@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
@@ -11,8 +12,15 @@ class FillInjuryFormView extends StatefulWidget {
 }
 
 class _FillInjuryFormViewState extends State<FillInjuryFormView> {
+  final _authService = AuthService();
   String _selectedMonth = 'January';
   String _searchQuery = '';
+
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
   final List<Map<String, dynamic>> _injuryForms = [
     {
       'date': '02/10/2025',
@@ -76,9 +84,32 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
+  }
+
   List<Map<String, dynamic>> get _filteredInjuryForms {
     return _injuryForms.where((form) {
-      final matchesMonth = DateFormat('MM/dd/yyyy').parse(form['date']).month == _getMonthNumber(_selectedMonth);
+      final matchesMonth = DateFormat('MM/dd/yyyy').parse(form['date']).month ==
+          _getMonthNumber(_selectedMonth);
       final matchesSearchQuery = form['date'].contains(_searchQuery);
       return matchesMonth && matchesSearchQuery;
     }).toList();
@@ -188,7 +219,8 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
   }
 
   void _handleLogout(BuildContext context) {
-    Navigator.pushReplacementNamed(context, coachAdminPlayerRoute); // Navigate to the desired page
+    Navigator.pushReplacementNamed(
+        context, coachAdminPlayerRoute); // Navigate to the desired page
   }
 
   @override
@@ -214,18 +246,49 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
           }
         },
         drawerItems: [
-          DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
-          DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
-          DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Nutritional Plan', route: nutritionalPlanRoute),
-          DrawerItem(icon: Icons.announcement, title: 'View Announcements', route: playerviewAnnouncementRoute),
-          DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
-          DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
-          DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-          DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+          DrawerItem(
+              icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View Coaches',
+              route: viewCoachProfileRoute),
+          DrawerItem(
+              icon: Icons.bar_chart,
+              title: 'View Stats',
+              route: viewPlayerStatisticsRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Medical Reports',
+              route: medicalReportRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Nutritional Plan',
+              route: nutritionalPlanRoute),
+          DrawerItem(
+              icon: Icons.announcement,
+              title: 'View Announcements',
+              route: playerviewAnnouncementRoute),
+          DrawerItem(
+              icon: Icons.calendar_today,
+              title: 'View Calendar',
+              route: viewCalendarRoute),
+          DrawerItem(
+              icon: Icons.fitness_center,
+              title: 'View Gym Plan',
+              route: viewGymPlanRoute),
+          DrawerItem(
+              icon: Icons.edit,
+              title: 'Fill Injury Form',
+              route: fillInjuryFormRoute),
+          DrawerItem(
+              icon: Icons.attach_money,
+              title: 'Finances',
+              route: playerFinancialViewRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -238,21 +301,24 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
                     onChanged: _onSearchChanged,
                     decoration: InputDecoration(
                       labelText: 'Search by Date',
-                      prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.deepPurple),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Colors.deepPurple),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                        borderSide: const BorderSide(
+                            color: Colors.deepPurple, width: 2),
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.deepPurple.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -288,7 +354,8 @@ class _FillInjuryFormViewState extends State<FillInjuryFormView> {
                       );
                     }).toList(),
                     underline: Container(),
-                    icon: const Icon(Icons.arrow_drop_down, color: Colors.deepPurple, size: 28),
+                    icon: const Icon(Icons.arrow_drop_down,
+                        color: Colors.deepPurple, size: 28),
                     dropdownColor: Colors.white,
                     elevation: 2,
                   ),
@@ -390,7 +457,8 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Date of Injury'),
+                  decoration:
+                      const InputDecoration(labelText: 'Date of Injury'),
                   readOnly: true,
                   onTap: () async {
                     final DateTime? picked = await showDatePicker(
@@ -412,12 +480,15 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                     return null;
                   },
                   controller: TextEditingController(
-                    text: _dateOfInjury == null ? '' : DateFormat('MM/dd/yyyy').format(_dateOfInjury!),
+                    text: _dateOfInjury == null
+                        ? ''
+                        : DateFormat('MM/dd/yyyy').format(_dateOfInjury!),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Time of Injury'),
+                  decoration:
+                      const InputDecoration(labelText: 'Time of Injury'),
                   readOnly: true,
                   onTap: () async {
                     final TimeOfDay? picked = await showTimePicker(
@@ -437,13 +508,16 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                     return null;
                   },
                   controller: TextEditingController(
-                    text: _timeOfInjury == null ? '' : _timeOfInjury!.format(context),
+                    text: _timeOfInjury == null
+                        ? ''
+                        : _timeOfInjury!.format(context),
                   ),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _typeOfInjury,
-                  decoration: const InputDecoration(labelText: 'Type of Injury'),
+                  decoration:
+                      const InputDecoration(labelText: 'Type of Injury'),
                   items: <String>[
                     'Sprain',
                     'Fracture',
@@ -467,7 +541,8 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _affectedBodyPart,
-                  decoration: const InputDecoration(labelText: 'Affected Body Part'),
+                  decoration:
+                      const InputDecoration(labelText: 'Affected Body Part'),
                   items: <String>[
                     'Head',
                     'Neck',
@@ -495,7 +570,8 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _injurySeverity,
-                  decoration: const InputDecoration(labelText: 'Injury Severity'),
+                  decoration:
+                      const InputDecoration(labelText: 'Injury Severity'),
                   items: <String>[
                     'Minor (Can Play)',
                     'Moderate (Needs Recovery)',
@@ -514,7 +590,8 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  decoration: const InputDecoration(labelText: 'Cause of Injury'),
+                  decoration:
+                      const InputDecoration(labelText: 'Cause of Injury'),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please describe the cause of injury';
@@ -535,7 +612,8 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                 const SizedBox(height: 16),
                 if (_firstAidProvided)
                   TextFormField(
-                    decoration: const InputDecoration(labelText: 'Who Gave First Aid?'),
+                    decoration:
+                        const InputDecoration(labelText: 'Who Gave First Aid?'),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter the name of the person who gave first aid';
@@ -546,7 +624,8 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _externalFactors,
-                  decoration: const InputDecoration(labelText: 'Any External Factors?'),
+                  decoration:
+                      const InputDecoration(labelText: 'Any External Factors?'),
                   items: <String>[
                     'Bad Ground Conditions',
                     'Collision',
@@ -688,7 +767,8 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                 ),
                 if (_previousInjury)
                   TextFormField(
-                    decoration: const InputDecoration(labelText: 'If Yes, When?'),
+                    decoration:
+                        const InputDecoration(labelText: 'If Yes, When?'),
                     readOnly: true,
                     onTap: () async {
                       final DateTime? picked = await showDatePicker(
@@ -710,7 +790,10 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                       return null;
                     },
                     controller: TextEditingController(
-                      text: _previousInjuryDate == null ? '' : DateFormat('MM/dd/yyyy').format(_previousInjuryDate!),
+                      text: _previousInjuryDate == null
+                          ? ''
+                          : DateFormat('MM/dd/yyyy')
+                              .format(_previousInjuryDate!),
                     ),
                   ),
                 const SizedBox(height: 16),
@@ -723,10 +806,13 @@ class _NewInjuryFormState extends State<NewInjuryForm> {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 20, color: Colors.white),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
+                    textStyle:
+                        const TextStyle(fontSize: 20, color: Colors.white),
                   ),
-                  child: const Text('Submit', style: TextStyle(color: Colors.white)),
+                  child: const Text('Submit',
+                      style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),

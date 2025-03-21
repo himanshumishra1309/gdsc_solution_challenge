@@ -37,6 +37,39 @@ class _AdminAccessFormState extends State<AdminAccessForm> {
   bool _physiotherapyRequired = false;
   bool _isEditing = false;
 
+  bool _isLoading = false;
+
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load user info when the screen initializes
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final userData = await _authService.getCurrentUser();
+      
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Admin";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   void _onDateChanged(DateTime? date) {
     setState(() {
       _injuryDate = date;
@@ -187,6 +220,9 @@ class _AdminAccessFormState extends State<AdminAccessForm> {
           DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

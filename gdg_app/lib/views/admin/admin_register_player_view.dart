@@ -72,11 +72,34 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
   bool _formChanged = false;
   bool _isSubmitting = false;
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _getOrganizationId();
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Admin";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   Future<void> _getOrganizationId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -2370,6 +2393,9 @@ class _AdminRegisterPlayerViewState extends State<AdminRegisterPlayerView> {
               }
             }
           },
+          userName: _userName,
+          userEmail: _userEmail, 
+          userAvatarUrl: _userAvatar,
         ),
         body: Container(
           decoration: BoxDecoration(

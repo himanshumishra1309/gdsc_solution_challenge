@@ -30,6 +30,10 @@ class _AdminRegisterAdminViewState extends State<AdminRegisterAdminView> {
   bool _isLoading = false;
   bool _isError = false;
   String _errorMessage = '';
+
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
   
   // Pagination state
   int _currentPage = 1;
@@ -43,8 +47,25 @@ class _AdminRegisterAdminViewState extends State<AdminRegisterAdminView> {
   void initState() {
     super.initState();
     _loadAdmins();
+    _loadUserInfo();
     _debugSharedPreferences(); // Debug to check organization ID
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Admin";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
   
   // Debug function to check SharedPreferences
   Future<void> _debugSharedPreferences() async {
@@ -354,6 +375,9 @@ class _AdminRegisterAdminViewState extends State<AdminRegisterAdminView> {
           }
         }
       },
+      userName: _userName,
+      userEmail: _userEmail, 
+      userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [

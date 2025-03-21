@@ -17,8 +17,34 @@ class _IndividualGameViewState extends State<IndividualGameView> {
   String _selectedSport = 'All Sports';
   String _searchQuery = '';
   List<String> _uploadedVideos = [];
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
   bool _isLoading = false;
-  
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
+  }
+
   // Sample video data
   final List<Map<String, dynamic>> _sampleVideos = [
     {
@@ -54,18 +80,27 @@ class _IndividualGameViewState extends State<IndividualGameView> {
       'views': 67,
     },
   ];
-  
+
   List<Map<String, dynamic>> get _filteredVideos {
     return _sampleVideos.where((video) {
-      final matchesSearch = _searchQuery.isEmpty || 
+      final matchesSearch = _searchQuery.isEmpty ||
           video['title'].toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesSport = _selectedSport == 'All Sports' || 
-          video['sport'] == _selectedSport;
+      final matchesSport =
+          _selectedSport == 'All Sports' || video['sport'] == _selectedSport;
       return matchesSearch && matchesSport;
     }).toList();
   }
 
-  final List<String> _sports = ['All Sports', 'Cricket', 'Football', 'Badminton', 'Basketball', 'Tennis', 'Golf', 'Swimming'];
+  final List<String> _sports = [
+    'All Sports',
+    'Cricket',
+    'Football',
+    'Badminton',
+    'Basketball',
+    'Tennis',
+    'Golf',
+    'Swimming'
+  ];
 
   void _onSelectDrawerItem(String item) {
     setState(() {
@@ -79,7 +114,7 @@ class _IndividualGameViewState extends State<IndividualGameView> {
     setState(() {
       _isLoading = true;
     });
-    
+
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.video,
@@ -89,7 +124,7 @@ class _IndividualGameViewState extends State<IndividualGameView> {
       setState(() {
         _uploadedVideos.addAll(result.paths.map((path) => path!).toList());
         // In a real app, you would upload these files to a server here
-        
+
         // Add to sample videos
         for (var path in result.paths) {
           final fileName = path!.split('/').last;
@@ -104,14 +139,14 @@ class _IndividualGameViewState extends State<IndividualGameView> {
         }
       });
     }
-    
+
     setState(() {
       _isLoading = false;
     });
   }
 
   final AuthService _authService = AuthService();
-  
+
   // Update your _handleLogout method
   Future<void> _handleLogout() async {
     bool success = await _authService.logout();
@@ -145,11 +180,11 @@ class _IndividualGameViewState extends State<IndividualGameView> {
         ],
       ),
     );
-    
+
     if (shouldLogout == true) {
       await _handleLogout();
     }
-    
+
     return false; // Return false to prevent app from closing
   }
 
@@ -170,14 +205,15 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Center(
-                child: Icon(Icons.play_circle_fill, size: 60, color: Colors.white),
+                child:
+                    Icon(Icons.play_circle_fill, size: 60, color: Colors.white),
               ),
             ),
             const SizedBox(height: 16),
             Text(
               video['title'],
               style: const TextStyle(
-                fontSize: 18, 
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -204,12 +240,30 @@ class _IndividualGameViewState extends State<IndividualGameView> {
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
       DrawerItem(icon: Icons.home, title: 'Home', route: individualHomeRoute),
-      DrawerItem(icon: Icons.upload_file, title: 'Upload Achievement', route: uploadAchievementRoute),
-      DrawerItem(icon: Icons.video_library, title: 'Game Videos', route: gameVideosRoute),
-      DrawerItem(icon: Icons.contact_mail, title: 'View and Contact Sponsor', route: viewContactSponsorRoute),
-      DrawerItem(icon: Icons.fastfood, title: 'Daily Diet Plan', route: individualDailyDietRoute),
-      DrawerItem(icon: Icons.fitness_center, title: 'Gym Plan', route: individualGymPlanRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: individualFinancesRoute),
+      DrawerItem(
+          icon: Icons.upload_file,
+          title: 'Upload Achievement',
+          route: uploadAchievementRoute),
+      DrawerItem(
+          icon: Icons.video_library,
+          title: 'Game Videos',
+          route: gameVideosRoute),
+      DrawerItem(
+          icon: Icons.contact_mail,
+          title: 'View and Contact Sponsor',
+          route: viewContactSponsorRoute),
+      DrawerItem(
+          icon: Icons.fastfood,
+          title: 'Daily Diet Plan',
+          route: individualDailyDietRoute),
+      DrawerItem(
+          icon: Icons.fitness_center,
+          title: 'Gym Plan',
+          route: individualGymPlanRoute),
+      DrawerItem(
+          icon: Icons.attach_money,
+          title: 'Finances',
+          route: individualFinancesRoute),
     ];
 
     return Scaffold(
@@ -227,7 +281,6 @@ class _IndividualGameViewState extends State<IndividualGameView> {
           fontWeight: FontWeight.bold,
         ),
         toolbarHeight: 65.0,
-        
       ),
       drawer: CustomDrawer(
         selectedDrawerItem: _selectedDrawerItem,
@@ -239,6 +292,9 @@ class _IndividualGameViewState extends State<IndividualGameView> {
         },
         drawerItems: drawerItems,
         onLogout: () => _onWillPop(),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Stack(
         children: [
@@ -247,7 +303,7 @@ class _IndividualGameViewState extends State<IndividualGameView> {
             height: 70,
             color: Colors.deepPurple,
           ),
-          
+
           // Main content area
           Column(
             children: [
@@ -277,10 +333,12 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                     },
                     decoration: InputDecoration(
                       hintText: 'Search videos...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.deepPurple),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.deepPurple),
+                              icon: const Icon(Icons.clear,
+                                  color: Colors.deepPurple),
                               onPressed: () {
                                 setState(() {
                                   _searchQuery = '';
@@ -294,11 +352,12 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                   ),
                 ),
               ),
-              
+
               // Sports filter section
               Container(
                 height: 60,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 margin: const EdgeInsets.only(top: 8),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -316,7 +375,7 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                   itemBuilder: (context, index) {
                     final sport = _sports[index];
                     final isSelected = _selectedSport == sport;
-                    
+
                     return GestureDetector(
                       onTap: () {
                         setState(() {
@@ -325,9 +384,12 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                       },
                       child: Container(
                         margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          color: isSelected ? Colors.deepPurple : Colors.grey.shade200,
+                          color: isSelected
+                              ? Colors.deepPurple
+                              : Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(20),
                           border: isSelected
                               ? null
@@ -336,8 +398,12 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                         child: Text(
                           sport,
                           style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.grey.shade700,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? Colors.white
+                                : Colors.grey.shade700,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -345,14 +411,15 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                   },
                 ),
               ),
-              
+
               // Video grid
               Expanded(
                 child: _filteredVideos.isEmpty
                     ? _buildEmptyView()
                     : GridView.builder(
                         padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           childAspectRatio: 0.75,
                           crossAxisSpacing: 12,
@@ -367,7 +434,7 @@ class _IndividualGameViewState extends State<IndividualGameView> {
               ),
             ],
           ),
-          
+
           // Loading overlay
           if (_isLoading)
             Container(
@@ -388,7 +455,7 @@ class _IndividualGameViewState extends State<IndividualGameView> {
       ),
     );
   }
-  
+
   Widget _buildVideoCard(Map<String, dynamic> video) {
     return GestureDetector(
       onTap: () => _playVideo(video),
@@ -405,7 +472,8 @@ class _IndividualGameViewState extends State<IndividualGameView> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(12)),
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
                     child: Container(
@@ -424,7 +492,8 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                   bottom: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(4),
@@ -460,7 +529,7 @@ class _IndividualGameViewState extends State<IndividualGameView> {
                 ),
               ],
             ),
-            
+
             // Video details
             Expanded(
               child: Padding(
@@ -512,7 +581,7 @@ class _IndividualGameViewState extends State<IndividualGameView> {
       ),
     );
   }
-  
+
   Widget _buildEmptyView() {
     return Center(
       child: Column(
@@ -557,18 +626,19 @@ class _IndividualGameViewState extends State<IndividualGameView> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
         ],
       ),
     );
   }
-  
+
   String _formatDate(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
       return 'Today';
     } else if (difference.inDays == 1) {

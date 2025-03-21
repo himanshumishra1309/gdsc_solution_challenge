@@ -913,8 +913,8 @@ const getOrganizationStats = asyncHandler(async (req, res) => {
       Coach.countDocuments({ organization: organizationId }),
       Athlete.countDocuments({ organization: organizationId }),
       // If you have a Sponsor model, use the line below. Otherwise, just return 0
-      // Sponsor.countDocuments({ organization: organizationId })
-      Promise.resolve(0) // Placeholder for sponsors if you don't have a model yet
+      Sponsor.countDocuments({ organization: organizationId })
+      // Promise.resolve(0) // Placeholder for sponsors if you don't have a model yet
     ]);
     
     return res.status(200).json(

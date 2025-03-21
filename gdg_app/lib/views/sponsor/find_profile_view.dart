@@ -1,6 +1,7 @@
 // ignore_for_file: unused_field
 
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'dart:convert';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
@@ -12,7 +13,9 @@ class FindProfilesView extends StatefulWidget {
   _FindProfilesViewState createState() => _FindProfilesViewState();
 }
 
-class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerProviderStateMixin {
+class _FindProfilesViewState extends State<FindProfilesView>
+    with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
   List<Map<String, String>> _profiles = [];
   List<Map<String, String>> _filteredProfiles = [];
   String _searchQuery = '';
@@ -22,15 +25,50 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
   late TabController _tabController;
   bool _isLoading = true;
 
-  final List<String> _sportsFilters = ['Cricket', 'Football', 'Tennis', 'Basketball', 'Golf', 'Swimming'];
-  final List<String> _locationFilters = ['Delhi', 'Mumbai', 'Bangalore', 'Chennai', 'Kolkata'];
+  final List<String> _sportsFilters = [
+    'Cricket',
+    'Football',
+    'Tennis',
+    'Basketball',
+    'Golf',
+    'Swimming'
+  ];
+  final List<String> _locationFilters = [
+    'Delhi',
+    'Mumbai',
+    'Bangalore',
+    'Chennai',
+    'Kolkata'
+  ];
+
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
 
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
     _loadProfiles();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Sponsor";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
   }
 
   @override
@@ -42,7 +80,8 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
   void _handleTabChange() {
     if (!_tabController.indexIsChanging) {
       setState(() {
-        _selectedCategory = _tabController.index == 0 ? 'individuals' : 'organizations';
+        _selectedCategory =
+            _tabController.index == 0 ? 'individuals' : 'organizations';
         _loadProfiles();
       });
     }
@@ -160,12 +199,12 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
       ]
     }
     ''';
-    
+
     final data = json.decode(jsonData);
     setState(() {
       _profiles = List<Map<String, String>>.from(
-        (data[_selectedCategory] as List).map((item) => Map<String, String>.from(item))
-      );
+          (data[_selectedCategory] as List)
+              .map((item) => Map<String, String>.from(item)));
       _filteredProfiles = _profiles;
       _isLoading = false;
     });
@@ -175,18 +214,23 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
     setState(() {
       _filteredProfiles = _profiles.where((profile) {
         // Apply search query filter
-        bool matchesQuery = profile['name']!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-               profile['username']!.toLowerCase().contains(_searchQuery.toLowerCase());
-        
+        bool matchesQuery = profile['name']!
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase()) ||
+            profile['username']!
+                .toLowerCase()
+                .contains(_searchQuery.toLowerCase());
+
         // Apply sport and location filters
         bool matchesFilters = true;
         for (String filter in _selectedFilters) {
-          if (!((profile['sport'] ?? '').contains(filter) || (profile['location'] ?? '').contains(filter))) {
+          if (!((profile['sport'] ?? '').contains(filter) ||
+              (profile['location'] ?? '').contains(filter))) {
             matchesFilters = false;
             break;
           }
         }
-        
+
         return matchesQuery && matchesFilters;
       }).toList();
     });
@@ -218,212 +262,216 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
   }
 
   void _viewProfile(Map<String, String> profile) {
-  // Show a bottom sheet with more profile details
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) => DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (_, controller) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        padding: const EdgeInsets.all(20),
-        // Use CustomScrollView to handle both fixed and scrollable content
-        child: CustomScrollView(
-          controller: controller, // Connect to DraggableScrollableSheet
-          slivers: [
-            // Profile header - fixed at top
-            SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Profile header
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundImage: AssetImage(profile['image']!),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              profile['name']!,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '@${profile['username']}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
-                                const SizedBox(width: 4),
-                                Text(
-                                  profile['location'] ?? 'Unknown',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Icon(Icons.star, size: 16, color: Colors.amber),
-                                const SizedBox(width: 4),
-                                Text(
-                                  profile['rating'] ?? '4.0',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const Divider(height: 30),
-                  
-                  // Sport and other details
-                  Text(
-                    'Sport',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.deepPurple.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
+    // Show a bottom sheet with more profile details
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          padding: const EdgeInsets.all(20),
+          // Use CustomScrollView to handle both fixed and scrollable content
+          child: CustomScrollView(
+            controller: controller, // Connect to DraggableScrollableSheet
+            slivers: [
+              // Profile header - fixed at top
+              SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Profile header
+                    Row(
                       children: [
-                        Icon(
-                          _getSportIcon(profile['sport'] ?? ''),
-                          color: Colors.deepPurple,
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundImage: AssetImage(profile['image']!),
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          profile['sport'] ?? 'Not specified',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                profile['name']!,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '@${profile['username']}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(Icons.location_on,
+                                      size: 16, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    profile['location'] ?? 'Unknown',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Icon(Icons.star,
+                                      size: 16, color: Colors.amber),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    profile['rating'] ?? '4.0',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Bio section (simulated)
-                  Text(
-                    'Bio',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam vel justo nec nisi efficitur scelerisque. Nullam facilisis metus eget massa posuere, in condimentum nisl facilisis.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade700,
-                      height: 1.5,
-                    ),
-                  ),
-                  
-                  // Achievements (simulated)
-                  const SizedBox(height: 24),
-                  Text(
-                    'Achievements',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                ],
-              ),
-            ),
-            
-            // Achievements list - can grow/scroll as needed
-            SliverToBoxAdapter(
-              child: _buildAchievementsList(),
-            ),
-            
-            // Spacer that pushes the button to the bottom when there's room
-            const SliverFillRemaining(
-              hasScrollBody: false,
-              fillOverscroll: true,
-              child: SizedBox(height: 20),
-            ),
-            
-            // Contact button - appears at the bottom
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Contact request sent to ${profile['name']}'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text(
-                      'Contact for Sponsorship',
+
+                    const Divider(height: 30),
+
+                    // Sport and other details
+                    Text(
+                      'Sport',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.deepPurple.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            _getSportIcon(profile['sport'] ?? ''),
+                            color: Colors.deepPurple,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            profile['sport'] ?? 'Not specified',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Bio section (simulated)
+                    Text(
+                      'Bio',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam vel justo nec nisi efficitur scelerisque. Nullam facilisis metus eget massa posuere, in condimentum nisl facilisis.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        height: 1.5,
+                      ),
+                    ),
+
+                    // Achievements (simulated)
+                    const SizedBox(height: 24),
+                    Text(
+                      'Achievements',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+
+              // Achievements list - can grow/scroll as needed
+              SliverToBoxAdapter(
+                child: _buildAchievementsList(),
+              ),
+
+              // Spacer that pushes the button to the bottom when there's room
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                fillOverscroll: true,
+                child: SizedBox(height: 20),
+              ),
+
+              // Contact button - appears at the bottom
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Contact request sent to ${profile['name']}'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: const Text(
+                        'Contact for Sponsorship',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildAchievementsList() {
     return ListView.builder(
@@ -436,7 +484,7 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
           leading: CircleAvatar(
             backgroundColor: Colors.amber.shade100,
             child: Icon(
-              Icons.emoji_events, 
+              Icons.emoji_events,
               color: Colors.amber.shade700,
               size: 20,
             ),
@@ -481,11 +529,26 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
   @override
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
-      DrawerItem(icon: Icons.article, title: 'News and Updates', route: sponsorHomeViewRoute),
-      DrawerItem(icon: Icons.sports, title: 'Sports of Interest', route: sportsOfInterestRoute),
-      DrawerItem(icon: Icons.mail, title: 'Invitations', route: invitationToSponsorRoute),
-      DrawerItem(icon: Icons.request_page, title: 'Requests', route: requestToSponsorPageRoute),
-      DrawerItem(icon: Icons.search, title: 'Find Organization or Players', route: findOrganizationOrPlayersRoute),
+      DrawerItem(
+          icon: Icons.article,
+          title: 'News and Updates',
+          route: sponsorHomeViewRoute),
+      DrawerItem(
+          icon: Icons.sports,
+          title: 'Sports of Interest',
+          route: sportsOfInterestRoute),
+      DrawerItem(
+          icon: Icons.mail,
+          title: 'Invitations',
+          route: invitationToSponsorRoute),
+      DrawerItem(
+          icon: Icons.request_page,
+          title: 'Requests',
+          route: requestToSponsorPageRoute),
+      DrawerItem(
+          icon: Icons.search,
+          title: 'Find Organization or Players',
+          route: findOrganizationOrPlayersRoute),
     ];
 
     return Scaffold(
@@ -517,6 +580,9 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
         },
         drawerItems: drawerItems,
         onLogout: _handleLogout,
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [
@@ -559,10 +625,12 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
                     decoration: InputDecoration(
                       hintText: 'Search names or usernames',
                       hintStyle: TextStyle(color: Colors.grey.shade400),
-                      prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.deepPurple),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.deepPurple),
+                              icon: const Icon(Icons.clear,
+                                  color: Colors.deepPurple),
                               onPressed: () {
                                 setState(() {
                                   _searchQuery = '';
@@ -576,7 +644,7 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
                     ),
                   ),
                 ),
-                
+
                 // Tab bar for category selection
                 TabBar(
                   controller: _tabController,
@@ -611,7 +679,7 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
               ],
             ),
           ),
-          
+
           // Filter chips
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -653,61 +721,61 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
                     children: [
                       // Sport filters
                       ..._sportsFilters.map((sport) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(sport),
-                          selected: _selectedFilters.contains(sport),
-                          onSelected: (_) => _toggleFilter(sport),
-                          backgroundColor: Colors.grey.shade200,
-                          selectedColor: Colors.deepPurple.shade100,
-                          checkmarkColor: Colors.deepPurple,
-                          labelStyle: TextStyle(
-                            color: _selectedFilters.contains(sport)
-                                ? Colors.deepPurple
-                                : Colors.black87,
-                            fontWeight: _selectedFilters.contains(sport)
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      )),
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(sport),
+                              selected: _selectedFilters.contains(sport),
+                              onSelected: (_) => _toggleFilter(sport),
+                              backgroundColor: Colors.grey.shade200,
+                              selectedColor: Colors.deepPurple.shade100,
+                              checkmarkColor: Colors.deepPurple,
+                              labelStyle: TextStyle(
+                                color: _selectedFilters.contains(sport)
+                                    ? Colors.deepPurple
+                                    : Colors.black87,
+                                fontWeight: _selectedFilters.contains(sport)
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                            ),
+                          )),
                       // Location filters
                       ..._locationFilters.map((location) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(location),
-                          selected: _selectedFilters.contains(location),
-                          onSelected: (_) => _toggleFilter(location),
-                          backgroundColor: Colors.grey.shade200,
-                          selectedColor: Colors.deepPurple.shade100,
-                          checkmarkColor: Colors.deepPurple,
-                          labelStyle: TextStyle(
-                            color: _selectedFilters.contains(location)
-                                ? Colors.deepPurple
-                                : Colors.black87,
-                            fontWeight: _selectedFilters.contains(location)
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                          avatar: Icon(
-                            Icons.location_on,
-                            size: 14,
-                            color: _selectedFilters.contains(location)
-                                ? Colors.deepPurple
-                                : Colors.grey.shade600,
-                          ),
-                        ),
-                      )),
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text(location),
+                              selected: _selectedFilters.contains(location),
+                              onSelected: (_) => _toggleFilter(location),
+                              backgroundColor: Colors.grey.shade200,
+                              selectedColor: Colors.deepPurple.shade100,
+                              checkmarkColor: Colors.deepPurple,
+                              labelStyle: TextStyle(
+                                color: _selectedFilters.contains(location)
+                                    ? Colors.deepPurple
+                                    : Colors.black87,
+                                fontWeight: _selectedFilters.contains(location)
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                              avatar: Icon(
+                                Icons.location_on,
+                                size: 14,
+                                color: _selectedFilters.contains(location)
+                                    ? Colors.deepPurple
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                          )),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          
+
           // Profile grid
           Expanded(
-            child: _isLoading 
+            child: _isLoading
                 ? _buildLoadingView()
                 : _filteredProfiles.isEmpty
                     ? _buildEmptyView()
@@ -716,7 +784,8 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
                         color: Colors.deepPurple,
                         child: GridView.builder(
                           padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 16.0,
                             mainAxisSpacing: 16.0,
@@ -736,145 +805,147 @@ class _FindProfilesViewState extends State<FindProfilesView> with SingleTickerPr
   }
 
   Widget _buildProfileCard(Map<String, String> profile) {
-  return GestureDetector(
-    onTap: () => _viewProfile(profile),
-    child: Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Profile image (with fixed height to prevent overflow)
-          SizedBox(
-            height: 120, // Reduced from 140
-            child: Stack(
-              children: [
-                Image.asset(
-                  profile['image']!,
-                  height: double.infinity,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-                // Rating badge
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: () => _viewProfile(profile),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile image (with fixed height to prevent overflow)
+            SizedBox(
+              height: 120, // Reduced from 140
+              child: Stack(
+                children: [
+                  Image.asset(
+                    profile['image']!,
+                    height: double.infinity,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                  // Rating badge
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            profile['rating'] ?? '4.0',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                          size: 14,
+                  ),
+                  // Sport badge
+                  if (profile['sport'] != null)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.deepPurple.withOpacity(0.8),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          profile['rating'] ?? '4.0',
+                        child: Text(
+                          profile['sport']!,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Sport badge
-                if (profile['sport'] != null)
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Text(
-                        profile['sport']!,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          
-          // Profile details - use a tight height constraint
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(8), // Reduced padding
-              child: Column(
-                mainAxisSize: MainAxisSize.min, // Use minimum size
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    profile['name']!,
-                    style: const TextStyle(
-                      fontSize: 14, // Smaller font
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2), // Smaller gap
-                  Text(
-                    '@${profile['username']}',
-                    style: TextStyle(
-                      fontSize: 12, // Smaller font
-                      color: Colors.grey.shade600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Spacer(),
-                  // Location
-                  if (profile['location'] != null)
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 12, // Smaller icon
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 2), // Smaller gap
-                        Expanded(
-                          child: Text(
-                            profile['location']!,
-                            style: TextStyle(
-                              fontSize: 11, // Smaller font
-                              color: Colors.grey.shade600,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
                     ),
                 ],
               ),
             ),
-          ),
-        ],
+
+            // Profile details - use a tight height constraint
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8), // Reduced padding
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // Use minimum size
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile['name']!,
+                      style: const TextStyle(
+                        fontSize: 14, // Smaller font
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2), // Smaller gap
+                    Text(
+                      '@${profile['username']}',
+                      style: TextStyle(
+                        fontSize: 12, // Smaller font
+                        color: Colors.grey.shade600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    // Location
+                    if (profile['location'] != null)
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on,
+                            size: 12, // Smaller icon
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 2), // Smaller gap
+                          Expanded(
+                            child: Text(
+                              profile['location']!,
+                              style: TextStyle(
+                                fontSize: 11, // Smaller font
+                                color: Colors.grey.shade600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
-  
+    );
+  }
+
   Widget _buildLoadingView() {
     return Center(
       child: Column(

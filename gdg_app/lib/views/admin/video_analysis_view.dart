@@ -27,21 +27,56 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
   bool _isGridView = false;
   bool _showFilterOptions = false;
   String _sortBy = 'Date (Newest)';
-  
-  final List<String> _sportOptions = ['All', 'Football', 'Cricket', 'Basketball', 'Tennis', 'Badminton', 'Swimming', 'Volleyball'];
-  final List<String> _sortOptions = ['Date (Newest)', 'Date (Oldest)', 'Title (A-Z)', 'Title (Z-A)', 'Most Viewed'];
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+
+  final List<String> _sportOptions = [
+    'All',
+    'Football',
+    'Cricket',
+    'Basketball',
+    'Tennis',
+    'Badminton',
+    'Swimming',
+    'Volleyball'
+  ];
+  final List<String> _sortOptions = [
+    'Date (Newest)',
+    'Date (Oldest)',
+    'Title (A-Z)',
+    'Title (Z-A)',
+    'Most Viewed'
+  ];
 
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _loadVideos();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Admin";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
   }
 
   Future<void> _loadVideos() async {
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
       // Simulating network delay
       await Future.delayed(const Duration(milliseconds: 800));
@@ -56,7 +91,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
         _videos = [];
         _isLoading = false;
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading videos: ${e.toString()}'),
@@ -95,7 +130,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
       _isGridView = !_isGridView;
     });
   }
-  
+
   void _toggleFilterOptions() {
     setState(() {
       _showFilterOptions = !_showFilterOptions;
@@ -132,7 +167,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
     String title = '';
     String description = '';
     String selectedSport = 'Football';
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -178,7 +213,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Description field
                 TextField(
                   decoration: InputDecoration(
@@ -194,7 +229,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Sport dropdown
                 DropdownButtonFormField<String>(
                   value: selectedSport,
@@ -205,7 +240,9 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                     ),
                     prefixIcon: const Icon(Icons.sports),
                   ),
-                  items: _sportOptions.where((sport) => sport != 'All').map((String value) {
+                  items: _sportOptions
+                      .where((sport) => sport != 'All')
+                      .map((String value) {
                     return DropdownMenuItem<String>(
                       value: value,
                       child: Text(value),
@@ -216,7 +253,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                   },
                 ),
                 const SizedBox(height: 24),
-                
+
                 // File selector
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -234,7 +271,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepPurple,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -251,7 +289,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.video_file, color: Colors.deepPurple),
+                              const Icon(Icons.video_file,
+                                  color: Colors.deepPurple),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -278,17 +317,20 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
-              onPressed: _selectedFile != null ? () {
-                Navigator.pop(context);
-                _uploadVideo(title, description, selectedSport);
-              } : null,
+              onPressed: _selectedFile != null
+                  ? () {
+                      Navigator.pop(context);
+                      _uploadVideo(title, description, selectedSport);
+                    }
+                  : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
               child: const Text('Upload'),
             ),
@@ -300,24 +342,25 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
 
   void _uploadVideo(String title, String description, String sport) {
     // In a real app, you'd send this to your backend
-    
+
     // Create a mock entry to add to the list
     final newVideo = {
       'id': _videos.length + 1,
       'title': title.isEmpty ? 'Untitled Video' : title,
-      'description': description.isEmpty ? 'No description provided' : description,
+      'description':
+          description.isEmpty ? 'No description provided' : description,
       'sport': sport,
       'uploadedBy': 'Current User',
       'date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
       'views': 0,
       'thumbnail': 'assets/images/video_thumbnail.jpg', // Default thumbnail
     };
-    
+
     // Add to the list
     setState(() {
       _videos = [newVideo, ..._videos];
     });
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Video uploaded successfully'),
@@ -330,7 +373,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
     // For demo purposes, we'll increase the view count when a video is viewed
     final updatedVideo = Map<String, dynamic>.from(video);
     updatedVideo['views'] = (video['views'] ?? 0) + 1;
-    
+
     // Update the video in the list
     setState(() {
       final videoIndex = _videos.indexWhere((v) => v['id'] == video['id']);
@@ -338,7 +381,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
         _videos[videoIndex] = updatedVideo;
       }
     });
-    
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -353,7 +396,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
                     child: Image.asset(
                       video['thumbnail'] ?? 'assets/default_thumbnail.png',
                       width: double.infinity,
@@ -383,7 +427,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                     top: 16,
                     right: 16,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(16),
@@ -400,7 +445,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                   ),
                 ],
               ),
-              
+
               // Video details
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -432,7 +477,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.calendar_today,
+                            size: 14, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
                         Text(
                           video['date'] ?? 'N/A',
@@ -442,7 +488,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                           ),
                         ),
                         const SizedBox(width: 16),
-                        Icon(Icons.remove_red_eye, size: 14, color: Colors.grey.shade600),
+                        Icon(Icons.remove_red_eye,
+                            size: 14, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
                         Text(
                           '${updatedVideo['views'] ?? 0} views',
@@ -504,12 +551,14 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
                           ),
                           onPressed: () {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Downloading video...')),
+                              const SnackBar(
+                                  content: Text('Downloading video...')),
                             );
                           },
                         ),
@@ -526,84 +575,84 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
   }
 
   void _handleLogout(BuildContext context) async {
-  // Show confirmation dialog
-  final shouldLogout = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Confirm Logout'),
-      content: const Text('Are you sure you want to logout?'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.red,
-          ),
-          child: const Text('Yes'),
-        ),
-      ],
-    ),
-  );
-  
-  // If user confirmed logout
-  if (shouldLogout == true) {
-    // Show loading indicator
-    showDialog(
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
       context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Dialog(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                CircularProgressIndicator(color: Colors.deepPurple),
-                SizedBox(height: 16),
-                Text('Logging out...'),
-              ],
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
             ),
+            child: const Text('Yes'),
           ),
-        );
-      },
+        ],
+      ),
     );
-    
-    try {
-      // First clear local data directly
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
-      
-      // Then try server-side logout, but don't block on it
-      _authService.logout().catchError((e) {
-        print('Server logout error: $e');
-      });
-      
-      // Navigate to login page
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading dialog
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          coachAdminPlayerRoute, // Make sure this constant is defined in your routes file
-          (route) => false, // This clears the navigation stack
-        );
-      }
-    } catch (e) {
-      // Handle errors
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading dialog
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error during logout: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+
+    // If user confirmed logout
+    if (shouldLogout == true) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  CircularProgressIndicator(color: Colors.deepPurple),
+                  SizedBox(height: 16),
+                  Text('Logging out...'),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+
+      try {
+        // First clear local data directly
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.clear();
+
+        // Then try server-side logout, but don't block on it
+        _authService.logout().catchError((e) {
+          print('Server logout error: $e');
+        });
+
+        // Navigate to login page
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            coachAdminPlayerRoute, // Make sure this constant is defined in your routes file
+            (route) => false, // This clears the navigation stack
+          );
+        }
+      } catch (e) {
+        // Handle errors
+        if (context.mounted) {
+          Navigator.pop(context); // Close loading dialog
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error during logout: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
-}
 
   void _showFilterBottomSheet() {
     showModalBottomSheet(
@@ -629,7 +678,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                           color: Colors.deepPurple.withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.filter_list, color: Colors.deepPurple),
+                        child: const Icon(Icons.filter_list,
+                            color: Colors.deepPurple),
                       ),
                       const SizedBox(width: 12),
                       const Expanded(
@@ -736,7 +786,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                           label: Text(
                             _selectedDate == null
                                 ? 'Select Date'
-                                : DateFormat('MMM d, yyyy').format(_selectedDate!),
+                                : DateFormat('MMM d, yyyy')
+                                    .format(_selectedDate!),
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.deepPurple,
@@ -812,31 +863,43 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
 
   List<dynamic> _getFilteredAndSortedVideos() {
     List<dynamic> filteredVideos = _videos.where((video) {
-      final matchesQuery = (video['title'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesSport = _selectedSport == 'All' || video['sport'] == _selectedSport;
-      final matchesDate = _selectedDate == null || video['date'] == DateFormat('yyyy-MM-dd').format(_selectedDate!);
+      final matchesQuery = (video['title'] ?? '')
+          .toString()
+          .toLowerCase()
+          .contains(_searchQuery.toLowerCase());
+      final matchesSport =
+          _selectedSport == 'All' || video['sport'] == _selectedSport;
+      final matchesDate = _selectedDate == null ||
+          video['date'] == DateFormat('yyyy-MM-dd').format(_selectedDate!);
       return matchesQuery && matchesSport && matchesDate;
     }).toList();
-    
+
     // Sort the videos based on the selected option
     switch (_sortBy) {
       case 'Date (Newest)':
-        filteredVideos.sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
+        filteredVideos
+            .sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
         break;
       case 'Date (Oldest)':
-        filteredVideos.sort((a, b) => (a['date'] ?? '').compareTo(b['date'] ?? ''));
+        filteredVideos
+            .sort((a, b) => (a['date'] ?? '').compareTo(b['date'] ?? ''));
         break;
       case 'Title (A-Z)':
-        filteredVideos.sort((a, b) => (a['title'] ?? '').toString().compareTo((b['title'] ?? '').toString()));
+        filteredVideos.sort((a, b) => (a['title'] ?? '')
+            .toString()
+            .compareTo((b['title'] ?? '').toString()));
         break;
       case 'Title (Z-A)':
-        filteredVideos.sort((a, b) => (b['title'] ?? '').toString().compareTo((a['title'] ?? '').toString()));
+        filteredVideos.sort((a, b) => (b['title'] ?? '')
+            .toString()
+            .compareTo((a['title'] ?? '').toString()));
         break;
       case 'Most Viewed':
-        filteredVideos.sort((a, b) => (b['views'] ?? 0).compareTo(a['views'] ?? 0));
+        filteredVideos
+            .sort((a, b) => (b['views'] ?? 0).compareTo(a['views'] ?? 0));
         break;
     }
-    
+
     return filteredVideos;
   }
 
@@ -880,18 +943,47 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
           }
         },
         drawerItems: [
-          DrawerItem(icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Admin', route: registerAdminRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Coach', route: registerCoachRoute),
-          DrawerItem(icon: Icons.person_add, title: 'Register Player', route: registerPlayerRoute),
-          DrawerItem(icon: Icons.people, title: 'View All Players', route: viewAllPlayersRoute),
-          DrawerItem(icon: Icons.people, title: 'View All Coaches', route: viewAllCoachesRoute),
-          DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
-          DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
-          DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-          DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
+          DrawerItem(
+              icon: Icons.home, title: 'Admin Home', route: adminHomeRoute),
+          DrawerItem(
+              icon: Icons.person_add,
+              title: 'Register Admin',
+              route: registerAdminRoute),
+          DrawerItem(
+              icon: Icons.person_add,
+              title: 'Register Coach',
+              route: registerCoachRoute),
+          DrawerItem(
+              icon: Icons.person_add,
+              title: 'Register Player',
+              route: registerPlayerRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View All Players',
+              route: viewAllPlayersRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View All Coaches',
+              route: viewAllCoachesRoute),
+          DrawerItem(
+              icon: Icons.request_page,
+              title: 'Request/View Sponsors',
+              route: requestViewSponsorsRoute),
+          DrawerItem(
+              icon: Icons.video_library,
+              title: 'Video Analysis',
+              route: videoAnalysisRoute),
+          DrawerItem(
+              icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
+          DrawerItem(
+              icon: Icons.attach_money,
+              title: 'Manage Player Finances',
+              route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [
@@ -919,7 +1011,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
               ),
             ),
           ),
-          
+
           // Active filters display
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -941,16 +1033,18 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                           });
                         },
                         backgroundColor: Colors.deepPurple.withOpacity(0.1),
-                        side: BorderSide(color: Colors.deepPurple.withOpacity(0.3)),
+                        side: BorderSide(
+                            color: Colors.deepPurple.withOpacity(0.3)),
                       ),
                     ),
-                  
+
                   // Selected date chip
                   if (_selectedDate != null)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: Chip(
-                        label: Text(DateFormat('MMM d, yyyy').format(_selectedDate!)),
+                        label: Text(
+                            DateFormat('MMM d, yyyy').format(_selectedDate!)),
                         deleteIcon: const Icon(Icons.close, size: 18),
                         onDeleted: () {
                           setState(() {
@@ -958,23 +1052,24 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                           });
                         },
                         backgroundColor: Colors.deepPurple.withOpacity(0.1),
-                        side: BorderSide(color: Colors.deepPurple.withOpacity(0.3)),
+                        side: BorderSide(
+                            color: Colors.deepPurple.withOpacity(0.3)),
                       ),
                     ),
-                  
+
                   // Sort chip
                   Chip(
                     label: Text('Sort: $_sortBy'),
                     avatar: const Icon(Icons.sort, size: 18),
                     backgroundColor: Colors.grey.shade200,
-                                        shape: RoundedRectangleBorder(
+                    shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                       side: BorderSide(color: Colors.grey.shade400),
                     ),
                   ),
-                  
+
                   const SizedBox(width: 8),
-                  
+
                   // Video count chip
                   Chip(
                     label: Text('${filteredVideos.length} Videos'),
@@ -989,11 +1084,12 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
               ),
             ),
           ),
-          
+
           // Main content - Videos grid/list
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.deepPurple))
                 : filteredVideos.isEmpty
                     ? Center(
                         child: Column(
@@ -1029,7 +1125,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                         ? AnimationLimiter(
                             child: GridView.builder(
                               padding: const EdgeInsets.all(16),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 childAspectRatio: 0.75,
                                 crossAxisSpacing: 16,
@@ -1043,7 +1140,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                                   duration: const Duration(milliseconds: 500),
                                   child: ScaleAnimation(
                                     child: FadeInAnimation(
-                                      child: _buildVideoGridCard(filteredVideos[index]),
+                                      child: _buildVideoGridCard(
+                                          filteredVideos[index]),
                                     ),
                                   ),
                                 );
@@ -1061,7 +1159,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                                   child: SlideAnimation(
                                     horizontalOffset: 50.0,
                                     child: FadeInAnimation(
-                                      child: _buildVideoListCard(filteredVideos[index]),
+                                      child: _buildVideoListCard(
+                                          filteredVideos[index]),
                                     ),
                                   ),
                                 );
@@ -1138,7 +1237,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                     top: 8,
                     right: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: _getSportColor(video['sport'] ?? 'Default'),
                         borderRadius: BorderRadius.circular(12),
@@ -1158,7 +1258,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                     bottom: 8,
                     right: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(4),
@@ -1175,7 +1276,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                   ),
                 ],
               ),
-              
+
               // Video details
               Expanded(
                 child: Padding(
@@ -1194,7 +1295,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      
+
                       // Metadata
                       Expanded(
                         child: Column(
@@ -1203,7 +1304,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
+                                Icon(Icons.calendar_today,
+                                    size: 12, color: Colors.grey.shade600),
                                 const SizedBox(width: 4),
                                 Expanded(
                                   child: Text(
@@ -1220,7 +1322,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.remove_red_eye, size: 12, color: Colors.grey.shade600),
+                                Icon(Icons.remove_red_eye,
+                                    size: 12, color: Colors.grey.shade600),
                                 const SizedBox(width: 4),
                                 Text(
                                   '${video['views'] ?? 0} views',
@@ -1248,7 +1351,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
   Widget _buildVideoListCard(Map<String, dynamic> video) {
     final sport = video['sport'] ?? 'Default';
     final sportColor = _getSportColor(sport);
-    
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 16),
@@ -1295,7 +1398,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                   bottom: 4,
                   right: 4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.7),
                       borderRadius: BorderRadius.circular(4),
@@ -1312,7 +1416,7 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                 ),
               ],
             ),
-            
+
             // Video information
             Expanded(
               child: Padding(
@@ -1337,11 +1441,13 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: sportColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: sportColor.withOpacity(0.3)),
+                            border:
+                                Border.all(color: sportColor.withOpacity(0.3)),
                           ),
                           child: Text(
                             sport,
@@ -1355,13 +1461,14 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    
+
                     // Metadata
                     Row(
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
+                            Icon(Icons.calendar_today,
+                                size: 12, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
                             Text(
                               _formatDate(video['date'] ?? ''),
@@ -1375,7 +1482,8 @@ class _VideoAnalysisViewState extends State<VideoAnalysisView> {
                         const SizedBox(width: 16),
                         Row(
                           children: [
-                            Icon(Icons.remove_red_eye, size: 12, color: Colors.grey.shade600),
+                            Icon(Icons.remove_red_eye,
+                                size: 12, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
                             Text(
                               '${video['views'] ?? 0} views',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'dart:math' as math;
@@ -12,9 +13,44 @@ class CoachViewPlayerReport extends StatefulWidget {
 }
 
 class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
+  final _authService = AuthService();
   String _searchQuery = '';
   String _selectedSport = 'All Sports';
-  final List<String> _sports = ['All Sports', 'Football', 'Basketball', 'Cricket', 'Badminton', 'Tennis'];
+  final List<String> _sports = [
+    'All Sports',
+    'Football',
+    'Basketball',
+    'Cricket',
+    'Badminton',
+    'Tennis'
+  ];
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Coach";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
+  }
 
   final List<Map<String, dynamic>> _players = [
     {
@@ -213,8 +249,10 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
 
   List<Map<String, dynamic>> get _filteredPlayers {
     return _players.where((player) {
-      final matchesName = player['name'].toLowerCase().contains(_searchQuery.toLowerCase());
-      final matchesSport = _selectedSport == 'All Sports' || player['sport'] == _selectedSport;
+      final matchesName =
+          player['name'].toLowerCase().contains(_searchQuery.toLowerCase());
+      final matchesSport =
+          _selectedSport == 'All Sports' || player['sport'] == _selectedSport;
       return matchesName && matchesSport;
     }).toList();
   }
@@ -252,19 +290,21 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
   void _showPlayerReport(BuildContext context, Map<String, dynamic> player) {
     final report = player['report'];
     final statusColor = _getStatusColor(report);
-    
+
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return Dialog(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Container(
             width: double.maxFinite,
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(dialogContext).size.height * 0.85,
-              maxWidth: math.min(MediaQuery.of(dialogContext).size.width * 0.9, 500),
+              maxWidth:
+                  math.min(MediaQuery.of(dialogContext).size.width * 0.9, 500),
             ),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -332,14 +372,17 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                                     ),
                                     const SizedBox(width: 12),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
                                         color: statusColor.withOpacity(0.2),
                                         borderRadius: BorderRadius.circular(10),
                                         border: Border.all(color: statusColor),
                                       ),
                                       child: Text(
-                                        report.containsKey('status') ? report['status'] : 'Unknown',
+                                        report.containsKey('status')
+                                            ? report['status']
+                                            : 'Unknown',
                                         style: TextStyle(
                                           color: statusColor,
                                           fontSize: 12,
@@ -358,9 +401,12 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          _buildHeaderItem(Icons.calendar_today, 'Report Date', report['date']),
-                          _buildHeaderItem(Icons.medical_services, 'Status', report['returnToPlayStatus']),
-                          _buildHeaderItem(Icons.access_time, 'Next Checkup', report['nextCheckupDate']),
+                          _buildHeaderItem(Icons.calendar_today, 'Report Date',
+                              report['date']),
+                          _buildHeaderItem(Icons.medical_services, 'Status',
+                              report['returnToPlayStatus']),
+                          _buildHeaderItem(Icons.access_time, 'Next Checkup',
+                              report['nextCheckupDate']),
                         ],
                       ),
                     ],
@@ -381,11 +427,11 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                             [
                               _buildInfoRow('ID', '#${report['athleteId']}'),
                               _buildInfoRow('Age', '${report['age']} years'),
-                              _buildInfoRow('Organization', report['organization']),
+                              _buildInfoRow(
+                                  'Organization', report['organization']),
                             ],
                           ),
                           const Divider(),
-                          
                           _buildMedicalReportSection(
                             'Body Measurements',
                             Icons.height,
@@ -396,79 +442,94 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                             ],
                           ),
                           const Divider(),
-                          
                           _buildMedicalReportSection(
                             'Vitals',
                             Icons.favorite,
                             [
-                              _buildInfoRow('Heart Rate', '${report['restingHeartRate']} bpm'),
-                              _buildInfoRow('Blood Pressure', report['bloodPressure']),
-                              _buildInfoRow('SpO2', '${report['oxygenSaturation']}%'),
-                              _buildInfoRow('Temperature', '${report['bodyTemperature']}°C'),
-                              _buildInfoRow('Respiratory Rate', '${report['respiratoryRate']} bpm'),
+                              _buildInfoRow('Heart Rate',
+                                  '${report['restingHeartRate']} bpm'),
+                              _buildInfoRow(
+                                  'Blood Pressure', report['bloodPressure']),
+                              _buildInfoRow(
+                                  'SpO2', '${report['oxygenSaturation']}%'),
+                              _buildInfoRow('Temperature',
+                                  '${report['bodyTemperature']}°C'),
+                              _buildInfoRow('Respiratory Rate',
+                                  '${report['respiratoryRate']} bpm'),
                             ],
                           ),
                           const Divider(),
-                          
                           _buildMedicalReportSection(
                             'Performance Metrics',
                             Icons.speed,
                             [
-                              _buildInfoRow('VO₂ Max', '${report['vo2Max']} ml/kg/min'),
-                              _buildInfoRow('Sprint Speed', '${report['sprintSpeed']} m/s'),
-                              _buildInfoRow('Agility Score', '${report['agilityScore']}/100'),
-                              _buildInfoRow('Strength', '${report['strength']} kg'),
-                              _buildInfoRow('Flexibility', '${report['flexibilityTest']} cm'),
+                              _buildInfoRow(
+                                  'VO₂ Max', '${report['vo2Max']} ml/kg/min'),
+                              _buildInfoRow('Sprint Speed',
+                                  '${report['sprintSpeed']} m/s'),
+                              _buildInfoRow('Agility Score',
+                                  '${report['agilityScore']}/100'),
+                              _buildInfoRow(
+                                  'Strength', '${report['strength']} kg'),
+                              _buildInfoRow('Flexibility',
+                                  '${report['flexibilityTest']} cm'),
                             ],
                           ),
                           const Divider(),
-                          
                           _buildMedicalReportSection(
                             'Medical History',
                             Icons.healing,
                             [
-                              _buildInfoRow('Past Injuries', report['pastInjuries']),
-                              _buildInfoRow('Treatment', report['ongoingTreatment']),
-                              _buildInfoRow('Return Status', report['returnToPlayStatus']),
+                              _buildInfoRow(
+                                  'Past Injuries', report['pastInjuries']),
+                              _buildInfoRow(
+                                  'Treatment', report['ongoingTreatment']),
+                              _buildInfoRow('Return Status',
+                                  report['returnToPlayStatus']),
                             ],
                           ),
                           const Divider(),
-                          
                           _buildMedicalReportSection(
                             'Test Results',
                             Icons.science,
                             [
                               _buildInfoRow('Blood Test', report['bloodTest']),
                               _buildInfoRow('ECG', report['ecg']),
-                              _buildInfoRow('Bone Density', report['boneDensity']),
-                              _buildInfoRow('Lung Function', report['lungFunction']),
+                              _buildInfoRow(
+                                  'Bone Density', report['boneDensity']),
+                              _buildInfoRow(
+                                  'Lung Function', report['lungFunction']),
                             ],
                           ),
                           const Divider(),
-                          
                           _buildMedicalReportSection(
                             'Nutrition',
                             Icons.restaurant,
                             [
-                              _buildInfoRow('Calories', '${report['caloricIntake']} kcal'),
-                              _buildInfoRow('Water', '${report['waterIntake']} L'),
-                              _buildInfoRow('Deficiencies', report['nutrientDeficiencies']),
-                              _buildInfoRow('Supplements', report['supplements']),
+                              _buildInfoRow('Calories',
+                                  '${report['caloricIntake']} kcal'),
+                              _buildInfoRow(
+                                  'Water', '${report['waterIntake']} L'),
+                              _buildInfoRow('Deficiencies',
+                                  report['nutrientDeficiencies']),
+                              _buildInfoRow(
+                                  'Supplements', report['supplements']),
                             ],
                           ),
                           const Divider(),
-                          
                           _buildMedicalReportSection(
                             'Mental & Cognitive Health',
                             Icons.psychology,
                             [
-                              _buildInfoRow('Stress Level', '${report['stressLevel']}/10'),
-                              _buildInfoRow('Sleep Quality', '${report['sleepQuality']} hrs'),
-                              _buildInfoRow('Cognitive Score', '${report['cognitiveScore']}/100'),
+                              _buildInfoRow('Stress Level',
+                                  '${report['stressLevel']}/10'),
+                              _buildInfoRow('Sleep Quality',
+                                  '${report['sleepQuality']} hrs'),
+                              _buildInfoRow('Cognitive Score',
+                                  '${report['cognitiveScore']}/100'),
                             ],
                           ),
                           const Divider(),
-                          
                           _buildMedicalReportSection(
                             'Doctor\'s Notes',
                             Icons.note_alt,
@@ -487,7 +548,7 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                     ),
                   ),
                 ),
-                
+
                 // Footer with action buttons
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -516,7 +577,8 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.deepPurple,
                           side: const BorderSide(color: Colors.deepPurple),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -527,7 +589,8 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepPurple,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -580,7 +643,8 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
     );
   }
 
-  Widget _buildMedicalReportSection(String title, IconData icon, List<Widget> children) {
+  Widget _buildMedicalReportSection(
+      String title, IconData icon, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -650,7 +714,7 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
     // Get screen dimensions
     final double screenWidth = MediaQuery.of(context).size.width;
     final int crossAxisCount = screenWidth > 600 ? 3 : 2;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Player Medical Reports'),
@@ -673,14 +737,35 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
           }
         },
         drawerItems: [
-          DrawerItem(icon: Icons.people, title: 'View all players', route: coachHomeRoute),
-          DrawerItem(icon: Icons.announcement, title: 'Make announcement', route: coachMakeAnAnnouncementRoute),
-          DrawerItem(icon: Icons.schedule, title: 'Mark upcoming sessions', route: coachMarkSessionRoute),
-          DrawerItem(icon: Icons.schedule, title: 'View Coaching Staffs Assigned', route: viewCoachingStaffsAssignedRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Medical records', route: coachViewPlayerMedicalReportRoute),
-          DrawerItem(icon: Icons.person, title: 'View Profile', route: coachProfileRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View all players',
+              route: coachHomeRoute),
+          DrawerItem(
+              icon: Icons.announcement,
+              title: 'Make announcement',
+              route: coachMakeAnAnnouncementRoute),
+          DrawerItem(
+              icon: Icons.schedule,
+              title: 'Mark upcoming sessions',
+              route: coachMarkSessionRoute),
+          DrawerItem(
+              icon: Icons.schedule,
+              title: 'View Coaching Staffs Assigned',
+              route: viewCoachingStaffsAssignedRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Medical records',
+              route: coachViewPlayerMedicalReportRoute),
+          DrawerItem(
+              icon: Icons.person,
+              title: 'View Profile',
+              route: coachProfileRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -715,13 +800,13 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                 children: [
                   const SizedBox(height: 10),
                   // Adapt layout based on screen width
-                  screenWidth > 500 
-                      ? _buildWideSearchRow() 
+                  screenWidth > 500
+                      ? _buildWideSearchRow()
                       : _buildNarrowSearchLayout(),
                 ],
               ),
             ),
-            
+
             // Player card section
             Expanded(
               child: _filteredPlayers.isEmpty
@@ -760,14 +845,15 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                         crossAxisCount: crossAxisCount,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        childAspectRatio: 0.58, // Adjusted to fix 36px overflow (previously 0.65)
+                        childAspectRatio:
+                            0.58, // Adjusted to fix 36px overflow (previously 0.65)
                       ),
                       itemCount: _filteredPlayers.length,
                       itemBuilder: (context, index) {
                         final player = _filteredPlayers[index];
                         final report = player['report'];
                         final statusColor = _getStatusColor(report);
-                        
+
                         return Material(
                           color: Colors.transparent,
                           child: _buildPlayerCard(player, report, statusColor),
@@ -810,7 +896,8 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.deepPurple, width: 1),
+                  borderSide:
+                      const BorderSide(color: Colors.deepPurple, width: 1),
                 ),
                 fillColor: Colors.white,
                 filled: true,
@@ -847,8 +934,9 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
               hintText: 'Search Players',
               prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.deepPurple, width: 1),
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                    const BorderSide(color: Colors.deepPurple, width: 1),
               ),
               fillColor: Colors.white,
               filled: true,
@@ -888,7 +976,8 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(_getSportIcon(sport), size: 16, color: Colors.deepPurple),
+                  Icon(_getSportIcon(sport),
+                      size: 16, color: Colors.deepPurple),
                   const SizedBox(width: 8),
                   Text(
                     sport,
@@ -913,7 +1002,8 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
   }
 
   // Fixed player card with proper constraints to avoid overflow
-  Widget _buildPlayerCard(Map<String, dynamic> player, Map<String, dynamic> report, Color statusColor) {
+  Widget _buildPlayerCard(Map<String, dynamic> player,
+      Map<String, dynamic> report, Color statusColor) {
     return Card(
       elevation: 2,
       margin: EdgeInsets.zero, // Remove default margin
@@ -948,7 +1038,7 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                   },
                 ),
               ),
-              
+
               // Player info section with more compact layout
               Expanded(
                 child: Padding(
@@ -959,7 +1049,8 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                     children: [
                       // Name and status icon in more compact form
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.center, // Center-align
+                        crossAxisAlignment:
+                            CrossAxisAlignment.center, // Center-align
                         children: [
                           Container(
                             padding: const EdgeInsets.all(4), // Smaller padding
@@ -988,7 +1079,7 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                         ],
                       ),
                       const SizedBox(height: 4), // Smaller spacing
-                      
+
                       // Sport info with icon - more compact
                       Row(
                         children: [
@@ -1012,14 +1103,16 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                         ],
                       ),
                       const SizedBox(height: 4), // Smaller spacing
-                      
+
                       // Medical clearance badge
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 4), // Smaller padding
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 3, horizontal: 4), // Smaller padding
                         decoration: BoxDecoration(
                           color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4), // Smaller radius
+                          borderRadius:
+                              BorderRadius.circular(4), // Smaller radius
                         ),
                         child: Text(
                           report['medicalClearance'],
@@ -1033,7 +1126,7 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                         ),
                       ),
                       const SizedBox(height: 17), // Smaller spacing
-                      
+
                       // Combine dates to save space
                       RichText(
                         text: TextSpan(
@@ -1065,27 +1158,30 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 6), // Smaller spacing
-                      
+
                       // View report button with reduced height
                       SizedBox(
                         width: double.infinity,
                         height: 28, // Reduced height
                         child: ElevatedButton.icon(
                           onPressed: () => _showPlayerReport(context, player),
-                          icon: const Icon(Icons.visibility, size: 10), // Smaller icon
+                          icon: const Icon(Icons.visibility,
+                              size: 10), // Smaller icon
                           label: const Text('View Report'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.deepPurple,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6), // Smaller radius
+                              borderRadius:
+                                  BorderRadius.circular(6), // Smaller radius
                             ),
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact, // Make it more compact
+                            visualDensity:
+                                VisualDensity.compact, // Make it more compact
                             textStyle: const TextStyle(
                               fontSize: 10, // Smaller font
                               fontWeight: FontWeight.bold,
