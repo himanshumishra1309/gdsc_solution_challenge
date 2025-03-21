@@ -75,7 +75,6 @@ import notificationRoutes from "./routes/notification.routes.js";
 import { configDotenv } from "dotenv";
 import trainingPlanrouter from "./routes/trainingPlan.routes.js";
 import sessionRouter from "./routes/session.routes.js";
-
 app.get("/api/v1/health", (req, res) => {
   res.status(200).json({
     success: true,

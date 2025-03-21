@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import SPORTS_ENUM from "../utils/sportsEnum.js";
 
-const sportsEnum = ["Cricket", "Basketball", "Football", "Tennis", "Swimming", "Athletics", "Badminton", "Hockey", "Volleyball", "Table Tennis"];
+// const sportsEnum = ["Cricket", "Basketball", "Football", "Tennis", "Swimming", "Athletics", "Badminton", "Hockey", "Volleyball", "Table Tennis"];
 const skillLevelEnum = ["Beginner", "Intermediate", "Advanced", "Elite"];
 const bloodGroupEnum = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const dominantHandEnum = ["Right", "Left", "Ambidextrous"];
@@ -75,7 +76,7 @@ const athleteSchema = new mongoose.Schema(
     sports: {
       type: [{
         type: String,
-        enum: sportsEnum
+        enum: SPORTS_ENUM
       }],
       required: true,
       validate: [array => array.length > 0, 'At least one sport must be selected']
