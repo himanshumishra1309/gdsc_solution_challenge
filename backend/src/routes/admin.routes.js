@@ -12,7 +12,6 @@ import { registerOrganizationAthlete,
   getAllAdmins,
   getAthleteById,
   getOrganizationStats ,
-  getOrganizationOverview,
   sendSponsorInvitation,
   sendPotentialSponsorRequest,
   getPotentialSponsors,
@@ -64,9 +63,6 @@ const sportEnum = ["Football", "Badminton", "Cricket", "Basketball", "Tennis"];
 router.get("/allowed-sports", (req, res) => {
   res.json({ allowedSports: sportEnum });
 });
-
-// Get Organization Overview Count of athletes,sponsors,coaches (Admin Only)
-router.get("/overview",  verifyJWTAdmin, getOrganizationOverview);
 
 
 //direct invitation

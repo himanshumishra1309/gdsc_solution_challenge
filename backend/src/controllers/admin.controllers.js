@@ -1081,38 +1081,6 @@ const createCustomForm = asyncHandler(async (req, res) => {
   }
 });
 
-/**
- * @desc Get organization overview (Total Athletes, Coaches, Sponsors)
- * @route GET /api/admin/overview
- * @access Private (Admin Only)
- */
-const getOrganizationOverview = asyncHandler(async (req, res, next) => {
-  // Debug log to check the logged-in admin ID
-  console.log("Logged-in admin ID:", req.admin._id);
-
-  if (!req.admin || !req.admin.organization) {
-      return next(new ApiError(400, "Organization not found for this admin"));
-  }
-
-  const organization = req.admin.organization;
-
-  try {
-      // Fetch counts
-      const [totalAthletes, totalCoaches, totalSponsors] = await Promise.all([
-          Athlete.countDocuments({ organization }),
-          Coach.countDocuments({ organization }),
-          Sponsor.countDocuments({ organization }),
-      ]);
-
-      return res
-          .status(200)
-          .json(new ApiResponse(200, { totalAthletes, totalCoaches, totalSponsors }, "Organization overview fetched successfully"));
-  } catch (error) {
-      console.error("Error fetching organization overview:", error);
-      return next(new ApiError(500, "Failed to fetch organization overview"));
-  }
-});
-
 //sponsor Mannagement
 const sendSponsorInvitation = asyncHandler(async (req, res, next) => {
   const { requestType, companyName, contactPerson, email, phone, notes } = req.body;
@@ -1257,8 +1225,7 @@ export {
   getAllAdmins,
   getAllCoaches,
   getAthleteById,
-  getOrganizationOverview,
-
+  getOrganizationStats,
   //sponsor
   getPotentialSponsors,
   getCurrentSponsors,
