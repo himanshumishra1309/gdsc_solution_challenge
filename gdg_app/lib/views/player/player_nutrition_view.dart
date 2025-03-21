@@ -1,6 +1,7 @@
 // ignore_for_file: unused_field
 
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 
@@ -12,6 +13,7 @@ class NutritionPlan extends StatefulWidget {
 }
 
 class _NutritionPlanState extends State<NutritionPlan> {
+  final _authService = AuthService();
   final Map<String, bool> _expandedSections = {
     'Breakfast': false,
     'Lunch': false,
@@ -81,6 +83,34 @@ class _NutritionPlanState extends State<NutritionPlan> {
     // Add data for other days...
   };
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
+  }
+
   void _toggleSection(String section) {
     setState(() {
       _expandedSections[section] = !_expandedSections[section]!;
@@ -104,7 +134,7 @@ class _NutritionPlanState extends State<NutritionPlan> {
   void _handleLogout(BuildContext context) {
     Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
   }
-  
+
   // Get appropriate icon for meal type
   IconData _getMealIcon(String mealType) {
     switch (mealType.toLowerCase()) {
@@ -171,18 +201,49 @@ class _NutritionPlanState extends State<NutritionPlan> {
           }
         },
         drawerItems: [
-          DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
-          DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
-          DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Nutritional Plan', route: nutritionalPlanRoute),
-          DrawerItem(icon: Icons.announcement, title: 'View Announcements', route: playerviewAnnouncementRoute),
-          DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
-          DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
-          DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-          DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+          DrawerItem(
+              icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View Coaches',
+              route: viewCoachProfileRoute),
+          DrawerItem(
+              icon: Icons.bar_chart,
+              title: 'View Stats',
+              route: viewPlayerStatisticsRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Medical Reports',
+              route: medicalReportRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Nutritional Plan',
+              route: nutritionalPlanRoute),
+          DrawerItem(
+              icon: Icons.announcement,
+              title: 'View Announcements',
+              route: playerviewAnnouncementRoute),
+          DrawerItem(
+              icon: Icons.calendar_today,
+              title: 'View Calendar',
+              route: viewCalendarRoute),
+          DrawerItem(
+              icon: Icons.fitness_center,
+              title: 'View Gym Plan',
+              route: viewGymPlanRoute),
+          DrawerItem(
+              icon: Icons.edit,
+              title: 'Fill Injury Form',
+              route: fillInjuryFormRoute),
+          DrawerItem(
+              icon: Icons.attach_money,
+              title: 'Finances',
+              route: playerFinancialViewRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -257,7 +318,8 @@ class _NutritionPlanState extends State<NutritionPlan> {
                     onChanged: _onSearchChanged,
                     decoration: InputDecoration(
                       hintText: 'Search meals...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.deepPurple),
                       filled: true,
                       fillColor: Colors.grey.shade50,
                       border: OutlineInputBorder(
@@ -275,10 +337,13 @@ class _NutritionPlanState extends State<NutritionPlan> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildNutrientWidget('Protein', '80g', Colors.red.shade400),
-                      _buildNutrientWidget('Carbs', '87g', Colors.green.shade400),
+                      _buildNutrientWidget(
+                          'Protein', '80g', Colors.red.shade400),
+                      _buildNutrientWidget(
+                          'Carbs', '87g', Colors.green.shade400),
                       _buildNutrientWidget('Fat', '50g', Colors.amber.shade400),
-                      _buildNutrientWidget('Calories', '1095', Colors.blue.shade400),
+                      _buildNutrientWidget(
+                          'Calories', '1095', Colors.blue.shade400),
                     ],
                   ),
                 ],
@@ -342,8 +407,15 @@ class _NutritionPlanState extends State<NutritionPlan> {
         child: DropdownButton<String>(
           value: _selectedDay,
           onChanged: _onDayChanged,
-          items: <String>['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-              .map<DropdownMenuItem<String>>((String value) {
+          items: <String>[
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday'
+          ].map<DropdownMenuItem<String>>((String value) {
             return DropdownMenuItem<String>(
               value: value,
               child: Text(
@@ -374,10 +446,13 @@ class _NutritionPlanState extends State<NutritionPlan> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
-            label == 'Protein' ? Icons.fitness_center :
-            label == 'Carbs' ? Icons.grain :
-            label == 'Fat' ? Icons.opacity :
-            Icons.local_fire_department,
+            label == 'Protein'
+                ? Icons.fitness_center
+                : label == 'Carbs'
+                    ? Icons.grain
+                    : label == 'Fat'
+                        ? Icons.opacity
+                        : Icons.local_fire_department,
             color: color,
             size: 20,
           ),
@@ -405,10 +480,10 @@ class _NutritionPlanState extends State<NutritionPlan> {
 
   Widget _buildMealCard(String mealType, List<Map<String, dynamic>> meals) {
     if (meals.isEmpty) return Container();
-    
+
     final bool isExpanded = _expandedSections[mealType]!;
     final Color mealColor = _getMealColor(mealType);
-    
+
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
@@ -434,7 +509,8 @@ class _NutritionPlanState extends State<NutritionPlan> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: mealColor.withOpacity(0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
                 children: [
@@ -468,7 +544,8 @@ class _NutritionPlanState extends State<NutritionPlan> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
                       color: mealColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -503,9 +580,12 @@ class _NutritionPlanState extends State<NutritionPlan> {
           AnimatedCrossFade(
             firstChild: Container(),
             secondChild: Column(
-              children: meals.map((meal) => _buildMealItem(meal, mealType)).toList(),
+              children:
+                  meals.map((meal) => _buildMealItem(meal, mealType)).toList(),
             ),
-            crossFadeState: isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            crossFadeState: isExpanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 300),
           ),
         ],
@@ -515,7 +595,7 @@ class _NutritionPlanState extends State<NutritionPlan> {
 
   Widget _buildMealItem(Map<String, dynamic> meal, String mealType) {
     final Color mealColor = _getMealColor(mealType);
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -572,14 +652,18 @@ class _NutritionPlanState extends State<NutritionPlan> {
                 // Macronutrients
                 Row(
                   children: [
-                    _buildMacroIndicator('P', meal['protein'], 'g', Colors.red.shade400),
+                    _buildMacroIndicator(
+                        'P', meal['protein'], 'g', Colors.red.shade400),
                     const SizedBox(width: 12),
-                    _buildMacroIndicator('C', meal['carbohydrates'], 'g', Colors.green.shade400),
+                    _buildMacroIndicator(
+                        'C', meal['carbohydrates'], 'g', Colors.green.shade400),
                     const SizedBox(width: 12),
-                    _buildMacroIndicator('F', meal['fat'], 'g', Colors.amber.shade400),
+                    _buildMacroIndicator(
+                        'F', meal['fat'], 'g', Colors.amber.shade400),
                     const SizedBox(width: 12),
                     if (meal.containsKey('calories'))
-                      _buildMacroIndicator('Cal', meal['calories'], '', Colors.blue.shade400),
+                      _buildMacroIndicator(
+                          'Cal', meal['calories'], '', Colors.blue.shade400),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -609,7 +693,8 @@ class _NutritionPlanState extends State<NutritionPlan> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.info_outline, size: 20, color: Colors.deepPurple),
+            icon: const Icon(Icons.info_outline,
+                size: 20, color: Colors.deepPurple),
             onPressed: () => _showMealDetails(context, meal),
             splashRadius: 20,
             tooltip: 'View details',
@@ -619,7 +704,8 @@ class _NutritionPlanState extends State<NutritionPlan> {
     );
   }
 
-  Widget _buildMacroIndicator(String label, dynamic value, String unit, Color color) {
+  Widget _buildMacroIndicator(
+      String label, dynamic value, String unit, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -690,11 +776,15 @@ class _NutritionPlanState extends State<NutritionPlan> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildDetailCard('Protein', '${meal['protein']}g', Colors.red.shade400),
-                _buildDetailCard('Carbs', '${meal['carbohydrates']}g', Colors.green.shade400),
-                _buildDetailCard('Fat', '${meal['fat']}g', Colors.amber.shade400),
+                _buildDetailCard(
+                    'Protein', '${meal['protein']}g', Colors.red.shade400),
+                _buildDetailCard('Carbs', '${meal['carbohydrates']}g',
+                    Colors.green.shade400),
+                _buildDetailCard(
+                    'Fat', '${meal['fat']}g', Colors.amber.shade400),
                 if (meal.containsKey('calories'))
-                  _buildDetailCard('Calories', meal['calories'].toString(), Colors.blue.shade400),
+                  _buildDetailCard('Calories', meal['calories'].toString(),
+                      Colors.blue.shade400),
               ],
             ),
             const SizedBox(height: 20),
@@ -818,7 +908,7 @@ class _NutritionPlanState extends State<NutritionPlan> {
 
   String _generateNutritionBenefits(Map<String, dynamic> meal) {
     String mealName = meal['name'].toString().toLowerCase();
-    
+
     if (mealName.contains('oatmeal')) {
       return 'Rich in fiber that helps maintain healthy blood sugar levels. Berries provide antioxidants that support recovery and immune function.';
     } else if (mealName.contains('egg')) {
@@ -830,7 +920,7 @@ class _NutritionPlanState extends State<NutritionPlan> {
     } else if (mealName.contains('salmon')) {
       return 'Rich in omega-3 fatty acids that reduce inflammation and support heart health. Quinoa provides complex carbohydrates and complete protein.';
     }
-    
+
     return 'This meal provides a balanced mix of nutrients to support your training goals and overall health.';
   }
 
@@ -863,7 +953,8 @@ class _NutritionPlanState extends State<NutritionPlan> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                  Icon(Icons.check_circle,
+                      color: Colors.green.shade600, size: 20),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
@@ -876,7 +967,8 @@ class _NutritionPlanState extends State<NutritionPlan> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                  Icon(Icons.check_circle,
+                      color: Colors.green.shade600, size: 20),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
@@ -889,7 +981,8 @@ class _NutritionPlanState extends State<NutritionPlan> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.green.shade600, size: 20),
+                  Icon(Icons.check_circle,
+                      color: Colors.green.shade600, size: 20),
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
@@ -902,13 +995,14 @@ class _NutritionPlanState extends State<NutritionPlan> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                                style: ElevatedButton.styleFrom(
+                style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                   elevation: 2,
                 ),
                 child: const Text(
@@ -953,21 +1047,23 @@ class EnhancedNutritionPlan extends StatefulWidget {
   _EnhancedNutritionPlanState createState() => _EnhancedNutritionPlanState();
 }
 
-class _EnhancedNutritionPlanState extends State<EnhancedNutritionPlan> with SingleTickerProviderStateMixin {
+class _EnhancedNutritionPlanState extends State<EnhancedNutritionPlan>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this); // One tab for each day
+    _tabController =
+        TabController(length: 7, vsync: this); // One tab for each day
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -995,13 +1091,12 @@ class _EnhancedNutritionPlanState extends State<EnhancedNutritionPlan> with Sing
         controller: _tabController,
         children: [
           // One tab view for each day
-          for (int i = 0; i < 7; i++)
-            _buildDayView(i),
+          for (int i = 0; i < 7; i++) _buildDayView(i),
         ],
       ),
     );
   }
-  
+
   Widget _buildDayView(int dayIndex) {
     // Here you would implement the enhanced day view
     return Center(

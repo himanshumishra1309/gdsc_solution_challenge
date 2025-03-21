@@ -19,6 +19,34 @@ class _IndividualAchievementViewState extends State<IndividualAchievementView> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
+
+  @override
+void initState() {
+  super.initState();
+  _loadUserInfo();
+}
+
+// Add these state variables for user info
+String _userName = "";
+String _userEmail = "";
+String? _userAvatar;
+bool _isLoading = false;
+
+Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Athlete";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
   
   final List<String> _sports = [
     'Cricket', 'Badminton', 'Football', 'Basketball', 'Tennis', 
@@ -205,6 +233,9 @@ class _IndividualAchievementViewState extends State<IndividualAchievementView> {
         },
         drawerItems: drawerItems,
         onLogout: () => _onWillPop(),
+        userName: _userName,
+        userEmail: _userEmail, 
+        userAvatarUrl: _userAvatar,
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),

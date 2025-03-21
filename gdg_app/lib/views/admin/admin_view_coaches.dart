@@ -34,6 +34,9 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
   int _totalCoaches = 0;
   bool _hasNextPage = false;
   bool _hasPrevPage = false;
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
 
   final List<String> _sportFilters = [
     'All',
@@ -61,7 +64,24 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
       duration: const Duration(milliseconds: 800),
     );
     _loadCoaches();
+    _loadUserInfo();
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Admin";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   @override
   void dispose() {
@@ -797,6 +817,9 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
               route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail, 
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [

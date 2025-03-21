@@ -19,6 +19,12 @@ class _IndividualHomeViewState extends State<IndividualHomeView> with SingleTick
   String _selectedYear = '2025';
   late TabController _tabController;
   bool _showLegend = true;
+
+  // Add these state variables for user info
+String _userName = "";
+String _userEmail = "";
+String? _userAvatar;
+bool _isLoading = false;
   
   // Summary data
   final Map<String, double> _summaryData = {
@@ -31,6 +37,7 @@ class _IndividualHomeViewState extends State<IndividualHomeView> with SingleTick
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -50,6 +57,22 @@ class _IndividualHomeViewState extends State<IndividualHomeView> with SingleTick
       }
     });
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Athlete";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   @override
   void dispose() {
@@ -149,6 +172,9 @@ class _IndividualHomeViewState extends State<IndividualHomeView> with SingleTick
           },
           drawerItems: drawerItems,
           onLogout: () => _onWillPop(),
+          userName: _userName,
+          userEmail: _userEmail,
+          userAvatarUrl: _userAvatar,
         ),
         body: Column(
           children: [

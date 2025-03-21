@@ -4,6 +4,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:gdg_app/constants/routes.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/views/player/player_home.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 
 class CoachHomePage extends StatefulWidget {
   const CoachHomePage({super.key});
@@ -13,6 +14,7 @@ class CoachHomePage extends StatefulWidget {
 }
 
 class _CoachHomePageState extends State<CoachHomePage> {
+  final _authService = AuthService();
   Map<String, List<dynamic>> _players = {};
   String _selectedSport = 'Cricket';
   List<dynamic> _filteredPlayers = [];
@@ -44,12 +46,33 @@ class _CoachHomePageState extends State<CoachHomePage> {
 
     return shouldLogout;
   }
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _loadPlayers();
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Coach";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   Future<void> _loadPlayers() async {
     final String response = await rootBundle.loadString('assets/json_files/players.json');
@@ -140,6 +163,9 @@ class _CoachHomePageState extends State<CoachHomePage> {
           onSelectDrawerItem: _onSelectDrawerItem,
           drawerItems: drawerItems,
           onLogout: _handleLogout,
+          userName: _userName,
+          userEmail: _userEmail,
+          userAvatarUrl: _userAvatar,
         ),
         body: Container(
           decoration: BoxDecoration(

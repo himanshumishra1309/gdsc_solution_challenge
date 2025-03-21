@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 
@@ -9,12 +10,14 @@ class ViewGymPlan extends StatefulWidget {
   _ViewGymPlanState createState() => _ViewGymPlanState();
 }
 
-class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStateMixin {
+class _ViewGymPlanState extends State<ViewGymPlan>
+    with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
   String _selectedMonth = 'January';
   String _selectedWeek = 'Week 1';
   String _selectedDay = 'Monday';
   late TabController _tabController;
-  
+
   // Track expanded sections
   final Map<String, bool> _expandedSections = {
     'Monday': true,
@@ -240,7 +243,7 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
       },
     },
   };
-  
+
   // Define icons for different workout types
   final Map<String, IconData> _workoutIcons = {
     'Cardio and Abs': Icons.directions_run,
@@ -268,17 +271,40 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
     }
   }
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _tabController = TabController(length: 7, vsync: this);
-    
+
     // Set the initial tab to today's day (Monday = 0, Sunday = 6)
     final today = DateTime.now().weekday;
     if (today >= 1 && today <= 7) {
       _tabController.index = today - 1;
       _selectedDay = _getDayName(today - 1);
       _expandedSections[_selectedDay] = true;
+    }
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
     }
   }
 
@@ -289,7 +315,15 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
   }
 
   String _getDayName(int index) {
-    final days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    final days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
     return days[index];
   }
 
@@ -328,7 +362,7 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final workoutPlan = _gymPlan[_selectedMonth]?[_selectedWeek]?[_selectedDay];
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gym Plan'),
@@ -351,18 +385,49 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
           }
         },
         drawerItems: [
-          DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
-          DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
-          DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Nutritional Plan', route: nutritionalPlanRoute),
-          DrawerItem(icon: Icons.announcement, title: 'View Announcements', route: playerviewAnnouncementRoute),
-          DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
-          DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
-          DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-          DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+          DrawerItem(
+              icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View Coaches',
+              route: viewCoachProfileRoute),
+          DrawerItem(
+              icon: Icons.bar_chart,
+              title: 'View Stats',
+              route: viewPlayerStatisticsRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Medical Reports',
+              route: medicalReportRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Nutritional Plan',
+              route: nutritionalPlanRoute),
+          DrawerItem(
+              icon: Icons.announcement,
+              title: 'View Announcements',
+              route: playerviewAnnouncementRoute),
+          DrawerItem(
+              icon: Icons.calendar_today,
+              title: 'View Calendar',
+              route: viewCalendarRoute),
+          DrawerItem(
+              icon: Icons.fitness_center,
+              title: 'View Gym Plan',
+              route: viewGymPlanRoute),
+          DrawerItem(
+              icon: Icons.edit,
+              title: 'Fill Injury Form',
+              route: fillInjuryFormRoute),
+          DrawerItem(
+              icon: Icons.attach_money,
+              title: 'Finances',
+              route: playerFinancialViewRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [
@@ -385,7 +450,8 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(12),
@@ -421,7 +487,8 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
                                 ),
                               );
                             }).toList(),
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.deepPurple, size: 28),
+                            icon: const Icon(Icons.arrow_drop_down,
+                                color: Colors.deepPurple, size: 28),
                             isExpanded: true,
                             dropdownColor: Colors.white,
                             elevation: 2,
@@ -432,7 +499,8 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
                     const SizedBox(width: 16),
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(12),
@@ -461,7 +529,8 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
                                 ),
                               );
                             }).toList(),
-                            icon: const Icon(Icons.arrow_drop_down, color: Colors.deepPurple, size: 28),
+                            icon: const Icon(Icons.arrow_drop_down,
+                                color: Colors.deepPurple, size: 28),
                             isExpanded: true,
                             dropdownColor: Colors.white,
                             elevation: 2,
@@ -472,7 +541,7 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
                   ],
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Day tabs
                 TabBar(
                   controller: _tabController,
@@ -544,8 +613,11 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
 
   Widget _buildTabDay(String shortName, String fullName, int index) {
     final isSelected = _selectedDay == fullName;
-    final hasWorkout = _gymPlan[_selectedMonth]?[_selectedWeek]?[fullName]['exercises'].length > 0;
-    
+    final hasWorkout = _gymPlan[_selectedMonth]?[_selectedWeek]?[fullName]
+                ['exercises']
+            .length >
+        0;
+
     return Tab(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -562,9 +634,9 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
             height: 8,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: hasWorkout ? 
-                Colors.deepPurple.withOpacity(isSelected ? 1.0 : 0.5) : 
-                Colors.transparent,
+              color: hasWorkout
+                  ? Colors.deepPurple.withOpacity(isSelected ? 1.0 : 0.5)
+                  : Colors.transparent,
             ),
           ),
         ],
@@ -574,7 +646,7 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
 
   Widget _buildWorkoutDay(String day) {
     final workout = _gymPlan[_selectedMonth]?[_selectedWeek]?[day];
-    
+
     if (workout == null) {
       return const Center(child: Text('No workout information available'));
     }
@@ -586,13 +658,14 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
     final duration = workout['duration'] ?? '';
     final intensity = workout['intensity'] ?? 'Medium';
     final notes = workout['notes'] ?? '';
-    
+
     // Icon for workout type
-    final IconData workoutIcon = _workoutIcons[workoutTitle] ?? Icons.fitness_center;
-    
+    final IconData workoutIcon =
+        _workoutIcons[workoutTitle] ?? Icons.fitness_center;
+
     // Color based on intensity
     final intensityColor = _getIntensityColor(intensity);
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -665,16 +738,17 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
                     children: [
                       _buildWorkoutStat(Icons.timer, duration, 'Duration'),
                       _buildWorkoutStat(Icons.flash_on, intensity, 'Intensity'),
-                      _buildWorkoutStat(Icons.fitness_center, '${exercises.length}', 'Exercises'),
+                      _buildWorkoutStat(Icons.fitness_center,
+                          '${exercises.length}', 'Exercises'),
                     ],
                   ),
                 ],
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Exercises list
           if (exercises.isNotEmpty) ...[
             const Text(
@@ -690,17 +764,17 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
               final index = entry.key;
               final exercise = entry.value;
               return _buildExerciseCard(
-                exercise['name'], 
-                exercise['sets'], 
-                exercise['reps'], 
+                exercise['name'],
+                exercise['sets'],
+                exercise['reps'],
                 exercise['notes'],
                 index,
               );
             }).toList(),
           ],
-          
+
           const SizedBox(height: 16),
-          
+
           // Cooldown section
           if (cooldown.isNotEmpty) ...[
             const Text(
@@ -749,7 +823,7 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
               ),
             ),
           ],
-          
+
           // Notes section
           if (notes.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -799,8 +873,8 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
               ),
             ),
           ],
-          
-          const SizedBox(height: 80),  // Space for FAB
+
+          const SizedBox(height: 80), // Space for FAB
         ],
       ),
     );
@@ -841,7 +915,8 @@ class _ViewGymPlanState extends State<ViewGymPlan> with SingleTickerProviderStat
     );
   }
 
-  Widget _buildExerciseCard(String name, String sets, String reps, String notes, int index) {
+  Widget _buildExerciseCard(
+      String name, String sets, String reps, String notes, int index) {
     return Card(
       elevation: 2,
       margin: const EdgeInsets.only(bottom: 12),

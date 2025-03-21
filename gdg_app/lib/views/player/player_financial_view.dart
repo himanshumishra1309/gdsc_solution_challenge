@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:intl/intl.dart';
@@ -10,16 +11,16 @@ class PlayerFinancialView extends StatefulWidget {
   _PlayerFinancialViewState createState() => _PlayerFinancialViewState();
 }
 
-class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTickerProviderStateMixin {
+class _PlayerFinancialViewState extends State<PlayerFinancialView>
+    with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
   String _selectedDrawerItem = playerFinancialViewRoute;
   late TabController _tabController;
   String _searchQuery = '';
   String _activeTab = 'All';
   bool _showSummaryView = false;
-  
-  final List<String> _categories = [
-    'All', 'Income', 'Expenses', 'Pending'
-  ];
+
+  final List<String> _categories = ['All', 'Income', 'Expenses', 'Pending'];
 
   final Map<String, double> _financeData = {
     'Salary/Stipend': 5000.0,
@@ -65,9 +66,16 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
     'Annual Financial Summary': Icons.summarize,
   };
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _tabController = TabController(length: _categories.length, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -77,7 +85,23 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
       }
     });
   }
-  
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -85,8 +109,9 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
   }
 
   void _editFinance(String key) {
-    TextEditingController controller = TextEditingController(text: _financeData[key].toString().replaceAll('-', ''));
-    
+    TextEditingController controller = TextEditingController(
+        text: _financeData[key].toString().replaceAll('-', ''));
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -133,7 +158,8 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                    borderSide:
+                        const BorderSide(color: Colors.deepPurple, width: 2),
                   ),
                   filled: true,
                   fillColor: Colors.grey.shade50,
@@ -225,23 +251,26 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
   // Filter finance data based on category and search query
   List<MapEntry<String, double>> get _filteredFinanceData {
     var entries = _financeData.entries.toList();
-    
+
     // Filter by tab category
     if (_activeTab == 'Income') {
       entries = entries.where((entry) => entry.value > 0).toList();
     } else if (_activeTab == 'Expenses') {
       entries = entries.where((entry) => entry.value < 0).toList();
     } else if (_activeTab == 'Pending') {
-      entries = entries.where((entry) => entry.key.toLowerCase().contains('pending')).toList();
+      entries = entries
+          .where((entry) => entry.key.toLowerCase().contains('pending'))
+          .toList();
     }
-    
+
     // Filter by search query
     if (_searchQuery.isNotEmpty) {
       entries = entries
-          .where((entry) => entry.key.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .where((entry) =>
+              entry.key.toLowerCase().contains(_searchQuery.toLowerCase()))
           .toList();
     }
-    
+
     return entries;
   }
 
@@ -252,16 +281,44 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
   @override
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
-      DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
-      DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
-      DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Nutritional Plan', route: nutritionalPlanRoute),
-      DrawerItem(icon: Icons.announcement, title: 'View Announcements', route: playerviewAnnouncementRoute),
-      DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
-      DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
-      DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+      DrawerItem(
+          icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
+      DrawerItem(
+          icon: Icons.people,
+          title: 'View Coaches',
+          route: viewCoachProfileRoute),
+      DrawerItem(
+          icon: Icons.bar_chart,
+          title: 'View Stats',
+          route: viewPlayerStatisticsRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Medical Reports',
+          route: medicalReportRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Nutritional Plan',
+          route: nutritionalPlanRoute),
+      DrawerItem(
+          icon: Icons.announcement,
+          title: 'View Announcements',
+          route: playerviewAnnouncementRoute),
+      DrawerItem(
+          icon: Icons.calendar_today,
+          title: 'View Calendar',
+          route: viewCalendarRoute),
+      DrawerItem(
+          icon: Icons.fitness_center,
+          title: 'View Gym Plan',
+          route: viewGymPlanRoute),
+      DrawerItem(
+          icon: Icons.edit,
+          title: 'Fill Injury Form',
+          route: fillInjuryFormRoute),
+      DrawerItem(
+          icon: Icons.attach_money,
+          title: 'Finances',
+          route: playerFinancialViewRoute),
     ];
 
     return Scaffold(
@@ -302,6 +359,9 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
         },
         drawerItems: drawerItems,
         onLogout: () => _handleLogout(),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [
@@ -340,15 +400,19 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                     _buildSummaryCard(
                       'Net Balance',
                       _netBalance,
-                      _netBalance >= 0 ? Colors.blue.shade700 : Colors.orange.shade700,
-                      _netBalance >= 0 ? Icons.account_balance_wallet : Icons.warning_amber,
+                      _netBalance >= 0
+                          ? Colors.blue.shade700
+                          : Colors.orange.shade700,
+                      _netBalance >= 0
+                          ? Icons.account_balance_wallet
+                          : Icons.warning_amber,
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          
+
           // Search bar and category tabs
           Container(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -358,7 +422,8 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                 TextField(
                   decoration: InputDecoration(
                     hintText: 'Search financial records',
-                    prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                    prefixIcon:
+                        const Icon(Icons.search, color: Colors.deepPurple),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),
@@ -377,7 +442,8 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.deepPurple, width: 2),
+                      borderSide:
+                          const BorderSide(color: Colors.deepPurple, width: 2),
                     ),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   ),
@@ -387,9 +453,9 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                     });
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Category tabs
                 TabBar(
                   controller: _tabController,
@@ -397,12 +463,14 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                   unselectedLabelColor: Colors.grey.shade600,
                   indicatorColor: Colors.deepPurple,
                   indicatorSize: TabBarIndicatorSize.label,
-                  tabs: _categories.map((category) => Tab(text: category)).toList(),
+                  tabs: _categories
+                      .map((category) => Tab(text: category))
+                      .toList(),
                 ),
               ],
             ),
           ),
-          
+
           // Main content area
           Expanded(
             child: _showSummaryView
@@ -433,9 +501,11 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
     );
   }
 
-  Widget _buildSummaryCard(String title, double amount, Color color, IconData icon) {
-    final formattedAmount = NumberFormat.currency(symbol: '\$').format(amount.abs());
-    
+  Widget _buildSummaryCard(
+      String title, double amount, Color color, IconData icon) {
+    final formattedAmount =
+        NumberFormat.currency(symbol: '\$').format(amount.abs());
+
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
@@ -526,7 +596,7 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
         ),
       );
     }
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _filteredFinanceData.length,
@@ -535,8 +605,9 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
         final icon = _categoryIcons[entry.key] ?? Icons.attach_money;
         final isExpense = entry.value < 0;
         final color = isExpense ? Colors.red.shade700 : Colors.green.shade700;
-        final formattedAmount = NumberFormat.currency(symbol: '\$').format(entry.value.abs());
-        
+        final formattedAmount =
+            NumberFormat.currency(symbol: '\$').format(entry.value.abs());
+
         return Card(
           elevation: 2,
           margin: const EdgeInsets.only(bottom: 12),
@@ -548,7 +619,8 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
             ),
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -599,12 +671,14 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
       },
     );
   }
-  
+
   Widget _buildSummaryView() {
     // Income vs Expenses visualization
-    final incomeEntries = _financeData.entries.where((e) => e.value > 0).toList();
-    final expenseEntries = _financeData.entries.where((e) => e.value < 0).toList();
-    
+    final incomeEntries =
+        _financeData.entries.where((e) => e.value > 0).toList();
+    final expenseEntries =
+        _financeData.entries.where((e) => e.value < 0).toList();
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -637,9 +711,12 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                 ? const Center(child: Text('No income entries'))
                 : Column(
                     children: incomeEntries.map((entry) {
-                      final percentage = (entry.value / _totalIncome * 100).toStringAsFixed(1);
-                      final formattedAmount = NumberFormat.currency(symbol: '\$').format(entry.value);
-                      
+                      final percentage =
+                          (entry.value / _totalIncome * 100).toStringAsFixed(1);
+                      final formattedAmount =
+                          NumberFormat.currency(symbol: '\$')
+                              .format(entry.value);
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Column(
@@ -670,7 +747,8 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                             LinearProgressIndicator(
                               value: entry.value / _totalIncome,
                               backgroundColor: Colors.green.shade50,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.green.shade500),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.green.shade500),
                               minHeight: 8,
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -680,9 +758,9 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                     }).toList(),
                   ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Expenses section
           const Text(
             'Expense Breakdown',
@@ -710,9 +788,13 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                 ? const Center(child: Text('No expense entries'))
                 : Column(
                     children: expenseEntries.map((entry) {
-                      final percentage = (entry.value.abs() / _totalExpenses * 100).toStringAsFixed(1);
-                      final formattedAmount = NumberFormat.currency(symbol: '\$').format(entry.value.abs());
-                      
+                      final percentage =
+                          (entry.value.abs() / _totalExpenses * 100)
+                              .toStringAsFixed(1);
+                      final formattedAmount =
+                          NumberFormat.currency(symbol: '\$')
+                              .format(entry.value.abs());
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Column(
@@ -743,7 +825,8 @@ class _PlayerFinancialViewState extends State<PlayerFinancialView> with SingleTi
                             LinearProgressIndicator(
                               value: entry.value.abs() / _totalExpenses,
                               backgroundColor: Colors.red.shade50,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.red.shade500),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.red.shade500),
                               minHeight: 8,
                               borderRadius: BorderRadius.circular(4),
                             ),

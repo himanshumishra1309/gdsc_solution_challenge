@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
@@ -11,14 +12,22 @@ class CalendarView extends StatefulWidget {
   _CalendarViewState createState() => _CalendarViewState();
 }
 
-class _CalendarViewState extends State<CalendarView> with SingleTickerProviderStateMixin {
+class _CalendarViewState extends State<CalendarView>
+    with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
   String _selectedSport = 'All Sports';
   String _searchQuery = '';
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
   late TabController _tabController;
-  
+
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
   // Event categories with colors
   final Map<String, Color> _eventCategories = {
     'Practice': Colors.blue.shade700,
@@ -117,8 +126,25 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _selectedDay = _focusedDay;
     _tabController = TabController(length: 2, vsync: this);
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
   }
 
   @override
@@ -129,20 +155,24 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
 
   List<Map<String, dynamic>> _getSessionsForDay(DateTime day) {
     // Filter sessions based on search query and selected sport
-    final daySessions = _sessions[DateTime.utc(day.year, day.month, day.day)] ?? [];
-    
+    final daySessions =
+        _sessions[DateTime.utc(day.year, day.month, day.day)] ?? [];
+
     if (_searchQuery.isEmpty && _selectedSport == 'All Sports') {
       return daySessions;
     }
-    
+
     return daySessions.where((session) {
-      final matchesSearch = _searchQuery.isEmpty || 
-          session['session'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      final matchesSearch = _searchQuery.isEmpty ||
+          session['session']
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
           session['coach'].toLowerCase().contains(_searchQuery.toLowerCase());
-          
-      final matchesSport = _selectedSport == 'All Sports' || 
-          (_selectedSport == 'Football'); // In a real app, you'd have sport field in sessions
-          
+
+      final matchesSport = _selectedSport == 'All Sports' ||
+          (_selectedSport ==
+              'Football'); // In a real app, you'd have sport field in sessions
+
       return matchesSearch && matchesSport;
     }).toList();
   }
@@ -168,7 +198,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
   void _handleLogout(BuildContext context) {
     Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
   }
-  
+
   // Get appropriate icon based on session type
   IconData _getSessionIcon(String type) {
     switch (type.toLowerCase()) {
@@ -184,11 +214,11 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
         return Icons.calendar_today;
     }
   }
-  
+
   void _showSessionDetails(Map<String, dynamic> session) {
     final sessionType = session['type'] as String;
     final typeColor = _eventCategories[sessionType] ?? Colors.deepPurple;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -212,7 +242,8 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                 children: [
                   // Session type badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: typeColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -238,7 +269,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                       ],
                     ),
                   ),
-                  
+
                   // Close button
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -248,7 +279,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Session title
               Text(
                 session['session'],
@@ -259,7 +290,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Session details
               _buildSessionDetailRow(
                 Icons.access_time,
@@ -289,7 +320,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                 Colors.green.shade700,
               ),
               const SizedBox(height: 24),
-              
+
               // Notes section
               const Text(
                 'Notes',
@@ -316,7 +347,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Action buttons
               Row(
                 children: [
@@ -325,7 +356,8 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                       onPressed: () {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Reminder set for this session')),
+                          const SnackBar(
+                              content: Text('Reminder set for this session')),
                         );
                       },
                       icon: const Icon(Icons.notifications_active, size: 18),
@@ -346,7 +378,8 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                       onPressed: () {
                         Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Message sent to coach')),
+                          const SnackBar(
+                              content: Text('Message sent to coach')),
                         );
                       },
                       icon: const Icon(Icons.message, size: 18),
@@ -369,8 +402,9 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
       },
     );
   }
-  
-  Widget _buildSessionDetailRow(IconData icon, String label, String value, Color color) {
+
+  Widget _buildSessionDetailRow(
+      IconData icon, String label, String value, Color color) {
     return Row(
       children: [
         Container(
@@ -413,7 +447,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final sessionCount = _getEventsForDay(_selectedDay ?? now);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Team Calendar'),
@@ -459,18 +493,49 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
           }
         },
         drawerItems: [
-          DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
-          DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
-          DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
-          DrawerItem(icon: Icons.medical_services, title: 'View Nutritional Plan', route: nutritionalPlanRoute),
-          DrawerItem(icon: Icons.announcement, title: 'View Announcements', route: playerviewAnnouncementRoute),
-          DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
-          DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
-          DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-          DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+          DrawerItem(
+              icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
+          DrawerItem(
+              icon: Icons.people,
+              title: 'View Coaches',
+              route: viewCoachProfileRoute),
+          DrawerItem(
+              icon: Icons.bar_chart,
+              title: 'View Stats',
+              route: viewPlayerStatisticsRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Medical Reports',
+              route: medicalReportRoute),
+          DrawerItem(
+              icon: Icons.medical_services,
+              title: 'View Nutritional Plan',
+              route: nutritionalPlanRoute),
+          DrawerItem(
+              icon: Icons.announcement,
+              title: 'View Announcements',
+              route: playerviewAnnouncementRoute),
+          DrawerItem(
+              icon: Icons.calendar_today,
+              title: 'View Calendar',
+              route: viewCalendarRoute),
+          DrawerItem(
+              icon: Icons.fitness_center,
+              title: 'View Gym Plan',
+              route: viewGymPlanRoute),
+          DrawerItem(
+              icon: Icons.edit,
+              title: 'Fill Injury Form',
+              route: fillInjuryFormRoute),
+          DrawerItem(
+              icon: Icons.attach_money,
+              title: 'Finances',
+              route: playerFinancialViewRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -506,20 +571,23 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                           decoration: InputDecoration(
                             hintText: 'Search sessions',
                             hintStyle: TextStyle(color: Colors.grey.shade400),
-                            prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                            prefixIcon: const Icon(Icons.search,
+                                color: Colors.deepPurple),
                             filled: true,
                             fillColor: Colors.grey.shade50,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 0),
                         decoration: BoxDecoration(
                           color: Colors.grey.shade50,
                           borderRadius: BorderRadius.circular(12),
@@ -529,8 +597,13 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                           child: DropdownButton<String>(
                             value: _selectedSport,
                             onChanged: _onSportChanged,
-                            items: <String>['All Sports', 'Football', 'Basketball', 'Tennis', 'Cricket']
-                                .map<DropdownMenuItem<String>>((String value) {
+                            items: <String>[
+                              'All Sports',
+                              'Football',
+                              'Basketball',
+                              'Tennis',
+                              'Cricket'
+                            ].map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Row(
@@ -561,7 +634,8 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                                 ),
                               );
                             }).toList(),
-                            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.deepPurple),
+                            icon: const Icon(Icons.keyboard_arrow_down,
+                                color: Colors.deepPurple),
                             elevation: 2,
                           ),
                         ),
@@ -569,7 +643,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Event type legend
                   SizedBox(
                     height: 32,
@@ -606,7 +680,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                 ],
               ),
             ),
-            
+
             // Calendar
             Container(
               margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -677,11 +751,11 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                     fontWeight: FontWeight.bold,
                   ),
                   leftChevronIcon: Icon(
-                    Icons.chevron_left, 
+                    Icons.chevron_left,
                     color: Colors.deepPurple.shade800,
                   ),
                   rightChevronIcon: Icon(
-                    Icons.chevron_right, 
+                    Icons.chevron_right,
                     color: Colors.deepPurple.shade800,
                   ),
                   decoration: BoxDecoration(
@@ -695,7 +769,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                 calendarBuilders: CalendarBuilders(
                   markerBuilder: (context, date, events) {
                     if (events.isEmpty) return const SizedBox();
-                    
+
                     return Positioned(
                       right: 1,
                       bottom: 1,
@@ -725,14 +799,15 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                 ),
               ),
             ),
-            
+
             // Selected day header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.deepPurple,
                       borderRadius: BorderRadius.circular(20),
@@ -747,8 +822,8 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    sessionCount > 0 
-                        ? '$sessionCount session${sessionCount > 1 ? 's' : ''}' 
+                    sessionCount > 0
+                        ? '$sessionCount session${sessionCount > 1 ? 's' : ''}'
                         : 'No sessions',
                     style: TextStyle(
                       color: Colors.grey.shade700,
@@ -760,26 +835,29 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                       ? TextButton.icon(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Feature coming soon!')),
+                              const SnackBar(
+                                  content: Text('Feature coming soon!')),
                             );
                           },
                           icon: const Icon(Icons.add, size: 18),
                           label: const Text('Request'),
                           style: TextButton.styleFrom(
                             foregroundColor: Colors.deepPurple,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 8),
                           ),
                         )
                       : Container(),
                 ],
               ),
             ),
-            
+
             // Sessions list
-                        // Sessions list
+            // Sessions list
             Expanded(
               child: sessionCount == 0
-                  ? SingleChildScrollView(  // Added SingleChildScrollView here
+                  ? SingleChildScrollView(
+                      // Added SingleChildScrollView here
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 40),
@@ -818,12 +896,14 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                       itemCount: _getSessionsForDay(_selectedDay ?? now).length,
                       itemBuilder: (context, index) {
                         // ListView builder content remains the same
-                        final session = _getSessionsForDay(_selectedDay ?? now)[index];
+                        final session =
+                            _getSessionsForDay(_selectedDay ?? now)[index];
                         final sessionType = session['type'] as String;
-                        final typeColor = _eventCategories[sessionType] ?? Colors.deepPurple;
-                        
+                        final typeColor =
+                            _eventCategories[sessionType] ?? Colors.deepPurple;
+
                         // Existing code continues...
-                        
+
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           elevation: 0,
@@ -864,24 +944,28 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                                       ),
                                     ],
                                   ),
-                                  
+
                                   const SizedBox(width: 16),
-                                  
+
                                   // Session details
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Row(
                                           children: [
                                             Container(
-                                              padding: const EdgeInsets.symmetric(
-                                                horizontal: 8, 
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 8,
                                                 vertical: 2,
                                               ),
                                               decoration: BoxDecoration(
-                                                color: typeColor.withOpacity(0.1),
-                                                borderRadius: BorderRadius.circular(4),
+                                                color:
+                                                    typeColor.withOpacity(0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
                                               child: Text(
                                                 sessionType,
@@ -922,7 +1006,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                                         ),
                                         const SizedBox(height: 4),
                                         Row(
-                                                                                    children: [
+                                          children: [
                                             Icon(
                                               Icons.location_on_outlined,
                                               size: 14,
@@ -964,10 +1048,11 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
                                       ],
                                     ),
                                   ),
-                                  
+
                                   // Action button
                                   IconButton(
-                                    onPressed: () => _showSessionDetails(session),
+                                    onPressed: () =>
+                                        _showSessionDetails(session),
                                     icon: Icon(
                                       Icons.arrow_forward_ios,
                                       size: 16,
@@ -993,13 +1078,15 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
             _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1, 1);
             _selectedDay = _focusedDay;
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Jumped to ${DateFormat('MMMM yyyy').format(_focusedDay)}'),
+              content: Text(
+                  'Jumped to ${DateFormat('MMMM yyyy').format(_focusedDay)}'),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.deepPurple,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
               margin: const EdgeInsets.all(16),
             ),
           );
@@ -1016,7 +1103,7 @@ class _CalendarViewState extends State<CalendarView> with SingleTickerProviderSt
 // Custom calendar dot marker builder
 class EventDot extends StatelessWidget {
   final Color color;
-  
+
   const EventDot({
     super.key,
     required this.color,
@@ -1042,7 +1129,7 @@ class CustomCalendarHeader extends StatelessWidget {
   final VoidCallback onLeftArrowTap;
   final VoidCallback onRightArrowTap;
   final VoidCallback onTodayButtonTap;
-  
+
   const CustomCalendarHeader({
     super.key,
     required this.focusedDay,
@@ -1054,7 +1141,7 @@ class CustomCalendarHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final headerText = DateFormat.yMMMM().format(focusedDay);
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
@@ -1077,7 +1164,8 @@ class CustomCalendarHeader extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.deepPurple.shade700),
+                  Icon(Icons.calendar_today,
+                      size: 16, color: Colors.deepPurple.shade700),
                   const SizedBox(width: 4),
                   Text(
                     'Today',
@@ -1100,7 +1188,8 @@ class CustomCalendarHeader extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Colors.grey.shade100,
               ),
-              child: Icon(Icons.chevron_left, color: Colors.deepPurple.shade700, size: 20),
+              child: Icon(Icons.chevron_left,
+                  color: Colors.deepPurple.shade700, size: 20),
             ),
             splashRadius: 20,
           ),
@@ -1112,7 +1201,8 @@ class CustomCalendarHeader extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Colors.grey.shade100,
               ),
-              child: Icon(Icons.chevron_right, color: Colors.deepPurple.shade700, size: 20),
+              child: Icon(Icons.chevron_right,
+                  color: Colors.deepPurple.shade700, size: 20),
             ),
             splashRadius: 20,
           ),
@@ -1133,7 +1223,7 @@ class AnimatedCalendarDay extends StatelessWidget {
   final int eventCount;
   final List<Color> eventColors;
   final VoidCallback onTap;
-  
+
   const AnimatedCalendarDay({
     super.key,
     required this.text,
@@ -1179,7 +1269,9 @@ class AnimatedCalendarDay extends StatelessWidget {
                           : isUnavailable
                               ? Colors.grey.shade400
                               : Colors.black87,
-                  fontWeight: isToday || isSelected ? FontWeight.bold : FontWeight.normal,
+                  fontWeight: isToday || isSelected
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
               if (hasEvents)

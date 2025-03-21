@@ -43,11 +43,34 @@ class _IndividualFinancesState extends State<IndividualFinances> with SingleTick
     'Pending Payments/Dues': {'amount': 2000.0, 'category': 'Planning', 'trend': 'down', 'lastUpdate': '2024-03-05'},
   };
 
+  // Add these state variables for user info
+String _userName = "";
+String _userEmail = "";
+String? _userAvatar;
+bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _tabController = TabController(length: 2, vsync: this);
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Athlete";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   @override
   void dispose() {
@@ -461,6 +484,9 @@ class _IndividualFinancesState extends State<IndividualFinances> with SingleTick
         },
         drawerItems: drawerItems,
         onLogout: () => _onWillPop(),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: TabBarView(
         controller: _tabController,

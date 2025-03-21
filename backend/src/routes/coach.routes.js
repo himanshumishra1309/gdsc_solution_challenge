@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
     getCoaches,
+    logoutUser,
+    getCoachProfile
     // loginAdmin,
     logoutUser,
 } from "../controllers/coach.controllers.js";
@@ -12,6 +14,9 @@ const router = Router()
 
 
 
+router.get("/", verifyJWTCoach, authorize(["coach"]), getCoaches);
+
+router.get("/profile", verifyJWTCoach, getCoachProfile); //connected
 router.get("/", verifyJWTCoach, verifyJWTCoach, getCoaches); // Fetch all coaches with filters
 
 

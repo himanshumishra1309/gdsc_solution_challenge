@@ -19,6 +19,34 @@ class _AdminFinancialViewState extends State<AdminFinancialView> {
   String _searchQuery = '';
   String _popupSearchQuery = '';
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
+  @override
+void initState() {
+  super.initState();
+  _loadUserInfo();
+}
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Admin";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
+
   // Enhanced player data with more financial information
   final List<Map<String, dynamic>> _players = [
     {
@@ -645,6 +673,9 @@ ListView.builder(
         onSelectDrawerItem: _onSelectDrawerItem,
         drawerItems: drawerItems,
         onLogout:() => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [

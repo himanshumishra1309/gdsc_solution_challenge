@@ -52,6 +52,10 @@ class _AdminViewPlayersState extends State<AdminViewPlayers>
     'Age (Oldest)'
   ];
 
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+
   @override
   void initState() {
     super.initState();
@@ -59,8 +63,25 @@ class _AdminViewPlayersState extends State<AdminViewPlayers>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
+    _loadUserInfo();
     _loadPlayers();
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Admin";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   @override
   void dispose() {
@@ -941,6 +962,9 @@ class _AdminViewPlayersState extends State<AdminViewPlayers>
               route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail, 
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [

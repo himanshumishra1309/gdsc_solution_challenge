@@ -1086,8 +1086,8 @@ const getOrganizationStats = asyncHandler(async (req, res) => {
       Coach.countDocuments({ organization: organizationId }),
       Athlete.countDocuments({ organization: organizationId }),
       // If you have a Sponsor model, use the line below. Otherwise, just return 0
-      // Sponsor.countDocuments({ organization: organizationId })
-      Promise.resolve(0) // Placeholder for sponsors if you don't have a model yet
+      Sponsor.countDocuments({ organization: organizationId })
+      // Promise.resolve(0) // Placeholder for sponsors if you don't have a model yet
     ]);
     
     return res.status(200).json(
@@ -1250,38 +1250,6 @@ const createCustomForm = asyncHandler(async (req, res) => {
     res.status(201).json(customForm);
   } catch (error) {
     res.status(500).json({ message: "Error creating custom form", error });
-  }
-});
-
-/**
- * @desc Get organization overview (Total Athletes, Coaches, Sponsors)
- * @route GET /api/admin/overview
- * @access Private (Admin Only)
- */
-const getOrganizationOverview = asyncHandler(async (req, res, next) => {
-  // Debug log to check the logged-in admin ID
-  console.log("Logged-in admin ID:", req.admin._id);
-
-  if (!req.admin || !req.admin.organization) {
-      return next(new ApiError(400, "Organization not found for this admin"));
-  }
-
-  const organization = req.admin.organization;
-
-  try {
-      // Fetch counts
-      const [totalAthletes, totalCoaches, totalSponsors] = await Promise.all([
-          Athlete.countDocuments({ organization }),
-          Coach.countDocuments({ organization }),
-          Sponsor.countDocuments({ organization }),
-      ]);
-
-      return res
-          .status(200)
-          .json(new ApiResponse(200, { totalAthletes, totalCoaches, totalSponsors }, "Organization overview fetched successfully"));
-  } catch (error) {
-      console.error("Error fetching organization overview:", error);
-      return next(new ApiError(500, "Failed to fetch organization overview"));
   }
 });
 
@@ -1543,8 +1511,7 @@ export {
   getAllAdmins,
   getAllCoaches,
   getAthleteById,
-  getOrganizationOverview,
-
+  getOrganizationStats,
   //sponsor
   getPotentialSponsors,
   getCurrentSponsors,

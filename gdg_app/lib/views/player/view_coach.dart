@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 
@@ -10,11 +11,16 @@ class ViewCoach extends StatefulWidget {
 }
 
 class _ViewCoachState extends State<ViewCoach> {
+  final _authService = AuthService();
+// Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
   String _selectedDrawerItem = viewCoachProfileRoute;
   String _selectedSport = 'All Sports';
   String _searchQuery = '';
   List<Map<String, String>> _coaches = [
-    // Keep your existing coach data
     {
       'name': 'John Doe',
       'sport': 'Football',
@@ -90,15 +96,37 @@ class _ViewCoachState extends State<ViewCoach> {
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _filteredCoaches = _coaches;
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
   }
 
   void _filterCoaches() {
     setState(() {
       _filteredCoaches = _coaches.where((coach) {
-        return (coach['name']!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                coach['sport']!.toLowerCase().contains(_searchQuery.toLowerCase())) &&
-               (_selectedSport == 'All Sports' || coach['sport'] == _selectedSport);
+        return (coach['name']!
+                    .toLowerCase()
+                    .contains(_searchQuery.toLowerCase()) ||
+                coach['sport']!
+                    .toLowerCase()
+                    .contains(_searchQuery.toLowerCase())) &&
+            (_selectedSport == 'All Sports' ||
+                coach['sport'] == _selectedSport);
       }).toList();
     });
   }
@@ -152,7 +180,8 @@ class _ViewCoachState extends State<ViewCoach> {
                     backgroundColor: Colors.white.withOpacity(0.9),
                     radius: 18,
                     child: IconButton(
-                      icon: const Icon(Icons.close, size: 18, color: Colors.black87),
+                      icon: const Icon(Icons.close,
+                          size: 18, color: Colors.black87),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                   ),
@@ -213,24 +242,34 @@ class _ViewCoachState extends State<ViewCoach> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildSectionHeader('Personal Information'),
-                              _buildInfoRow(Icons.email, 'Email Address', coach['email']!),
-                              _buildInfoRow(Icons.cake, 'Date of Birth', coach['dob']!),
-                              _buildInfoRow(Icons.person, 'Gender', coach['gender']!),
-                              _buildInfoRow(Icons.flag, 'Nationality', coach['nationality']!),
-                              
+                              _buildInfoRow(Icons.email, 'Email Address',
+                                  coach['email']!),
+                              _buildInfoRow(
+                                  Icons.cake, 'Date of Birth', coach['dob']!),
+                              _buildInfoRow(
+                                  Icons.person, 'Gender', coach['gender']!),
+                              _buildInfoRow(Icons.flag, 'Nationality',
+                                  coach['nationality']!),
                               const SizedBox(height: 16),
                               _buildSectionHeader('Contact Information'),
-                              _buildInfoRow(Icons.phone, 'Phone Number', coach['phone']!),
-                              _buildInfoRow(Icons.location_on, 'Country', coach['country']!),
-                              _buildInfoRow(Icons.location_city, 'State', coach['state']!),
-                              _buildInfoRow(Icons.home, 'Address', coach['address']!),
-                              
+                              _buildInfoRow(
+                                  Icons.phone, 'Phone Number', coach['phone']!),
+                              _buildInfoRow(Icons.location_on, 'Country',
+                                  coach['country']!),
+                              _buildInfoRow(Icons.location_city, 'State',
+                                  coach['state']!),
+                              _buildInfoRow(
+                                  Icons.home, 'Address', coach['address']!),
                               const SizedBox(height: 16),
                               _buildSectionHeader('Professional Background'),
-                              _buildInfoRow(Icons.timeline, 'Experience', '${coach['experience']!} years'),
-                              _buildInfoRow(Icons.school, 'Certifications', coach['certifications']!),
-                              _buildInfoRow(Icons.business, 'Previous Organizations', coach['previousOrganizations']!),
-                              
+                              _buildInfoRow(Icons.timeline, 'Experience',
+                                  '${coach['experience']!} years'),
+                              _buildInfoRow(Icons.school, 'Certifications',
+                                  coach['certifications']!),
+                              _buildInfoRow(
+                                  Icons.business,
+                                  'Previous Organizations',
+                                  coach['previousOrganizations']!),
                               const SizedBox(height: 24),
                               Center(
                                 child: ElevatedButton.icon(
@@ -239,7 +278,8 @@ class _ViewCoachState extends State<ViewCoach> {
                                     Navigator.of(context).pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('Message feature coming soon!'),
+                                        content: Text(
+                                            'Message feature coming soon!'),
                                         behavior: SnackBarBehavior.floating,
                                       ),
                                     );
@@ -249,7 +289,8 @@ class _ViewCoachState extends State<ViewCoach> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.deepPurple,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 12),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
@@ -371,16 +412,44 @@ class _ViewCoachState extends State<ViewCoach> {
   @override
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
-      DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
-      DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
-      DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Nutritional Plan', route: nutritionalPlanRoute),
-      DrawerItem(icon: Icons.announcement, title: 'View Announcements', route: playerviewAnnouncementRoute),
-      DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
-      DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
-      DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+      DrawerItem(
+          icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
+      DrawerItem(
+          icon: Icons.people,
+          title: 'View Coaches',
+          route: viewCoachProfileRoute),
+      DrawerItem(
+          icon: Icons.bar_chart,
+          title: 'View Stats',
+          route: viewPlayerStatisticsRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Medical Reports',
+          route: medicalReportRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Nutritional Plan',
+          route: nutritionalPlanRoute),
+      DrawerItem(
+          icon: Icons.announcement,
+          title: 'View Announcements',
+          route: playerviewAnnouncementRoute),
+      DrawerItem(
+          icon: Icons.calendar_today,
+          title: 'View Calendar',
+          route: viewCalendarRoute),
+      DrawerItem(
+          icon: Icons.fitness_center,
+          title: 'View Gym Plan',
+          route: viewGymPlanRoute),
+      DrawerItem(
+          icon: Icons.edit,
+          title: 'Fill Injury Form',
+          route: fillInjuryFormRoute),
+      DrawerItem(
+          icon: Icons.attach_money,
+          title: 'Finances',
+          route: playerFinancialViewRoute),
     ];
 
     return Scaffold(
@@ -408,6 +477,9 @@ class _ViewCoachState extends State<ViewCoach> {
         },
         drawerItems: drawerItems,
         onLogout: () => _handleLogout(),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -435,7 +507,8 @@ class _ViewCoachState extends State<ViewCoach> {
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -461,14 +534,16 @@ class _ViewCoachState extends State<ViewCoach> {
                             decoration: InputDecoration(
                               hintText: 'Search by name or sport',
                               hintStyle: TextStyle(color: Colors.grey.shade400),
-                              prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                              prefixIcon: const Icon(Icons.search,
+                                  color: Colors.deepPurple),
                               filled: true,
                               fillColor: Colors.grey.shade50,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
                             ),
                           ),
                         ),
@@ -482,8 +557,10 @@ class _ViewCoachState extends State<ViewCoach> {
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _selectedSport,
-                              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.deepPurple),
-                              style: const TextStyle(color: Colors.black87, fontSize: 14),
+                              icon: const Icon(Icons.keyboard_arrow_down,
+                                  color: Colors.deepPurple),
+                              style: const TextStyle(
+                                  color: Colors.black87, fontSize: 14),
                               onChanged: (String? newValue) {
                                 setState(() {
                                   _selectedSport = newValue!;
@@ -510,9 +587,9 @@ class _ViewCoachState extends State<ViewCoach> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Results summary
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -543,9 +620,9 @@ class _ViewCoachState extends State<ViewCoach> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Coach cards grid
               Expanded(
                 child: _filteredCoaches.isEmpty
@@ -578,7 +655,8 @@ class _ViewCoachState extends State<ViewCoach> {
                         ),
                       )
                     : GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           crossAxisSpacing: 12.0,
                           mainAxisSpacing: 12.0,
@@ -621,7 +699,8 @@ class _ViewCoachState extends State<ViewCoach> {
                                       children: [
                                         // Coach image
                                         CircleAvatar(
-                                          backgroundImage: AssetImage(coach['image']!),
+                                          backgroundImage:
+                                              AssetImage(coach['image']!),
                                           radius: 40,
                                           backgroundColor: Colors.grey.shade200,
                                         ),
@@ -653,12 +732,18 @@ class _ViewCoachState extends State<ViewCoach> {
                                         const SizedBox(height: 8),
                                         // Sport badge
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: _getSportColor(coach['sport']!).withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
+                                            color:
+                                                _getSportColor(coach['sport']!)
+                                                    .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                             border: Border.all(
-                                              color: _getSportColor(coach['sport']!).withOpacity(0.3),
+                                              color: _getSportColor(
+                                                      coach['sport']!)
+                                                  .withOpacity(0.3),
                                               width: 1,
                                             ),
                                           ),
@@ -666,7 +751,8 @@ class _ViewCoachState extends State<ViewCoach> {
                                             coach['sport']!,
                                             style: TextStyle(
                                               fontSize: 12,
-                                              color: _getSportColor(coach['sport']!),
+                                              color: _getSportColor(
+                                                  coach['sport']!),
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),

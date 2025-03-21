@@ -26,6 +26,9 @@ class _AdminViewRequestSponsorsState extends State<AdminViewRequestSponsors> wit
   bool _isLoading = true;
   bool _isGridView = false;
   late TabController _tabController;
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
   
   final List<String> _sportFilters = ['All', 'Football', 'Cricket', 'Basketball', 'Tennis', 'Badminton', 'Swimming', 'Volleyball'];
   final List<String> _sponsorTiers = ['All', 'Platinum', 'Gold', 'Silver', 'Bronze'];
@@ -50,9 +53,26 @@ class _AdminViewRequestSponsorsState extends State<AdminViewRequestSponsors> wit
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
+    _loadUserInfo();
     _loadSponsors();
   }
   
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Admin";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
+
   @override
   void dispose() {
     _tabController.removeListener(_handleTabChange);
@@ -731,6 +751,9 @@ class _AdminViewRequestSponsorsState extends State<AdminViewRequestSponsors> wit
           DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [

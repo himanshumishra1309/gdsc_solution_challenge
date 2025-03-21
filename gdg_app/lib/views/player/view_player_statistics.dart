@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -12,7 +13,9 @@ class ViewPlayerStatistics extends StatefulWidget {
   _ViewPlayerStatisticsState createState() => _ViewPlayerStatisticsState();
 }
 
-class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with SingleTickerProviderStateMixin {
+class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics>
+    with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
   String _selectedDrawerItem = viewPlayerStatisticsRoute;
   String _selectedSport = 'Football';
   Map<String, dynamic> _playerStats = {};
@@ -21,11 +24,11 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
   late TabController _tabController;
   bool _isLoading = true;
   String _selectedView = 'Table'; // 'Table' or 'Card'
-  
+
   // Format stat values based on their type
   String _formatStatValue(String key, dynamic value) {
     // Format percentages
-    if (key.toLowerCase().contains('percentage') || 
+    if (key.toLowerCase().contains('percentage') ||
         key.toLowerCase().contains('accuracy') ||
         key.toLowerCase().contains('rate')) {
       return '$value%';
@@ -37,7 +40,7 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
     // Else return as is
     return value.toString();
   }
-  
+
   // Check if stat is a key metric for the selected sport
   bool _isKeyMetricForSport(String key) {
     if (_selectedSport == 'Football') {
@@ -50,11 +53,34 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
     return false;
   }
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this); // Changed from 3 to 2 (removed Chart view)
+    _loadUserInfo();
+    _tabController = TabController(
+        length: 2, vsync: this); // Changed from 3 to 2 (removed Chart view)
     _loadPlayerData();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
   }
 
   @override
@@ -67,12 +93,14 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
-      final String response = await rootBundle.loadString('assets/json_files/player_statistics.json');
+      final String response = await rootBundle
+          .loadString('assets/json_files/player_statistics.json');
       final data = await json.decode(response);
       setState(() {
-        _playerStats = _filterSportSpecificStats(data[_selectedSport.toLowerCase()] ?? {});
+        _playerStats =
+            _filterSportSpecificStats(data[_selectedSport.toLowerCase()] ?? {});
         _isLoading = false;
       });
     } catch (e) {
@@ -85,37 +113,55 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
   }
 
   // New method to filter sport-specific statistics
-  Map<String, dynamic> _filterSportSpecificStats(Map<String, dynamic> allStats) {
+  Map<String, dynamic> _filterSportSpecificStats(
+      Map<String, dynamic> allStats) {
     // If source data is empty, return empty map
     if (allStats.isEmpty) return {};
-    
+
     Map<String, dynamic> filteredStats = {};
-    
+
     if (_selectedSport == 'Football') {
       // Keep only relevant football stats and ensure required ones exist
-      if (allStats.containsKey('Goals')) filteredStats['Goals'] = allStats['Goals'];
-      if (allStats.containsKey('Assists')) filteredStats['Assists'] = allStats['Assists'];
-      if (allStats.containsKey('Minutes Played')) filteredStats['Minutes Played'] = allStats['Minutes Played'];
-      if (allStats.containsKey('Pass Accuracy')) filteredStats['Pass Accuracy'] = allStats['Pass Accuracy'];
-      if (allStats.containsKey('Yellow Cards')) filteredStats['Yellow Cards'] = allStats['Yellow Cards'];
-      if (allStats.containsKey('Red Cards')) filteredStats['Red Cards'] = allStats['Red Cards'];
+      if (allStats.containsKey('Goals'))
+        filteredStats['Goals'] = allStats['Goals'];
+      if (allStats.containsKey('Assists'))
+        filteredStats['Assists'] = allStats['Assists'];
+      if (allStats.containsKey('Minutes Played'))
+        filteredStats['Minutes Played'] = allStats['Minutes Played'];
+      if (allStats.containsKey('Pass Accuracy'))
+        filteredStats['Pass Accuracy'] = allStats['Pass Accuracy'];
+      if (allStats.containsKey('Yellow Cards'))
+        filteredStats['Yellow Cards'] = allStats['Yellow Cards'];
+      if (allStats.containsKey('Red Cards'))
+        filteredStats['Red Cards'] = allStats['Red Cards'];
     } else if (_selectedSport == 'Cricket') {
       // Keep only relevant cricket stats
-      if (allStats.containsKey('Total Runs')) filteredStats['Total Runs'] = allStats['Total Runs'];
-      if (allStats.containsKey('Wickets')) filteredStats['Wickets'] = allStats['Wickets'];
-      if (allStats.containsKey('Batting Average')) filteredStats['Batting Average'] = allStats['Batting Average'];
-      if (allStats.containsKey('Economy Rate')) filteredStats['Economy Rate'] = allStats['Economy Rate'];
-      if (allStats.containsKey('Centuries')) filteredStats['Centuries'] = allStats['Centuries'];
-      if (allStats.containsKey('Half Centuries')) filteredStats['Half Centuries'] = allStats['Half Centuries'];
+      if (allStats.containsKey('Total Runs'))
+        filteredStats['Total Runs'] = allStats['Total Runs'];
+      if (allStats.containsKey('Wickets'))
+        filteredStats['Wickets'] = allStats['Wickets'];
+      if (allStats.containsKey('Batting Average'))
+        filteredStats['Batting Average'] = allStats['Batting Average'];
+      if (allStats.containsKey('Economy Rate'))
+        filteredStats['Economy Rate'] = allStats['Economy Rate'];
+      if (allStats.containsKey('Centuries'))
+        filteredStats['Centuries'] = allStats['Centuries'];
+      if (allStats.containsKey('Half Centuries'))
+        filteredStats['Half Centuries'] = allStats['Half Centuries'];
     } else if (_selectedSport == 'Badminton') {
       // Keep only relevant badminton stats
-      if (allStats.containsKey('Hit Percentage')) filteredStats['Hit Percentage'] = allStats['Hit Percentage'];
-      if (allStats.containsKey('Accuracy')) filteredStats['Accuracy'] = allStats['Accuracy'];
-      if (allStats.containsKey('Win Rate')) filteredStats['Win Rate'] = allStats['Win Rate'];
-      if (allStats.containsKey('Matches Played')) filteredStats['Matches Played'] = allStats['Matches Played'];
-      if (allStats.containsKey('Smash Speed')) filteredStats['Smash Speed'] = allStats['Smash Speed'];
+      if (allStats.containsKey('Hit Percentage'))
+        filteredStats['Hit Percentage'] = allStats['Hit Percentage'];
+      if (allStats.containsKey('Accuracy'))
+        filteredStats['Accuracy'] = allStats['Accuracy'];
+      if (allStats.containsKey('Win Rate'))
+        filteredStats['Win Rate'] = allStats['Win Rate'];
+      if (allStats.containsKey('Matches Played'))
+        filteredStats['Matches Played'] = allStats['Matches Played'];
+      if (allStats.containsKey('Smash Speed'))
+        filteredStats['Smash Speed'] = allStats['Smash Speed'];
     }
-    
+
     // If no specific stats were found, return all stats (fallback)
     return filteredStats.isEmpty ? allStats : filteredStats;
   }
@@ -233,9 +279,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
         return Colors.deepPurple;
       }
     }
-    
+
     // Generic coloring for percentage values
-    if (category.toLowerCase().contains('accuracy') || 
+    if (category.toLowerCase().contains('accuracy') ||
         category.toLowerCase().contains('percentage') ||
         category.toLowerCase().contains('rate')) {
       double numValue = double.tryParse(value.toString()) ?? 0;
@@ -243,7 +289,7 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
       if (numValue >= 60) return Colors.amber.shade700;
       return Colors.red.shade700;
     }
-    
+
     return Colors.deepPurple;
   }
 
@@ -253,13 +299,13 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
       return Icons.sports_soccer;
     } else if (category.toLowerCase() == 'assists') {
       return Icons.handshake;
-    } 
+    }
     // Cricket icons
     else if (category.toLowerCase() == 'total runs') {
       return Icons.score;
     } else if (category.toLowerCase() == 'wickets') {
       return Icons.sports_cricket;
-    } 
+    }
     // Badminton icons
     else if (category.toLowerCase() == 'hit percentage') {
       return Icons.gps_fixed;
@@ -273,8 +319,8 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
       return Icons.sports;
     } else if (category.toLowerCase().contains('intercept')) {
       return Icons.block;
-    } else if (category.toLowerCase().contains('minute') || 
-              category.toLowerCase().contains('time')) {
+    } else if (category.toLowerCase().contains('minute') ||
+        category.toLowerCase().contains('time')) {
       return Icons.timer;
     } else if (category.toLowerCase().contains('yellow card')) {
       return Icons.warning_amber_rounded;
@@ -302,22 +348,53 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
   @override
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
-      DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
-      DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
-      DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Nutritional Plan', route: nutritionalPlanRoute),
-      DrawerItem(icon: Icons.announcement, title: 'View Announcements', route: playerviewAnnouncementRoute),
-      DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
-      DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
-      DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+      DrawerItem(
+          icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
+      DrawerItem(
+          icon: Icons.people,
+          title: 'View Coaches',
+          route: viewCoachProfileRoute),
+      DrawerItem(
+          icon: Icons.bar_chart,
+          title: 'View Stats',
+          route: viewPlayerStatisticsRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Medical Reports',
+          route: medicalReportRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Nutritional Plan',
+          route: nutritionalPlanRoute),
+      DrawerItem(
+          icon: Icons.announcement,
+          title: 'View Announcements',
+          route: playerviewAnnouncementRoute),
+      DrawerItem(
+          icon: Icons.calendar_today,
+          title: 'View Calendar',
+          route: viewCalendarRoute),
+      DrawerItem(
+          icon: Icons.fitness_center,
+          title: 'View Gym Plan',
+          route: viewGymPlanRoute),
+      DrawerItem(
+          icon: Icons.edit,
+          title: 'Fill Injury Form',
+          route: fillInjuryFormRoute),
+      DrawerItem(
+          icon: Icons.attach_money,
+          title: 'Finances',
+          route: playerFinancialViewRoute),
     ];
 
     // Filter player stats based on search query
     final filteredStats = _playerStats.entries.where((entry) {
       return entry.key.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-             entry.value.toString().toLowerCase().contains(_searchQuery.toLowerCase());
+          entry.value
+              .toString()
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase());
     }).toList();
 
     return Scaffold(
@@ -343,6 +420,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
         },
         drawerItems: drawerItems,
         onLogout: _handleLogout,
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [
@@ -352,22 +432,23 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: _selectedSport == 'Football' ? 
-                  [Colors.green.shade700, Colors.green.shade900] :
-                _selectedSport == 'Cricket' ? 
-                  [Colors.blue.shade700, Colors.blue.shade900] :
-                  [Colors.amber.shade700, Colors.amber.shade900],
+                colors: _selectedSport == 'Football'
+                    ? [Colors.green.shade700, Colors.green.shade900]
+                    : _selectedSport == 'Cricket'
+                        ? [Colors.blue.shade700, Colors.blue.shade900]
+                        : [Colors.amber.shade700, Colors.amber.shade900],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: (_selectedSport == 'Football' ? 
-                    Colors.green.shade700 : 
-                    _selectedSport == 'Cricket' ? 
-                      Colors.blue.shade700 : 
-                      Colors.amber.shade700).withOpacity(0.3),
+                  color: (_selectedSport == 'Football'
+                          ? Colors.green.shade700
+                          : _selectedSport == 'Cricket'
+                              ? Colors.blue.shade700
+                              : Colors.amber.shade700)
+                      .withOpacity(0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -382,14 +463,16 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                       backgroundColor: Colors.white,
                       radius: 24,
                       child: Icon(
-                        _selectedSport == 'Football' ? Icons.sports_soccer :
-                        _selectedSport == 'Cricket' ? Icons.sports_cricket :
-                        Icons.sports_tennis,
-                        color: _selectedSport == 'Football' ? 
-                          Colors.green.shade700 : 
-                          _selectedSport == 'Cricket' ? 
-                            Colors.blue.shade700 : 
-                            Colors.amber.shade700,
+                        _selectedSport == 'Football'
+                            ? Icons.sports_soccer
+                            : _selectedSport == 'Cricket'
+                                ? Icons.sports_cricket
+                                : Icons.sports_tennis,
+                        color: _selectedSport == 'Football'
+                            ? Colors.green.shade700
+                            : _selectedSport == 'Cricket'
+                                ? Colors.blue.shade700
+                                : Colors.amber.shade700,
                         size: 24,
                       ),
                     ),
@@ -436,54 +519,66 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: _selectedSport == 'Football' ? [
-                    // Football key stats
-                    _buildHighlightStat(
-                      _playerStats.containsKey('Goals') ? 
-                        _playerStats['Goals'].toString() : '0',
-                      'Goals',
-                      Icons.sports_soccer,
-                    ),
-                    _buildHighlightStat(
-                      _playerStats.containsKey('Assists') ? 
-                        _playerStats['Assists'].toString() : '0',
-                      'Assists',
-                      Icons.handshake,
-                    ),
-                  ] : _selectedSport == 'Cricket' ? [
-                    // Cricket key stats
-                    _buildHighlightStat(
-                      _playerStats.containsKey('Total Runs') ? 
-                        _playerStats['Total Runs'].toString() : '0',
-                      'Runs',
-                      Icons.score,
-                    ),
-                    _buildHighlightStat(
-                      _playerStats.containsKey('Wickets') ? 
-                        _playerStats['Wickets'].toString() : '0',
-                      'Wickets',
-                      Icons.sports_cricket,
-                    ),
-                  ] : [
-                    // Badminton key stats
-                    _buildHighlightStat(
-                      _playerStats.containsKey('Hit Percentage') ? 
-                        _playerStats['Hit Percentage'].toString() + '%' : '0%',
-                      'Hit %',
-                      Icons.gps_fixed,
-                    ),
-                    _buildHighlightStat(
-                      _playerStats.containsKey('Accuracy') ? 
-                        _playerStats['Accuracy'].toString() + '%' : '0%',
-                      'Accuracy',
-                      Icons.precision_manufacturing,
-                    ),
-                  ],
+                  children: _selectedSport == 'Football'
+                      ? [
+                          // Football key stats
+                          _buildHighlightStat(
+                            _playerStats.containsKey('Goals')
+                                ? _playerStats['Goals'].toString()
+                                : '0',
+                            'Goals',
+                            Icons.sports_soccer,
+                          ),
+                          _buildHighlightStat(
+                            _playerStats.containsKey('Assists')
+                                ? _playerStats['Assists'].toString()
+                                : '0',
+                            'Assists',
+                            Icons.handshake,
+                          ),
+                        ]
+                      : _selectedSport == 'Cricket'
+                          ? [
+                              // Cricket key stats
+                              _buildHighlightStat(
+                                _playerStats.containsKey('Total Runs')
+                                    ? _playerStats['Total Runs'].toString()
+                                    : '0',
+                                'Runs',
+                                Icons.score,
+                              ),
+                              _buildHighlightStat(
+                                _playerStats.containsKey('Wickets')
+                                    ? _playerStats['Wickets'].toString()
+                                    : '0',
+                                'Wickets',
+                                Icons.sports_cricket,
+                              ),
+                            ]
+                          : [
+                              // Badminton key stats
+                              _buildHighlightStat(
+                                _playerStats.containsKey('Hit Percentage')
+                                    ? _playerStats['Hit Percentage']
+                                            .toString() +
+                                        '%'
+                                    : '0%',
+                                'Hit %',
+                                Icons.gps_fixed,
+                              ),
+                              _buildHighlightStat(
+                                _playerStats.containsKey('Accuracy')
+                                    ? _playerStats['Accuracy'].toString() + '%'
+                                    : '0%',
+                                'Accuracy',
+                                Icons.precision_manufacturing,
+                              ),
+                            ],
                 ),
               ],
             ),
           ),
-          
+
           // Search bar and sport selector
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -507,10 +602,13 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                       onChanged: _onSearchChanged,
                       decoration: InputDecoration(
                         hintText: 'Search statistics...',
-                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
-                        prefixIcon: Icon(Icons.search, color: Colors.deepPurple.shade300, size: 20),
+                        hintStyle: TextStyle(
+                            color: Colors.grey.shade400, fontSize: 14),
+                        prefixIcon: Icon(Icons.search,
+                            color: Colors.deepPurple.shade300, size: 20),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
                       ),
                     ),
                   ),
@@ -528,34 +626,39 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                     child: DropdownButton<String>(
                       value: _selectedSport,
                       onChanged: _onSportChanged,
-                      icon: Icon(Icons.keyboard_arrow_down, color: Colors.deepPurple.shade400),
-                      style: const TextStyle(color: Colors.black87, fontSize: 14),
-                      items: <String>['Football', 'Cricket', 'Badminton'].map<DropdownMenuItem<String>>((String value) {
+                      icon: Icon(Icons.keyboard_arrow_down,
+                          color: Colors.deepPurple.shade400),
+                      style:
+                          const TextStyle(color: Colors.black87, fontSize: 14),
+                      items: <String>['Football', 'Cricket', 'Badminton']
+                          .map<DropdownMenuItem<String>>((String value) {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                value == 'Football' ? Icons.sports_soccer :
-                                value == 'Cricket' ? Icons.sports_cricket :
-                                Icons.sports_tennis,
-                                color: value == 'Football' ? 
-                                  Colors.green.shade700 : 
-                                  value == 'Cricket' ? 
-                                    Colors.blue.shade700 : 
-                                    Colors.amber.shade700,
+                                value == 'Football'
+                                    ? Icons.sports_soccer
+                                    : value == 'Cricket'
+                                        ? Icons.sports_cricket
+                                        : Icons.sports_tennis,
+                                color: value == 'Football'
+                                    ? Colors.green.shade700
+                                    : value == 'Cricket'
+                                        ? Colors.blue.shade700
+                                        : Colors.amber.shade700,
                                 size: 16,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 value,
                                 style: TextStyle(
-                                  color: value == 'Football' ? 
-                                    Colors.green.shade700 : 
-                                    value == 'Cricket' ? 
-                                      Colors.blue.shade700 : 
-                                      Colors.amber.shade700,
+                                  color: value == 'Football'
+                                      ? Colors.green.shade700
+                                      : value == 'Cricket'
+                                          ? Colors.blue.shade700
+                                          : Colors.amber.shade700,
                                   fontWeight: FontWeight.w500,
                                   fontSize: 14,
                                 ),
@@ -570,17 +673,17 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
               ],
             ),
           ),
-          
+
           // Statistics content based on selected view (only Table or Card now)
           Expanded(
             child: _isLoading
                 ? Center(
                     child: CircularProgressIndicator(
-                      color: _selectedSport == 'Football' ? 
-                        Colors.green.shade700 : 
-                        _selectedSport == 'Cricket' ? 
-                          Colors.blue.shade700 : 
-                          Colors.amber.shade700,
+                      color: _selectedSport == 'Football'
+                          ? Colors.green.shade700
+                          : _selectedSport == 'Cricket'
+                              ? Colors.blue.shade700
+                              : Colors.amber.shade700,
                       strokeWidth: 3,
                     ),
                   )
@@ -622,10 +725,10 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
       ),
     );
   }
-  
+
   Widget _buildViewToggle(IconData icon, String view) {
     final isSelected = _selectedView == view;
-    
+
     return InkWell(
       onTap: () {
         setState(() {
@@ -636,30 +739,30 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? 
-            (_selectedSport == 'Football' ? 
-              Colors.green.shade100 : 
-              _selectedSport == 'Cricket' ? 
-                Colors.blue.shade100 : 
-                Colors.amber.shade100)
-            : Colors.transparent,
+          color: isSelected
+              ? (_selectedSport == 'Football'
+                  ? Colors.green.shade100
+                  : _selectedSport == 'Cricket'
+                      ? Colors.blue.shade100
+                      : Colors.amber.shade100)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Icon(
           icon,
           size: 20,
-          color: isSelected ? 
-            (_selectedSport == 'Football' ? 
-              Colors.green.shade700 : 
-              _selectedSport == 'Cricket' ? 
-                Colors.blue.shade700 : 
-                Colors.amber.shade700)
-            : Colors.grey.shade600,
+          color: isSelected
+              ? (_selectedSport == 'Football'
+                  ? Colors.green.shade700
+                  : _selectedSport == 'Cricket'
+                      ? Colors.blue.shade700
+                      : Colors.amber.shade700)
+              : Colors.grey.shade600,
         ),
       ),
     );
   }
-  
+
   Widget _buildHighlightStat(String value, String label, IconData icon) {
     return Column(
       children: [
@@ -729,7 +832,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                       InkWell(
                         onTap: () => _sortTable('Category', !_sortAscending),
                         child: Icon(
-                          _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                          _sortAscending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
                           size: 16,
                           color: Colors.grey.shade600,
                         ),
@@ -748,7 +853,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                       InkWell(
                         onTap: () => _sortTable('Statistic', !_sortAscending),
                         child: Icon(
-                          _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                          _sortAscending
+                              ? Icons.arrow_upward
+                              : Icons.arrow_downward,
                           size: 16,
                           color: Colors.grey.shade600,
                         ),
@@ -760,15 +867,15 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
               ],
               rows: filteredStats.map((entry) {
                 final isKeyMetric = _isKeyMetricForSport(entry.key);
-                
+
                 return DataRow(
                   color: MaterialStateColor.resolveWith((states) {
                     if (isKeyMetric) {
-                      return (_selectedSport == 'Football' ? 
-                        Colors.green.shade50 : 
-                        _selectedSport == 'Cricket' ? 
-                          Colors.blue.shade50 : 
-                          Colors.amber.shade50);
+                      return (_selectedSport == 'Football'
+                          ? Colors.green.shade50
+                          : _selectedSport == 'Cricket'
+                              ? Colors.blue.shade50
+                              : Colors.amber.shade50);
                     }
                     if (states.contains(MaterialState.selected)) {
                       return Colors.deepPurple.shade50;
@@ -783,7 +890,8 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                           Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: _getStatColor(entry.key, entry.value).withOpacity(0.1),
+                              color: _getStatColor(entry.key, entry.value)
+                                  .withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -796,7 +904,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                           Text(
                             entry.key,
                             style: TextStyle(
-                              fontWeight: isKeyMetric ? FontWeight.bold : FontWeight.w500,
+                              fontWeight: isKeyMetric
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
                             ),
                           ),
                         ],
@@ -805,9 +915,11 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                     ),
                     DataCell(
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: _getStatColor(entry.key, entry.value).withOpacity(0.1),
+                          color: _getStatColor(entry.key, entry.value)
+                              .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -829,11 +941,11 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
               headingRowHeight: 56,
               columnSpacing: 24,
               headingTextStyle: TextStyle(
-                color: _selectedSport == 'Football' ? 
-                  Colors.green.shade700 : 
-                  _selectedSport == 'Cricket' ? 
-                    Colors.blue.shade700 : 
-                    Colors.amber.shade700,
+                color: _selectedSport == 'Football'
+                    ? Colors.green.shade700
+                    : _selectedSport == 'Cricket'
+                        ? Colors.blue.shade700
+                        : Colors.amber.shade700,
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
@@ -890,7 +1002,8 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _getStatColor(entry.key, entry.value).withOpacity(0.1),
+                    color:
+                        _getStatColor(entry.key, entry.value).withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -938,7 +1051,7 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
         return false;
       }
     }).toList();
-    
+
     // Sort by value, descending
     numericStats.sort((a, b) {
       try {
@@ -949,10 +1062,10 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
         return 0;
       }
     });
-    
+
     // Limit to top 10 stats for better visibility
     final topStats = numericStats.take(10).toList();
-    
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: topStats.isEmpty
@@ -1015,11 +1128,13 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                     child: BarChart(
                       BarChartData(
                         alignment: BarChartAlignment.spaceAround,
-                        maxY: double.parse(topStats.first.value.toString()) * 1.2,
+                        maxY:
+                            double.parse(topStats.first.value.toString()) * 1.2,
                         barTouchData: BarTouchData(
                           enabled: true,
                           touchTooltipData: BarTouchTooltipData(
-                            getTooltipColor:(spot)=> Colors.deepPurple.shade800,
+                            getTooltipColor: (spot) =>
+                                Colors.deepPurple.shade800,
                             tooltipPadding: const EdgeInsets.all(8),
                             tooltipMargin: 8,
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
@@ -1088,7 +1203,8 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                         borderData: FlBorderData(show: false),
                         gridData: FlGridData(
                           show: true,
-                          horizontalInterval: double.parse(topStats.first.value.toString()) / 5,
+                          horizontalInterval:
+                              double.parse(topStats.first.value.toString()) / 5,
                           getDrawingHorizontalLine: (value) {
                             return FlLine(
                               color: Colors.grey.shade200,
@@ -1100,8 +1216,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                         barGroups: List.generate(
                           topStats.length,
                           (index) {
-                            final double value = double.parse(topStats[index].value.toString());
-                                                        return BarChartGroupData(
+                            final double value =
+                                double.parse(topStats[index].value.toString());
+                            return BarChartGroupData(
                               x: index,
                               barRods: [
                                 BarChartRodData(
@@ -1109,7 +1226,8 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                                   gradient: LinearGradient(
                                     colors: [
                                       _getStatColor(topStats[index].key, value),
-                                      _getStatColor(topStats[index].key, value).withOpacity(0.6),
+                                      _getStatColor(topStats[index].key, value)
+                                          .withOpacity(0.6),
                                     ],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
@@ -1121,7 +1239,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                                   ),
                                   backDrawRodData: BackgroundBarChartRodData(
                                     show: true,
-                                    toY: double.parse(topStats.first.value.toString()) * 1.2,
+                                    toY: double.parse(
+                                            topStats.first.value.toString()) *
+                                        1.2,
                                     color: Colors.grey.shade100,
                                   ),
                                 ),
@@ -1201,7 +1321,8 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
           borderRadius: BorderRadius.circular(16),
           onTap: () => _showStatDetail(entry),
           splashColor: _getStatColor(entry.key, entry.value).withOpacity(0.1),
-          highlightColor: _getStatColor(entry.key, entry.value).withOpacity(0.05),
+          highlightColor:
+              _getStatColor(entry.key, entry.value).withOpacity(0.05),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1218,7 +1339,8 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _getStatColor(entry.key, entry.value).withOpacity(0.1),
+                    color:
+                        _getStatColor(entry.key, entry.value).withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -1233,12 +1355,17 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
               TweenAnimationBuilder(
                 tween: Tween<double>(
                   begin: 0,
-                  end: bool.tryParse(entry.value.toString()) ?? entry.value is int ? entry.value.toDouble() : 0,
+                  end: bool.tryParse(entry.value.toString()) ??
+                          entry.value is int
+                      ? entry.value.toDouble()
+                      : 0,
                 ),
                 duration: const Duration(milliseconds: 1000),
                 builder: (context, value, _) {
                   return Text(
-                    value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1),
+                    value % 1 == 0
+                        ? value.toInt().toString()
+                        : value.toStringAsFixed(1),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -1267,9 +1394,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
 
   // Method to show detailed stat information
   void _showStatDetail(MapEntry<String, dynamic> stat) {
-    final bool isPercentage = stat.key.toLowerCase().contains('percentage') || 
-                              stat.key.toLowerCase().contains('accuracy');
-    
+    final bool isPercentage = stat.key.toLowerCase().contains('percentage') ||
+        stat.key.toLowerCase().contains('accuracy');
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -1342,7 +1469,8 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
                               ),
                             ),
                             Text(
-                              _getPerformanceLevel(double.parse(stat.value.toString())),
+                              _getPerformanceLevel(
+                                  double.parse(stat.value.toString())),
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.grey.shade600,
@@ -1436,7 +1564,7 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
   Widget _buildComparisonSection(MapEntry<String, dynamic> stat) {
     final teamAverage = (double.tryParse(stat.value.toString()) ?? 0) * 0.8;
     final leagueAverage = (double.tryParse(stat.value.toString()) ?? 0) * 0.7;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1449,11 +1577,13 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
           ),
         ),
         const SizedBox(height: 12),
-        _buildComparisonItem('Your value', double.tryParse(stat.value.toString()) ?? 0, Colors.deepPurple),
+        _buildComparisonItem('Your value',
+            double.tryParse(stat.value.toString()) ?? 0, Colors.deepPurple),
         const SizedBox(height: 8),
         _buildComparisonItem('Team average', teamAverage, Colors.blue.shade700),
         const SizedBox(height: 8),
-        _buildComparisonItem('League average', leagueAverage, Colors.green.shade700),
+        _buildComparisonItem(
+            'League average', leagueAverage, Colors.green.shade700),
       ],
     );
   }
@@ -1487,7 +1617,9 @@ class _ViewPlayerStatisticsState extends State<ViewPlayerStatistics> with Single
               ),
               const SizedBox(height: 4),
               Text(
-                value % 1 == 0 ? value.toInt().toString() : value.toStringAsFixed(1),
+                value % 1 == 0
+                    ? value.toInt().toString()
+                    : value.toStringAsFixed(1),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,

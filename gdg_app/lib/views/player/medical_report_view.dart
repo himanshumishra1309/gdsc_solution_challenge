@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 import 'package:flutter_animate/flutter_animate.dart'; // Add this package to pubspec.yaml
@@ -11,6 +12,7 @@ class MedicalReport extends StatefulWidget {
 }
 
 class _MedicalReportState extends State<MedicalReport> with SingleTickerProviderStateMixin {
+  final _authService = AuthService();
   final Map<String, bool> _expandedSections = {
     'General Health & Vitals': false,
     'Fitness & Performance Metrics': false,
@@ -24,12 +26,35 @@ class _MedicalReportState extends State<MedicalReport> with SingleTickerProvider
 
   String _searchQuery = '';
   late TabController _tabController;
+
+  // Add these state variables for user info
+String _userName = "";
+String _userEmail = "";
+String? _userAvatar;
+bool _isLoading = false;
   
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _tabController = TabController(length: 2, vsync: this);
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Athlete";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   final Map<String, dynamic> reportData = {
     'date': '02/10/2025',
@@ -165,6 +190,9 @@ class _MedicalReportState extends State<MedicalReport> with SingleTickerProvider
           DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Container(
         decoration: BoxDecoration(

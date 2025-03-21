@@ -16,14 +16,22 @@ class CustomDrawer extends StatelessWidget {
   final String selectedDrawerItem;
   final Function(String) onSelectDrawerItem;
   final List<DrawerItem> drawerItems;
-  final VoidCallback onLogout; // Callback for logout
+  final VoidCallback onLogout;
+  
+  // Add user info parameters
+  final String userName;
+  final String userEmail;
+  final String? userAvatarUrl;
 
   const CustomDrawer({
     Key? key,
     required this.selectedDrawerItem,
     required this.onSelectDrawerItem,
     required this.drawerItems,
-    required this.onLogout, // Add this parameter
+    required this.onLogout,
+    required this.userName,
+    required this.userEmail,
+    this.userAvatarUrl,
   }) : super(key: key);
 
   @override
@@ -32,13 +40,19 @@ class CustomDrawer extends StatelessWidget {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          const UserAccountsDrawerHeader(
-            accountName: Text('User Name'),
-            accountEmail: Text('user@example.com'),
+          UserAccountsDrawerHeader(
+            accountName: Text(userName),
+            accountEmail: Text(userEmail),
             currentAccountPicture: CircleAvatar(
-              backgroundImage: AssetImage('assets/images/player5.jpg'),
+              backgroundColor: Colors.grey.shade200,
+              backgroundImage: userAvatarUrl != null && userAvatarUrl!.isNotEmpty
+                  ? NetworkImage(userAvatarUrl!) as ImageProvider
+                  : const AssetImage('assets/images/default_avatar.png'),
+              child: userAvatarUrl == null || userAvatarUrl!.isEmpty
+                  ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                  : null,
             ),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.deepPurple,
             ),
           ),
@@ -46,15 +60,15 @@ class CustomDrawer extends StatelessWidget {
             return ListTile(
               leading: Icon(item.icon),
               title: Text(item.title),
-              selected: selectedDrawerItem == item.route, // Compare with route
-              onTap: () => onSelectDrawerItem(item.route), // Use route for navigation
+              selected: selectedDrawerItem == item.route,
+              onTap: () => onSelectDrawerItem(item.route),
             );
           }).toList(),
-          const Divider(), // Add a divider before the logout button
+          const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red), // Logout icon
-            title: const Text('Logout', style: TextStyle(color: Colors.red)), // Logout text
-            onTap: onLogout, // Call the logout callback
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: onLogout,
           ),
         ],
       ),
