@@ -2,6 +2,8 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import {Athlete} from "../models/athlete.model.js"
+import {AthleteStats} from "../models/AthleteStats.model.js"
+import mongoose from "mongoose";
 import jwt from 'jsonwebtoken'
 
 
@@ -143,10 +145,30 @@ const getAthleteDetails = async (req, res) => {
   }
 };
 
+const getAthleteStats = asyncHandler(async (req, res, next) => {
+  const athleteId = req.athlete.id; // Get ID from the JWT middleware
+
+  if (!athleteId) {
+      return next(new ApiError(400, "Athlete ID not found in token"));
+  }
+
+  // Ensure athlete exists
+  const athlete = await Athlete.findById(athleteId);
+  if (!athlete) {
+      return next(new ApiError(404, "Athlete not found"));
+  }
+
+  // Fetch all stats for the athlete across multiple sports
+  const athleteStats = await AthleteStats.find({ athlete: athleteId });
+
+  res.status(200).json(new ApiResponse(200, athleteStats, "Athlete stats retrieved successfully"));
+});
+
 export {
   generateAccessAndRefreshToken,
   logoutUser,
   getAthleteProfile,
   getAthletes,
   getAthleteDetails,
+  getAthleteStats,
 };
