@@ -645,7 +645,7 @@ ListView.builder(
       DrawerItem(icon: Icons.people, title: 'View All Coaches', route: viewAllCoachesRoute),
       DrawerItem(icon: Icons.request_page, title: 'Request/View Sponsors', route: requestViewSponsorsRoute),
       DrawerItem(icon: Icons.video_library, title: 'Video Analysis', route: videoAnalysisRoute),
-      DrawerItem(icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
+       
       DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
     ];
 

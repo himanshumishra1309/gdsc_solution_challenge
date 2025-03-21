@@ -68,20 +68,20 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
   }
 
   Future<void> _loadUserInfo() async {
-  try {
-    final userData = await _authService.getCurrentUser();
-    
-    if (userData.isNotEmpty) {
-      setState(() {
-        _userName = userData['name'] ?? "Admin";
-        _userEmail = userData['email'] ?? "";
-        _userAvatar = userData['avatar'];
-      });
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Admin";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
     }
-  } catch (e) {
-    debugPrint('Error loading user info: $e');
   }
-}
 
   @override
   void dispose() {
@@ -810,15 +810,13 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
               title: 'Video Analysis',
               route: videoAnalysisRoute),
           DrawerItem(
-              icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-          DrawerItem(
               icon: Icons.attach_money,
               title: 'Manage Player Finances',
               route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
         userName: _userName,
-        userEmail: _userEmail, 
+        userEmail: _userEmail,
         userAvatarUrl: _userAvatar,
       ),
       body: Column(
