@@ -8,6 +8,7 @@ import {Sponsor} from "../models/sponsor.model.js"
 // import {sendEmail} from "../utils/sendEmail.js"
 import ApiResponse  from "../utils/ApiResponse.js"
 import {CustomForm} from "../models/customForm.model.js"
+import {SponsorRequest} from "../models/SponsorRequest.model.js"
 import mongoose from "mongoose"
 
 const registerOrganizationAthlete = asyncHandler(async (req, res) => {
@@ -1080,6 +1081,169 @@ const createCustomForm = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * @desc Get organization overview (Total Athletes, Coaches, Sponsors)
+ * @route GET /api/admin/overview
+ * @access Private (Admin Only)
+ */
+const getOrganizationOverview = asyncHandler(async (req, res, next) => {
+  // Debug log to check the logged-in admin ID
+  console.log("Logged-in admin ID:", req.admin._id);
+
+  if (!req.admin || !req.admin.organization) {
+      return next(new ApiError(400, "Organization not found for this admin"));
+  }
+
+  const organization = req.admin.organization;
+
+  try {
+      // Fetch counts
+      const [totalAthletes, totalCoaches, totalSponsors] = await Promise.all([
+          Athlete.countDocuments({ organization }),
+          Coach.countDocuments({ organization }),
+          Sponsor.countDocuments({ organization }),
+      ]);
+
+      return res
+          .status(200)
+          .json(new ApiResponse(200, { totalAthletes, totalCoaches, totalSponsors }, "Organization overview fetched successfully"));
+  } catch (error) {
+      console.error("Error fetching organization overview:", error);
+      return next(new ApiError(500, "Failed to fetch organization overview"));
+  }
+});
+
+//sponsor Mannagement
+const sendSponsorInvitation = asyncHandler(async (req, res, next) => {
+  const { requestType, companyName, contactPerson, email, phone, notes } = req.body;
+  const organizationId = req.admin.organization;
+
+  if (!requestType || !companyName || !contactPerson || !email || !phone) {
+      return next(new ApiError(400, "All fields are required for manual sponsor invitations"));
+  }
+
+  // Check if a sponsor already exists with this email
+  let sponsor = await Sponsor.findOne({ email });
+
+  if (!sponsor) {
+      // If sponsor does not exist, create a new sponsor entry
+      sponsor = await Sponsor.create({ companyName, contactPerson, email, phone });
+  }
+
+  // Check if a pending request already exists for this sponsor
+  const existingRequest = await SponsorRequest.findOne({ organization: organizationId, sponsor: sponsor._id, status: "Pending" });
+  if (existingRequest) {
+      return next(new ApiError(400, "A pending request already exists for this sponsor"));
+  }
+
+  // Create a sponsor request linked to the existing/new sponsor
+  const newRequest = await SponsorRequest.create({
+      organization: organizationId,
+      sponsor: sponsor._id, // Linking request to sponsor
+      requestType,
+      companyName,
+      contactPerson,
+      email,
+      phone,
+      notes,
+      status: "Pending"
+  });
+
+  res.status(201).json(new ApiResponse(201, newRequest, "Sponsor invitation sent successfully!"));
+});
+
+const sendPotentialSponsorRequest = asyncHandler(async (req, res, next) => {
+  const { sponsorId, requestType, title, message } = req.body;
+  const organizationId = req.admin.organization;
+
+  if (!sponsorId || !requestType || !title || !message) {
+      return next(new ApiError(400, "Sponsor ID, request type, title, and message are required"));
+  }
+
+  const sponsor = await Sponsor.findById(sponsorId);
+  if (!sponsor) {
+      return next(new ApiError(404, "Sponsor not found"));
+  }
+
+  // Check if a pending request already exists for this sponsor
+  const existingRequest = await SponsorRequest.findOne({ organization: organizationId, sponsor: sponsorId, status: "Pending" });
+  if (existingRequest) {
+      return next(new ApiError(400, "A pending request already exists for this sponsor"));
+  }
+
+  const newRequest = await SponsorRequest.create({
+      sponsor: sponsorId,
+      organization: organizationId,
+      requestType,
+      title,
+      message,
+      status: "Pending"
+  });
+
+  res.status(201).json(new ApiResponse(201, newRequest, "Sponsor request sent successfully!"));
+});
+
+const getPotentialSponsors = asyncHandler(async (req, res, next) => {
+  const organizationId = req.admin.organization;
+
+  // Get sponsors that are NOT already sponsoring this organization
+  const potentialSponsors = await Sponsor.find({
+      sponsoredOrganizations: { $ne: organizationId }
+  }).select("Name contactName contactNo email");
+
+  if (!potentialSponsors.length) {
+      return next(new ApiError(404, "No potential sponsors found"));
+  }
+
+  res.status(200).json(new ApiResponse(200, potentialSponsors, "Potential sponsors retrieved successfully"));
+});
+
+
+const getCurrentSponsors = asyncHandler(async (req, res, next) => {
+  const organizationId = req.admin.organization; // Get the admin's organization ID
+
+  const currentSponsors = await Sponsor.find({ sponsoredOrganizations: organizationId })
+      .select("companyName contactPerson email phone");
+
+  res.status(200).json(new ApiResponse(200, currentSponsors, "Current sponsors retrieved successfully"));
+});
+
+const deleteSponsorRequest = asyncHandler(async (req, res, next) => {
+    const sponsor = await Sponsor.findById(req.params.sponsorId);
+
+    if (!sponsor) {
+        return next(new ApiError(404, "Sponsor request not found"));
+    }
+
+    await Sponsor.findByIdAndDelete(req.params.sponsorId);
+    res.status(200).json(new ApiResponse(200, null, "Sponsor request removed successfully"));
+});
+
+const getRequestsLog = asyncHandler(async (req, res, next) => {
+  const organizationId = req.admin.organization;
+  const { status, page = 1, limit = 10 } = req.query;
+
+  // Filter by status if provided
+  const filter = { organization: organizationId };
+  if (status && ["Pending", "Accepted", "Declined"].includes(status)) {
+      filter.status = status;
+  }
+
+  // Paginate results
+  const requests = await SponsorRequest.find(filter)
+      .populate("sponsor", "companyName contactPerson email phone")
+      .sort({ createdAt: -1 }) // Newest requests first
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+  // Count total requests for pagination metadata
+  const totalRequests = await SponsorRequest.countDocuments(filter);
+
+  res.status(200).json(
+      new ApiResponse(200, { requests, totalRequests }, "Fetched requests log successfully!")
+  );
+});
+
 export {
   registerOrganizationAthlete,
   getAllAthletes,
@@ -1093,5 +1257,13 @@ export {
   getAllAdmins,
   getAllCoaches,
   getAthleteById,
-  getOrganizationStats
+  getOrganizationOverview,
+
+  //sponsor
+  getPotentialSponsors,
+  getCurrentSponsors,
+  deleteSponsorRequest,
+  getRequestsLog,
+  sendSponsorInvitation,
+  sendPotentialSponsorRequest,
 };
