@@ -1511,8 +1511,6 @@ export {
   getAllAdmins,
   getAllCoaches,
   getAthleteById,
-  getOrganizationStats,
-  //sponsor
   getPotentialSponsors,
   getCurrentSponsors,
   deleteSponsorRequest,

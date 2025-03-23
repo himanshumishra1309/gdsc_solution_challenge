@@ -4,7 +4,6 @@ import {
     logoutUser,
     getCoachProfile
     // loginAdmin,
-    logoutUser,
 } from "../controllers/coach.controllers.js";
 import { addAthleteStats } from "../controllers/admin.controllers.js";
 import { verifyJWTCoach } from "../middlewares/auth.middleware.js";
