@@ -10,7 +10,7 @@ root-directory/
 │
 ├── backend/
 ├── frontend/
-├── flutter-app/
+├── gdg_app/
 └── player-tracking/
 ```
 
