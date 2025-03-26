@@ -1,6 +1,6 @@
 # 🚀 Project Setup Guide
 
-Welcome to our complete project repository! This guide will walk you through setting up the **Backend**, **Frontend**, and **Flutter Mobile Application** in the most seamless way possible. Follow each step carefully to get up and running! 😎
+Welcome to our complete project repository! This guide will walk you through setting up the **Backend**, **Frontend**, **Flutter Mobile Application**, and **Player Tracking System** using YOLOv8 and Supervision.
 
 ---
 
@@ -10,7 +10,8 @@ root-directory/
 │
 ├── backend/
 ├── frontend/
-└── flutter-app/
+├── flutter-app/
+└── player-tracking/
 ```
 
 ---
@@ -62,7 +63,7 @@ npm install --force
 npm run dev
 ```
 
-The frontend should now be running on **http://localhost:5173** (or as specified).
+The frontend should now be running on **http://localhost:3000** (or as specified).
 
 ---
 
@@ -109,6 +110,61 @@ This allows your phone to communicate with the local backend server.
 
 ---
 
+## ✅ Player Tracking Setup using YOLOv8 and Supervision
+
+### Overview
+This project uses YOLOv8 for real-time detection and tracking of players in field sports such as hockey, basketball, football, and more. The system tracks player movements, calculates speed, distance covered, agility (direction changes), and generates performance metrics. The output includes an annotated video and graphs summarizing player performance.
+
+### Features
+- Detects and tracks players using YOLOv8 and ByteTrack.
+- Calculates player speed, distance covered, and agility.
+- Generates an annotated video with tracking information.
+- Produces graphical and textual performance reports for analysis.
+
+### Requirements
+Ensure you have the following dependencies installed:
+```bash
+pip install ultralytics opencv-python numpy matplotlib supervision
+```
+
+### Usage
+1. **Update Paths:** Edit the script to specify the correct paths:
+   - `video_path` - Path to the input sports game video.
+   - `output_folder` - Directory where performance metrics will be saved.
+   - `output_path` - Path where the annotated video will be stored.
+
+2. **Run the Script:**
+```bash
+python tracking_script.py
+```
+
+3. **Interact with Output:**
+- Annotated video will be saved at `output_path`.
+- Performance metrics (graphs and reports) will be stored in `output_folder`.
+
+### Output Details
+- **Annotated Video**: Shows tracked players with assigned IDs.
+- **Performance Metrics**:
+  - **Speed Graph** (m/s)
+  - **Distance Covered Graph** (pixels)
+  - **Agility (Direction Changes)**
+  - **Performance Score** (derived from speed, distance, and agility)
+
+### Notes
+- The script is optimized for tracking up to 22 players.
+- Ensure the YOLO model (`yolov8l.pt`) is available in your working directory.
+- Press `q` during video processing to quit early.
+
+### Future Improvements
+- Add more refined tracking to avoid duplicate player IDs.
+- Enhance performance calculations with real-world scale calibration.
+- Integrate real-time dashboard for live analysis.
+
+### License
+This project is open-source and free to use for research and development purposes.
+
+---
+
 ## 🔐 Developer Credentials:
 | Role                 | Email                         | Password   |
 |----------------------|-------------------------------|------------|
@@ -128,11 +184,6 @@ adb kill-server
 adb start-server
 ```
 - Make sure you have accepted all device permissions.
-
----
-
-## 💡 Contributing
-We love contributions! Please fork the repo, make your changes, and raise a PR. 😄
 
 ---
 
