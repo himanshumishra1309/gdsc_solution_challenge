@@ -193,11 +193,6 @@ adb start-server
 
 ---
 
-## 💡 Contributing
-We love contributions! Please fork the repo, make your changes, and raise a PR. 😄
-
----
-
 ## 📬 Contact
 For any help, feel free to reach out to the development team.
 
