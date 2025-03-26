@@ -62,7 +62,7 @@ npm install --force
 npm run dev
 ```
 
-The frontend should now be running on **http://localhost:3000** (or as specified).
+The frontend should now be running on **http://localhost:5173** (or as specified).
 
 ---
 
@@ -110,11 +110,13 @@ This allows your phone to communicate with the local backend server.
 ---
 
 ## 🔐 Developer Credentials:
-| Role            | Username        | Password   |
-|-----------------|-----------------|------------|
-| Admin           | admin_user      | admin@123  |
-| Test User       | test_user       | test@123   |
-| Developer       | dev_user        | dev@123    |
+| Role                 | Email                         | Password   |
+|----------------------|-------------------------------|------------|
+| Admin                | mainadmin@gmail.com           | 1234       |
+| Coach                | coachjohn@example.com         | John@123   |
+| Athlete              | johndoe@example.com           | 1234       |
+| Sponsor              | individualathlete@gmail.com   | dev@123    |
+| Independent Athlete  | sponsor@gmail.com             | dev@123    |
 
 ---
 
