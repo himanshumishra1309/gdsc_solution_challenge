@@ -115,8 +115,8 @@ This allows your phone to communicate with the local backend server.
 | Admin                | mainadmin@gmail.com           | 1234       |
 | Coach                | coachjohn@example.com         | John@123   |
 | Athlete              | johndoe@example.com           | 1234       |
-| Sponsor              | individualathlete@gmail.com   | dev@123    |
-| Independent Athlete  | sponsor@gmail.com             | dev@123    |
+| Independent Athlete  | individualathlete@gmail.com   | 1234       |
+| Sponsor              | sponsor@gmail.com             | 1234       |
 
 ---
 
