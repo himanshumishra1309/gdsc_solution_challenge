@@ -63,7 +63,7 @@ npm install --force
 npm run dev
 ```
 
-The frontend should now be running on **http://localhost:3000** (or as specified).
+The frontend should now be running on **http://localhost:5173** (or as specified).
 
 ---
 
@@ -79,27 +79,33 @@ flutter doctor
 ```
 Make sure all checks are ✅.
 
-### 3. Setup Android Debug Bridge (ADB) & Device:
+### 3. Install Flutter dependencies:
+Navigate to the `gdg_app` directory and run:
+```bash
+flutter pub get
+```
+
+### 4. Setup Android Debug Bridge (ADB) & Device:
 - Go to your **Android phone Settings > About phone > Tap on Build Number 7 times** to enable developer mode.
 - Then go to **Settings > Developer options** and:
   - Enable **Developer mode**
   - Enable **USB Debugging**
   - Enable **USB Debugging (Security settings)**
 
-### 4. Connect your phone:
+### 5. Connect your phone:
 - Plug your phone into your laptop using a USB cable.
 - Ensure the phone is recognized by running:
 ```bash
 adb devices
 ```
 
-### 5. Run the Flutter App:
-- Open the `flutter-app` folder in your IDE.
+### 6. Run the Flutter App:
+- Open the `gdg_app` folder in your IDE.
 - Open `lib/main.dart`.
 - In the IDE, click on **Run > Run Without Debugging**.
 - Allow the popup on your phone screen to install the APK.
 
-### 6. Setup ADB Port Forwarding:
+### 7. Setup ADB Port Forwarding:
 After running the app, open a terminal and enter:
 ```bash
 adb reverse tcp:8000 tcp:8000
@@ -184,6 +190,11 @@ adb kill-server
 adb start-server
 ```
 - Make sure you have accepted all device permissions.
+
+---
+
+## 💡 Contributing
+We love contributions! Please fork the repo, make your changes, and raise a PR. 😄
 
 ---
 
