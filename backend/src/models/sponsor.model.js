@@ -34,8 +34,23 @@ const sponsorSchema = new mongoose.Schema({
   // Auth
   refreshToken: {
     type: String
-  }
+  },
+
+  interestedSports: [
+    {
+      sport: { type: String, required: true },
+      type: { type: String, enum: ["Team", "Individual"], required: true }
+    }
+  ],
+  status: { 
+    type: String, 
+    enum: ["Pending", "Accepted", "Rejected"], 
+    default: "Pending" 
+},
+sponsoredOrganizations: [{ type: mongoose.Schema.Types.ObjectId, ref: "Organization" }], // ✅ Stores approved sponsorships
+
 }, { timestamps: true });
+
 
 // Rest of the schema methods remain the same
 sponsorSchema.pre('save', async function (next) {

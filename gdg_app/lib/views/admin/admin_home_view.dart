@@ -4,6 +4,7 @@ import 'package:gdg_app/constants/routes.dart';
 import 'package:intl/intl.dart';
 import 'package:gdg_app/serivces/auth_service.dart'; 
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:gdg_app/serivces/admin_services.dart';
 
 class AdminHomeView extends StatefulWidget {
   const AdminHomeView({super.key});
@@ -16,16 +17,84 @@ class _AdminHomeViewState extends State<AdminHomeView> with SingleTickerProvider
   late AnimationController _animationController;
   bool _isLoading = false;
   final AuthService _authService = AuthService();
+  final AdminService _adminService = AdminService();
+  
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  
+  Map<String, dynamic> _organizationStats = {
+    'adminCount': 0,
+    'coachCount': 0,
+    'athleteCount': 0,
+    'sponsorCount': 0,
+  };
 
   @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _animationController.forward();
+void initState() {
+  super.initState();
+  _animationController = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 800),
+  );
+  _animationController.forward();
+  
+  // Fetch organization stats when the page loads
+  _loadUserInfo();
+  _fetchOrganizationStats();
+}
+
+Future<void> _loadUserInfo() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final userData = await _authService.getCurrentUser();
+      
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Admin";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
+
+// Add a method to fetch the stats:
+Future<void> _fetchOrganizationStats() async {
+  setState(() => _isLoading = true);
+  
+  try {
+    final result = await _adminService.getOrganizationStats();
+    
+    if (result['success']) {
+      setState(() {
+        _organizationStats = result['stats'];
+      });
+    } else {
+      // Show error if stats fetch failed
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Failed to load organization statistics')),
+        );
+      }
+    }
+  } catch (e) {
+    // Handle unexpected errors
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  } finally {
+    setState(() => _isLoading = false);
+  }
+}
+
 
   @override
   void dispose() {
@@ -177,14 +246,15 @@ Widget build(BuildContext context) {
           DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
           : RefreshIndicator(
               onRefresh: () async {
-                setState(() => _isLoading = true);
-                await Future.delayed(const Duration(seconds: 1));
-                setState(() => _isLoading = false);
+                await _fetchOrganizationStats();
               },
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -342,57 +412,57 @@ Widget build(BuildContext context) {
   }
 
   Widget _buildStatCards() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Overview',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Overview',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: [
+            _buildStatCard(
+              title: 'Players',
+              value: _organizationStats['athleteCount'].toString(),
+              icon: Icons.people_outline,
+              color: Colors.blue,
             ),
-          ),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              _buildStatCard(
-                title: 'Players',
-                value: _dashboardData['playerCount'].toString(),
-                icon: Icons.people_outline,
-                color: Colors.blue,
-              ),
-              _buildStatCard(
-                title: 'Coaches',
-                value: _dashboardData['coachCount'].toString(),
-                icon: Icons.sports_outlined,
-                color: Colors.green,
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          Row(
-            children: [
-              _buildStatCard(
-                title: 'Sponsors',
-                value: _dashboardData['sponsorCount'].toString(),
-                icon: Icons.handshake_outlined,
-                color: Colors.amber,
-              ),
-              _buildStatCard(
-                title: 'Events',
-                value: _dashboardData['upcomingEvents'].toString(),
-                icon: Icons.event_outlined,
-                color: Colors.purple,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+            _buildStatCard(
+              title: 'Coaches',
+              value: _organizationStats['coachCount'].toString(),
+              icon: Icons.sports_outlined,
+              color: Colors.green,
+            ),
+          ],
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: [
+            _buildStatCard(
+              title: 'Admins',
+              value: _organizationStats['adminCount'].toString(),
+              icon: Icons.admin_panel_settings_outlined,
+              color: Colors.red,
+            ),
+            _buildStatCard(
+              title: 'Sponsors',
+              value: _organizationStats['sponsorCount'].toString(),
+              icon: Icons.handshake_outlined,
+              color: Colors.amber,
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildStatCard({
     required String title,

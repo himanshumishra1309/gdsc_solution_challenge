@@ -14,6 +14,7 @@ const TrainingSessionSchema = new mongoose.Schema({
     date: { type: Date, required: true },
     duration: { type: Number, required: true }, // In minutes
     intensity: { type: String, enum: ["Low", "Moderate", "High"], required: true },
+    sessionRPE: { type: Number, min: 1, max: 10 }, // Per session RPE (1-10 scale)
     exercises: [
         {
             name: { type: String, required: true }, // e.g., "Sprint Drills"

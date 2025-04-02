@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gdg_app/constants/routes.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 
 class CoachViewCoachingStaffsAssigned extends StatefulWidget {
@@ -10,6 +11,7 @@ class CoachViewCoachingStaffsAssigned extends StatefulWidget {
 }
 
 class _CoachViewCoachingStaffsAssignedState extends State<CoachViewCoachingStaffsAssigned> {
+  final _authService = AuthService();
   String _searchQuery = '';
   String _selectedSport = 'All Sports';
   final List<String> _sports = ['All Sports', 'Football', 'Basketball', 'Cricket', 'Badminton', 'Tennis'];
@@ -17,11 +19,34 @@ class _CoachViewCoachingStaffsAssignedState extends State<CoachViewCoachingStaff
   List<Map<String, dynamic>> _filteredPlayers = [];
   String _selectedDrawerItem = viewCoachingStaffsAssignedRoute; // Use route for selection
 
+  // Add these state variables for user info
+String _userName = "";
+String _userEmail = "";
+String? _userAvatar;
+bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+     _loadUserInfo();
     _loadPlayers();
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Coach";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   void _loadPlayers() {
     _players = [
@@ -312,6 +337,9 @@ class _CoachViewCoachingStaffsAssignedState extends State<CoachViewCoachingStaff
           onSelectDrawerItem: _onSelectDrawerItem,
           drawerItems: drawerItems,
           onLogout: _handleLogout,
+          userName: _userName,
+          userEmail: _userEmail,
+          userAvatarUrl: _userAvatar,
         ),
         body: Container(
           decoration: BoxDecoration(

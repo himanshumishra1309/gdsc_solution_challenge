@@ -8,14 +8,43 @@ class IndividualContactSponsorView extends StatefulWidget {
   const IndividualContactSponsorView({super.key});
 
   @override
-  _IndividualContactSponsorViewState createState() => _IndividualContactSponsorViewState();
+  _IndividualContactSponsorViewState createState() =>
+      _IndividualContactSponsorViewState();
 }
 
-class _IndividualContactSponsorViewState extends State<IndividualContactSponsorView> {
+class _IndividualContactSponsorViewState
+    extends State<IndividualContactSponsorView> {
   String _selectedDrawerItem = viewContactSponsorRoute;
   String _selectedSport = 'All Sports';
   String _searchQuery = '';
   bool _showFavorites = false;
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
+  }
+
   final List<Map<String, dynamic>> _sponsors = [
     {
       'name': 'SportsTech Global',
@@ -26,7 +55,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       'phone': '+1 (555) 123-4567',
       'website': 'www.sportstechglobal.com',
       'address': '123 Corporate Plaza, Silicon Valley, CA',
-      'description': 'Leading provider of sports technology solutions and equipment.',
+      'description':
+          'Leading provider of sports technology solutions and equipment.',
       'isFavorite': true,
     },
     {
@@ -38,7 +68,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       'phone': '+1 (555) 234-5678',
       'website': 'www.athleticgear.com',
       'address': '456 Sports Avenue, New York, NY',
-      'description': 'Premium sports equipment and apparel for professional athletes.',
+      'description':
+          'Premium sports equipment and apparel for professional athletes.',
       'isFavorite': false,
     },
     {
@@ -50,7 +81,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       'phone': '+1 (555) 345-6789',
       'website': 'www.championnutrition.com',
       'address': '789 Health Blvd, Los Angeles, CA',
-      'description': 'Science-backed nutrition solutions for peak athletic performance.',
+      'description':
+          'Science-backed nutrition solutions for peak athletic performance.',
       'isFavorite': true,
     },
     {
@@ -62,7 +94,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       'phone': '+1 (555) 456-7890',
       'website': 'www.victoryfoundation.org',
       'address': '321 Community Lane, Chicago, IL',
-      'description': 'Supporting emerging athletes through grants and development programs.',
+      'description':
+          'Supporting emerging athletes through grants and development programs.',
       'isFavorite': false,
     },
     {
@@ -74,7 +107,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       'phone': '+1 (555) 567-8901',
       'website': 'www.elitetrainingacademy.com',
       'address': '555 Performance Drive, Miami, FL',
-      'description': 'World-class training facilities and coaching for aspiring champions.',
+      'description':
+          'World-class training facilities and coaching for aspiring champions.',
       'isFavorite': false,
     },
   ];
@@ -84,14 +118,14 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       // Apply search filter
       final matchesSearch = _searchQuery.isEmpty ||
           sponsor['name'].toLowerCase().contains(_searchQuery.toLowerCase());
-      
+
       // Apply sport filter
       final matchesSport = _selectedSport == 'All Sports' ||
           (sponsor['sports'] as List).contains(_selectedSport);
-      
+
       // Apply favorites filter
       final matchesFavorite = !_showFavorites || sponsor['isFavorite'] == true;
-      
+
       return matchesSearch && matchesSport && matchesFavorite;
     }).toList();
   }
@@ -111,7 +145,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
   }
 
   final AuthService _authService = AuthService();
-  
+
   // Update your _handleLogout method
   Future<void> _handleLogout() async {
     bool success = await _authService.logout();
@@ -145,11 +179,11 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
         ],
       ),
     );
-    
+
     if (shouldLogout == true) {
       await _handleLogout();
     }
-    
+
     return false; // Return false to prevent app from closing
   }
 
@@ -167,7 +201,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
         break;
       case 'map':
         // For simplicity just showing a Google search for the address
-        scheme = 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(url)}';
+        scheme =
+            'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(url)}';
         break;
       default:
         return;
@@ -187,12 +222,30 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
       DrawerItem(icon: Icons.home, title: 'Home', route: individualHomeRoute),
-      DrawerItem(icon: Icons.upload_file, title: 'Upload Achievement', route: uploadAchievementRoute),
-      DrawerItem(icon: Icons.video_library, title: 'Game Videos', route: gameVideosRoute),
-      DrawerItem(icon: Icons.contact_mail, title: 'View and Contact Sponsor', route: viewContactSponsorRoute),
-      DrawerItem(icon: Icons.fastfood, title: 'Daily Diet Plan', route: individualDailyDietRoute),
-      DrawerItem(icon: Icons.fitness_center, title: 'Gym Plan', route: individualGymPlanRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: individualFinancesRoute),
+      DrawerItem(
+          icon: Icons.upload_file,
+          title: 'Upload Achievement',
+          route: uploadAchievementRoute),
+      DrawerItem(
+          icon: Icons.video_library,
+          title: 'Game Videos',
+          route: gameVideosRoute),
+      DrawerItem(
+          icon: Icons.contact_mail,
+          title: 'View and Contact Sponsor',
+          route: viewContactSponsorRoute),
+      DrawerItem(
+          icon: Icons.fastfood,
+          title: 'Daily Diet Plan',
+          route: individualDailyDietRoute),
+      DrawerItem(
+          icon: Icons.fitness_center,
+          title: 'Gym Plan',
+          route: individualGymPlanRoute),
+      DrawerItem(
+          icon: Icons.attach_money,
+          title: 'Finances',
+          route: individualFinancesRoute),
     ];
 
     return Scaffold(
@@ -210,9 +263,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
           fontWeight: FontWeight.bold,
         ),
         toolbarHeight: 65.0,
-        actions: [
-          
-        ],
+        actions: [],
       ),
       drawer: CustomDrawer(
         selectedDrawerItem: _selectedDrawerItem,
@@ -224,6 +275,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
         },
         drawerItems: drawerItems,
         onLogout: () => _onWillPop(),
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [
@@ -255,10 +309,12 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                     decoration: InputDecoration(
                       hintText: 'Search sponsors...',
                       hintStyle: TextStyle(color: Colors.grey.shade500),
-                      prefixIcon: const Icon(Icons.search, color: Colors.deepPurple),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.deepPurple),
                       suffixIcon: _searchQuery.isNotEmpty
                           ? IconButton(
-                              icon: const Icon(Icons.clear, color: Colors.deepPurple),
+                              icon: const Icon(Icons.clear,
+                                  color: Colors.deepPurple),
                               onPressed: () {
                                 setState(() {
                                   _searchQuery = '';
@@ -271,9 +327,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Sports filter chips
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -291,7 +347,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
               ],
             ),
           ),
-          
+
           // Sponsors list section
           Expanded(
             child: _filteredSponsors.isEmpty
@@ -311,10 +367,10 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       ),
     );
   }
-  
+
   Widget _buildSportFilterChip(String sport) {
     final isSelected = _selectedSport == sport;
-    
+
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
@@ -342,7 +398,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       ),
     );
   }
-  
+
   IconData _getSportIcon(String sport) {
     switch (sport) {
       case 'Cricket':
@@ -359,7 +415,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
         return Icons.sports;
     }
   }
-  
+
   Widget _buildSponsorCard(Map<String, dynamic> sponsor, int originalIndex) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -378,7 +434,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
               height: 100,
               decoration: BoxDecoration(
                 color: Colors.deepPurple.shade50,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(12)),
               ),
               child: Stack(
                 children: [
@@ -434,7 +491,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                               ),
                               const SizedBox(height: 4),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: _getCategoryColor(sponsor['category']),
                                   borderRadius: BorderRadius.circular(12),
@@ -454,7 +512,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                       ],
                     ),
                   ),
-                  
+
                   // Favorite button
                   Positioned(
                     top: 8,
@@ -462,7 +520,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                     child: IconButton(
                       icon: Icon(
                         sponsor['isFavorite'] ? Icons.star : Icons.star_border,
-                        color: sponsor['isFavorite'] ? Colors.amber : Colors.grey.shade400,
+                        color: sponsor['isFavorite']
+                            ? Colors.amber
+                            : Colors.grey.shade400,
                       ),
                       onPressed: () => _toggleFavorite(originalIndex),
                     ),
@@ -470,7 +530,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                 ],
               ),
             ),
-            
+
             // Quick description
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -484,7 +544,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            
+
             // Sports supported
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -510,7 +570,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                 ],
               ),
             ),
-            
+
             // Contact actions
             Padding(
               padding: const EdgeInsets.all(8),
@@ -540,7 +600,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       ),
     );
   }
-  
+
   Widget _buildContactButton({
     required IconData icon,
     required String label,
@@ -572,7 +632,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
       ),
     );
   }
-  
+
   Color _getCategoryColor(String category) {
     switch (category) {
       case 'Corporate':
@@ -589,7 +649,7 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
         return Colors.grey.shade700;
     }
   }
-  
+
   Widget _buildEmptyState() {
     return Center(
       child: Column(
@@ -613,7 +673,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              _searchQuery.isNotEmpty || _selectedSport != 'All Sports' || _showFavorites
+              _searchQuery.isNotEmpty ||
+                      _selectedSport != 'All Sports' ||
+                      _showFavorites
                   ? 'Try adjusting your filters or favorites selection'
                   : 'Connect with sponsors to grow your athletic career',
               style: TextStyle(
@@ -624,7 +686,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
             ),
           ),
           const SizedBox(height: 24),
-          if (_searchQuery.isNotEmpty || _selectedSport != 'All Sports' || _showFavorites)
+          if (_searchQuery.isNotEmpty ||
+              _selectedSport != 'All Sports' ||
+              _showFavorites)
             ElevatedButton.icon(
               onPressed: () {
                 setState(() {
@@ -638,14 +702,15 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
         ],
       ),
     );
   }
-  
+
   void _showSponsorDetails(Map<String, dynamic> sponsor) {
     showModalBottomSheet(
       context: context,
@@ -706,7 +771,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
                                 color: _getCategoryColor(sponsor['category']),
                                 borderRadius: BorderRadius.circular(12),
@@ -723,14 +789,22 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                             const Spacer(),
                             TextButton.icon(
                               icon: Icon(
-                                sponsor['isFavorite'] ? Icons.star : Icons.star_border,
-                                color: sponsor['isFavorite'] ? Colors.amber : Colors.grey,
+                                sponsor['isFavorite']
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: sponsor['isFavorite']
+                                    ? Colors.amber
+                                    : Colors.grey,
                                 size: 20,
                               ),
                               label: Text(
-                                sponsor['isFavorite'] ? 'Favorited' : 'Add to Favorites',
+                                sponsor['isFavorite']
+                                    ? 'Favorited'
+                                    : 'Add to Favorites',
                                 style: TextStyle(
-                                  color: sponsor['isFavorite'] ? Colors.amber : Colors.grey,
+                                  color: sponsor['isFavorite']
+                                      ? Colors.amber
+                                      : Colors.grey,
                                   fontSize: 12,
                                 ),
                               ),
@@ -740,7 +814,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               onPressed: () {
-                                final index = _sponsors.indexWhere((s) => s['name'] == sponsor['name']);
+                                final index = _sponsors.indexWhere(
+                                    (s) => s['name'] == sponsor['name']);
                                 if (index != -1) {
                                   _toggleFavorite(index);
                                   Navigator.pop(context);
@@ -755,9 +830,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                   ),
                 ],
               ),
-              
+
               const Divider(height: 32),
-              
+
               // Description
               const Text(
                 'About',
@@ -775,9 +850,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                   height: 1.5,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Supported Sports
               const Text(
                 'Supported Sports',
@@ -793,7 +868,8 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                 runSpacing: 8,
                 children: (sponsor['sports'] as List).map<Widget>((sport) {
                   return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.deepPurple.shade50,
                       borderRadius: BorderRadius.circular(20),
@@ -820,9 +896,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                   );
                 }).toList(),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Contact Information
               const Text(
                 'Contact Information',
@@ -889,9 +965,9 @@ class _IndividualContactSponsorViewState extends State<IndividualContactSponsorV
                   onPressed: () => _launchUrl(sponsor['address'], 'map'),
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               // Contact button
               SizedBox(
                 width: double.infinity,

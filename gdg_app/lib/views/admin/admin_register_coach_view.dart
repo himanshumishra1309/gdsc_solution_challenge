@@ -76,11 +76,32 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
   final ImagePicker _imagePicker = ImagePicker();
   String? _organizationId;
 
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _loadOrganizationId();
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Admin";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   Future<void> _loadOrganizationId() async {
     try {
@@ -532,6 +553,9 @@ class _AdminRegisterCoachViewState extends State<AdminRegisterCoachView> {
           DrawerItem(icon: Icons.attach_money, title: 'Manage Player Finances', route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
+        userName: _userName,
+        userEmail: _userEmail, 
+        userAvatarUrl: _userAvatar,
       ),
       body: Container(
         decoration: BoxDecoration(

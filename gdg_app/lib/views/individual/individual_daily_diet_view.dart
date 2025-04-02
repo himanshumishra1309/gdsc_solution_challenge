@@ -59,9 +59,16 @@ class _IndividualDailyDietViewState extends State<IndividualDailyDietView> with 
   Map<String, List<Map<String, dynamic>>> _userMeals = {};
   Map<String, List<Map<String, dynamic>>> _userSupplements = {};
 
+  // Add these state variables for user info
+String _userName = "";
+String _userEmail = "";
+String? _userAvatar;
+bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _tabController = TabController(length: 7, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -77,6 +84,22 @@ class _IndividualDailyDietViewState extends State<IndividualDailyDietView> with 
       _userSupplements[day] = [];
     }
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Athlete";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   @override
   void dispose() {
@@ -293,6 +316,9 @@ class _IndividualDailyDietViewState extends State<IndividualDailyDietView> with 
         },
         drawerItems: drawerItems,
         onLogout: () => _onWillPop(),
+        userName: _userName,
+        userEmail: _userEmail, 
+        userAvatarUrl: _userAvatar,
       ),
       body: Column(
         children: [

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:gdg_app/constants/routes.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 
@@ -13,6 +14,7 @@ class CoachMakeAnAnnouncement extends StatefulWidget {
 }
 
 class _CoachMakeAnAnnouncementState extends State<CoachMakeAnAnnouncement> {
+  final _authService = AuthService();
   List<dynamic> _announcements = [];
   final TextEditingController _announcementController = TextEditingController();
   int _nextId = 3; // Assuming the next ID for a new announcement
@@ -28,11 +30,33 @@ class _CoachMakeAnAnnouncementState extends State<CoachMakeAnAnnouncement> {
   String _selectedSport = "All Sports";
   final List<String> _sportsList = ["All Sports", "Cricket", "Football", "Basketball", "Badminton", "Tennis"];
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _loadAnnouncements();
   }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Coach";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   @override
   void dispose() {
@@ -367,6 +391,9 @@ class _CoachMakeAnAnnouncementState extends State<CoachMakeAnAnnouncement> {
           onSelectDrawerItem: _onSelectDrawerItem,
           drawerItems: drawerItems,
           onLogout: _handleLogout,
+          userName: _userName,
+          userEmail: _userEmail,
+          userAvatarUrl: _userAvatar,
         ),
         body: Container(
           decoration: BoxDecoration(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 
@@ -11,19 +12,43 @@ class PlayerHome extends StatefulWidget {
 }
 
 class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
+  final _authService = AuthService();
   String _selectedDrawerItem = playerHomeRoute;
   String _selectedGraph = 'RPE Line Graph';
   String _selectedWeek = 'Week 1';
   String _selectedMonth = 'January';
   String _selectedYear = '2025';
-  
+
   // Add a tab controller for switching between different data views
   late TabController _tabController;
-  
+
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     _tabController = TabController(length: 3, vsync: this);
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Athlete";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
   }
 
   @override
@@ -79,16 +104,44 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
-      DrawerItem(icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
-      DrawerItem(icon: Icons.people, title: 'View Coaches', route: viewCoachProfileRoute),
-      DrawerItem(icon: Icons.bar_chart, title: 'View Stats', route: viewPlayerStatisticsRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Medical Reports', route: medicalReportRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Nutritional Plan', route: nutritionalPlanRoute),
-      DrawerItem(icon: Icons.announcement, title: 'View Announcements', route: playerviewAnnouncementRoute),
-      DrawerItem(icon: Icons.calendar_today, title: 'View Calendar', route: viewCalendarRoute),
-      DrawerItem(icon: Icons.fitness_center, title: 'View Gym Plan', route: viewGymPlanRoute),
-      DrawerItem(icon: Icons.edit, title: 'Fill Injury Form', route: fillInjuryFormRoute),
-      DrawerItem(icon: Icons.attach_money, title: 'Finances', route: playerFinancialViewRoute),
+      DrawerItem(
+          icon: Icons.show_chart, title: 'Graphs', route: playerHomeRoute),
+      DrawerItem(
+          icon: Icons.people,
+          title: 'View Coaches',
+          route: viewCoachProfileRoute),
+      DrawerItem(
+          icon: Icons.bar_chart,
+          title: 'View Stats',
+          route: viewPlayerStatisticsRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Medical Reports',
+          route: medicalReportRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Nutritional Plan',
+          route: nutritionalPlanRoute),
+      DrawerItem(
+          icon: Icons.announcement,
+          title: 'View Announcements',
+          route: playerviewAnnouncementRoute),
+      DrawerItem(
+          icon: Icons.calendar_today,
+          title: 'View Calendar',
+          route: viewCalendarRoute),
+      DrawerItem(
+          icon: Icons.fitness_center,
+          title: 'View Gym Plan',
+          route: viewGymPlanRoute),
+      DrawerItem(
+          icon: Icons.edit,
+          title: 'Fill Injury Form',
+          route: fillInjuryFormRoute),
+      DrawerItem(
+          icon: Icons.attach_money,
+          title: 'Finances',
+          route: playerFinancialViewRoute),
     ];
 
     return WillPopScope(
@@ -118,6 +171,9 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
           },
           drawerItems: drawerItems,
           onLogout: _handleLogout,
+          userName: _userName,
+          userEmail: _userEmail,
+          userAvatarUrl: _userAvatar,
         ),
         // Use a simple Container with color instead of a gradient with background image
         body: Container(
@@ -146,82 +202,87 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Colors.deepPurple.shade100,
-                            child: const Icon(
-                              Icons.person,
-                              size: 32,
-                              color: Colors.deepPurple,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Alexander Thompson',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.deepPurple,
-                                  ),
-                                ),
-                                Text(
-                                  'Cricket - Right-arm Fast Bowler',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.green.shade300,
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 28,
+                              backgroundColor: Colors.deepPurple.shade100,
+                              child: const Icon(
+                                Icons.person,
+                                size: 32,
+                                color: Colors.deepPurple,
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.check_circle, color: Colors.green.shade700, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Fit to Play',
-                                  style: TextStyle(
-                                    color: Colors.green.shade700,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Alexander Thompson',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.deepPurple,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  Text(
+                                    'Cricket - Right-arm Fast Bowler',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildStatWidget('Training Load', '7.6', 'High', Colors.orange),
-                          _buildStatWidget('Fitness Level', '8.3', 'Good', Colors.green),
-                          _buildStatWidget('Rest Score', '6.4', 'Average', Colors.amber),
-                        ],
-                      ),
-                    ],
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade100,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.green.shade300,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.check_circle,
+                                      color: Colors.green.shade700, size: 16),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Fit to Play',
+                                    style: TextStyle(
+                                      color: Colors.green.shade700,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _buildStatWidget(
+                                'Training Load', '7.6', 'High', Colors.orange),
+                            _buildStatWidget(
+                                'Fitness Level', '8.3', 'Good', Colors.green),
+                            _buildStatWidget(
+                                'Rest Score', '6.4', 'Average', Colors.amber),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              
-              // Graph Selection and Filters
-              Container(
+
+                // Graph Selection and Filters
+                Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -236,270 +297,283 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
                     ],
                   ),
                   child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Performance Analysis',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              // Info button action
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('View detailed analytics explanation'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            icon: Icon(
-                              Icons.info_outline,
-                              color: Colors.deepPurple.shade300,
-                            ),
-                            tooltip: 'Info',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Graph Type Selection Chip
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildSelectionChip(
-                              'RPE Line Graph',
-                              _selectedGraph == 'RPE Line Graph',
-                              () {
-                                setState(() {
-                                  _selectedGraph = 'RPE Line Graph';
-                                });
-                              },
+                            const Text(
+                              'Performance Analysis',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.deepPurple,
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            _buildSelectionChip(
-                              'Spider Graph',
-                              _selectedGraph == 'Spider Graph',
-                              () {
-                                setState(() {
-                                  _selectedGraph = 'Spider Graph';
-                                });
+                            IconButton(
+                              onPressed: () {
+                                // Info button action
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'View detailed analytics explanation'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
                               },
-                            ),
-                            const SizedBox(width: 8),
-                            _buildSelectionChip(
-                              'Comparative Graph',
-                              _selectedGraph == 'Comparative RPE and RP Graph',
-                              () {
-                                setState(() {
-                                  _selectedGraph = 'Comparative RPE and RP Graph';
-                                });
-                              },
+                              icon: Icon(
+                                Icons.info_outline,
+                                color: Colors.deepPurple.shade300,
+                              ),
+                              tooltip: 'Info',
                             ),
                           ],
                         ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Time Period Filters
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildFilterDropdown(
-                              value: _selectedWeek,
-                              items: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedWeek = newValue!;
-                                });
-                              },
-                              icon: Icons.date_range,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildFilterDropdown(
-                              value: _selectedMonth,
-                              items: [
-                                'January', 'February', 'March', 'April', 'May', 'June',
-                                'July', 'August', 'September', 'October', 'November', 'December'
-                              ],
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedMonth = newValue!;
-                                });
-                              },
-                              icon: Icons.calendar_month,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildFilterDropdown(
-                              value: _selectedYear,
-                              items: ['2023', '2024', '2025', '2026'],
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedYear = newValue!;
-                                });
-                              },
-                              icon: Icons.calendar_today,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Graph Display - FIXED: removed Expanded which causes the layout issue
-              Container(
-                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 1,
-                      blurRadius: 3,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Use min size
-                  children: [
-                    // Graph title with scrolling
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: Text(
-                              _getGraphTitle(),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                        const SizedBox(height: 16),
+
+                        // Graph Type Selection Chip
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              _buildSelectionChip(
+                                'RPE Line Graph',
+                                _selectedGraph == 'RPE Line Graph',
+                                () {
+                                  setState(() {
+                                    _selectedGraph = 'RPE Line Graph';
+                                  });
+                                },
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              _buildSelectionChip(
+                                'Spider Graph',
+                                _selectedGraph == 'Spider Graph',
+                                () {
+                                  setState(() {
+                                    _selectedGraph = 'Spider Graph';
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 8),
+                              _buildSelectionChip(
+                                'Comparative Graph',
+                                _selectedGraph ==
+                                    'Comparative RPE and RP Graph',
+                                () {
+                                  setState(() {
+                                    _selectedGraph =
+                                        'Comparative RPE and RP Graph';
+                                  });
+                                },
+                              ),
+                            ],
                           ),
                         ),
+
+                        const SizedBox(height: 16),
+
+                        // Time Period Filters
                         Row(
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.download, size: 18),
-                              onPressed: () {
-                                // Download graph functionality
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Graph downloaded'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              },
-                              tooltip: 'Download Graph',
-                              iconSize: 20,
-                              color: Colors.deepPurple,
+                            Expanded(
+                              child: _buildFilterDropdown(
+                                value: _selectedWeek,
+                                items: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedWeek = newValue!;
+                                  });
+                                },
+                                icon: Icons.date_range,
+                              ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.share, size: 18),
-                              onPressed: () {
-                                // Share graph functionality
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Share options'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              },
-                              tooltip: 'Share Graph',
-                              iconSize: 20,
-                              color: Colors.deepPurple,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildFilterDropdown(
+                                value: _selectedMonth,
+                                items: [
+                                  'January',
+                                  'February',
+                                  'March',
+                                  'April',
+                                  'May',
+                                  'June',
+                                  'July',
+                                  'August',
+                                  'September',
+                                  'October',
+                                  'November',
+                                  'December'
+                                ],
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedMonth = newValue!;
+                                  });
+                                },
+                                icon: Icons.calendar_month,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildFilterDropdown(
+                                value: _selectedYear,
+                                items: ['2023', '2024', '2025', '2026'],
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedYear = newValue!;
+                                  });
+                                },
+                                icon: Icons.calendar_today,
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    
-                    // Graph Legend - only show for comparative graph
-                    if (_selectedGraph == 'Comparative RPE and RP Graph') ...[
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Graph Display - FIXED: removed Expanded which causes the layout issue
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 1,
+                        blurRadius: 3,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min, // Use min size
+                    children: [
+                      // Graph title with scrolling
                       Row(
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.deepPurple,
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Text(
+                                _getGraphTitle(),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'RPE (Rate of Perceived Exertion)',
-                            style: TextStyle(fontSize: 12),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.red,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'Recovery Points',
-                            style: TextStyle(fontSize: 12),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.download, size: 18),
+                                onPressed: () {
+                                  // Download graph functionality
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Graph downloaded'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                                tooltip: 'Download Graph',
+                                iconSize: 20,
+                                color: Colors.deepPurple,
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.share, size: 18),
+                                onPressed: () {
+                                  // Share graph functionality
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Share options'),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                                tooltip: 'Share Graph',
+                                iconSize: 20,
+                                color: Colors.deepPurple,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+
+                      // Graph Legend - only show for comparative graph
+                      if (_selectedGraph == 'Comparative RPE and RP Graph') ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.deepPurple,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'RPE (Rate of Perceived Exertion)',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.red,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Recovery Points',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Graph area with fixed height
+                      SizedBox(
+                        height: 350, // Fixed taller height for graphs
+                        width: double.infinity,
+                        child: _buildGraph(),
+                      ),
                     ],
-                    
-                    // Graph area with fixed height
-                    SizedBox(
-                      height: 350, // Fixed taller height for graphs
-                      width: double.infinity,
-                      child: _buildGraph(),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-                
-              // Add insights panel 
-              // _buildInsightsPanel(),
-                
-              // Add upcoming events card
-              // _buildUpcomingEventsCard(),
-                
-              // Add space at bottom for better scroll experience
-              const SizedBox(height: 24),
-            ],
+
+                // Add insights panel
+                // _buildInsightsPanel(),
+
+                // Add upcoming events card
+                // _buildUpcomingEventsCard(),
+
+                // Add space at bottom for better scroll experience
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 
@@ -521,7 +595,8 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
     return title;
   }
 
-  Widget _buildStatWidget(String label, String value, String status, Color statusColor) {
+  Widget _buildStatWidget(
+      String label, String value, String status, Color statusColor) {
     return Column(
       children: [
         Text(
@@ -561,7 +636,8 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildSelectionChip(String label, bool isSelected, VoidCallback onTap) {
+  Widget _buildSelectionChip(
+      String label, bool isSelected, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(30),
@@ -570,14 +646,16 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: isSelected ? Colors.deepPurple : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(30),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: Colors.deepPurple.withOpacity(0.3),
-              spreadRadius: 1,
-              blurRadius: 2,
-              offset: const Offset(0, 1),
-            ),
-          ] : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.deepPurple.withOpacity(0.3),
+                    spreadRadius: 1,
+                    blurRadius: 2,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
@@ -639,7 +717,7 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
     );
   }
 
-   Widget _buildGraph() {
+  Widget _buildGraph() {
     switch (_selectedGraph) {
       case 'RPE Line Graph':
         return _buildRPELineGraph();
@@ -706,7 +784,10 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
                     String text = '';
-                    if (value.toInt() == 1 || value.toInt() == 3 || value.toInt() == 5 || value.toInt() == 7) {
+                    if (value.toInt() == 1 ||
+                        value.toInt() == 3 ||
+                        value.toInt() == 5 ||
+                        value.toInt() == 7) {
                       text = 'Day ${value.toInt()}';
                     }
                     return Padding(
@@ -737,7 +818,8 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
             maxY: 10,
             lineTouchData: LineTouchData(
               touchTooltipData: LineTouchTooltipData(
-                getTooltipColor: (spot)=> Colors.deepPurple, // Fixed tooltip background color
+                getTooltipColor: (spot) =>
+                    Colors.deepPurple, // Fixed tooltip background color
                 tooltipRoundedRadius: 8,
                 getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                   return touchedBarSpots.map((barSpot) {
@@ -769,7 +851,8 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
                 isStrokeCapRound: true,
                 dotData: FlDotData(
                   show: true,
-                  getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                  getDotPainter: (spot, percent, barData, index) =>
+                      FlDotCirclePainter(
                     radius: 5,
                     color: Colors.white,
                     strokeWidth: 2,
@@ -810,12 +893,12 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
                 borderWidth: 2,
                 entryRadius: 5,
                 dataEntries: [
-                  const RadarEntry(value: 8),  // Sprint Speed
-                  const RadarEntry(value: 7),  // Pass Accuracy
-                  const RadarEntry(value: 6),  // Goals/Wickets
-                  const RadarEntry(value: 5),  // Tackles/Catches
-                  const RadarEntry(value: 9),  // Stamina
-                  const RadarEntry(value: 8),  // Agility
+                  const RadarEntry(value: 8), // Sprint Speed
+                  const RadarEntry(value: 7), // Pass Accuracy
+                  const RadarEntry(value: 6), // Goals/Wickets
+                  const RadarEntry(value: 5), // Tackles/Catches
+                  const RadarEntry(value: 9), // Stamina
+                  const RadarEntry(value: 8), // Agility
                 ],
               ),
             ],
@@ -916,7 +999,10 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
                     String text = '';
-                    if (value.toInt() == 1 || value.toInt() == 3 || value.toInt() == 5 || value.toInt() == 7) {
+                    if (value.toInt() == 1 ||
+                        value.toInt() == 3 ||
+                        value.toInt() == 5 ||
+                        value.toInt() == 7) {
                       text = 'Day ${value.toInt()}';
                     }
                     return Padding(
@@ -947,11 +1033,13 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
             maxY: 10,
             lineTouchData: LineTouchData(
               touchTooltipData: LineTouchTooltipData(
-                getTooltipColor: (spot) => spot.barIndex == 0 ? Colors.deepPurple : Colors.red,
-                            tooltipRoundedRadius: 8,
+                getTooltipColor: (spot) =>
+                    spot.barIndex == 0 ? Colors.deepPurple : Colors.red,
+                tooltipRoundedRadius: 8,
                 getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                   return touchedBarSpots.map((barSpot) {
-                    final String label = barSpot.barIndex == 0 ? 'RPE' : 'Recovery';
+                    final String label =
+                        barSpot.barIndex == 0 ? 'RPE' : 'Recovery';
                     final Color textColor = Colors.white;
                     return LineTooltipItem(
                       '$label: ${barSpot.y.toStringAsFixed(1)}',
@@ -983,7 +1071,8 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
                 isStrokeCapRound: true,
                 dotData: FlDotData(
                   show: true,
-                  getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                  getDotPainter: (spot, percent, barData, index) =>
+                      FlDotCirclePainter(
                     radius: 5,
                     color: Colors.white,
                     strokeWidth: 2,
@@ -1019,7 +1108,8 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
                 isStrokeCapRound: true,
                 dotData: FlDotData(
                   show: true,
-                  getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                  getDotPainter: (spot, percent, barData, index) =>
+                      FlDotCirclePainter(
                     radius: 5,
                     color: Colors.white,
                     strokeWidth: 2,
@@ -1046,7 +1136,8 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
   }
 
   // Function to show detailed info for a performance metric
-  void _showMetricDetails(BuildContext context, String title, String value, String description) {
+  void _showMetricDetails(
+      BuildContext context, String title, String value, String description) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1250,7 +1341,8 @@ class _PlayerHomeState extends State<PlayerHome> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildInsightItem(IconData icon, String title, String description, Color color) {
+  Widget _buildInsightItem(
+      IconData icon, String title, String description, Color color) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       child: Row(

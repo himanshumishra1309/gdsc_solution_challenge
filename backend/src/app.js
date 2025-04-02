@@ -74,7 +74,7 @@ import financesRouter from "./routes/finance.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import { configDotenv } from "dotenv";
 import trainingPlanrouter from "./routes/trainingPlan.routes.js";
-
+import sessionRouter from "./routes/session.routes.js";
 app.get("/api/v1/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -105,6 +105,8 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/finances", financesRouter); 
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/training", trainingPlanrouter);
+app.use("/api/v1/session", sessionRouter);
+
 
 // ✅ Global Error Handler (Moved to Bottom)
 app.use(errorHandler);

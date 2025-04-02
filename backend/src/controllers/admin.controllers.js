@@ -1,23 +1,20 @@
 import asyncHandler from "../utils/asyncHandler.js";
-
 import ApiError from "../utils/ApiError.js"
 import  {Admin} from "../models/admin.model.js"
 import {Athlete} from "../models/athlete.model.js"
 import {Coach} from "../models/coach.model.js"
 import {Organization} from "../models/organization.model.js"
+import {Sponsor} from "../models/sponsor.model.js"
 // import {sendEmail} from "../utils/sendEmail.js"
-import {RPE} from "../models/rpe.model.js"
 import ApiResponse  from "../utils/ApiResponse.js"
 import {CustomForm} from "../models/customForm.model.js"
+import {SponsorRequest} from "../models/SponsorRequest.model.js"
+import {AthleteStats} from "../models/AthleteStats.model.js"
+import { SportStats } from "../models/SportStats.model.js";
 
+import DEFAULT_SPORT_STATS from "../utils/defaultStats.js";
+import SPORTS_ENUM from "../utils/sportsEnum.js";
 import mongoose from "mongoose"
-
-
-
-
-import jwt from 'jsonwebtoken'
-
-
 
 const registerOrganizationAthlete = asyncHandler(async (req, res) => {
   // Extract all fields from request
@@ -344,6 +341,65 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
   ));
 });
 
+const updateOrganizationAthlete = asyncHandler(async (req, res) => {
+  const { athleteId } = req.params;
+  const updateFields = req.body; // Get all updatable fields from request
+
+  console.log("🛠 Incoming update request:", updateFields);
+
+  // Validate athleteId
+  if (!mongoose.Types.ObjectId.isValid(athleteId)) {
+    throw new ApiError(400, "Invalid Athlete ID format");
+  }
+
+  // Find the athlete
+  const athlete = await Athlete.findById(athleteId);
+  if (!athlete) {
+    throw new ApiError(404, "Athlete not found");
+  }
+
+  console.log("📌 Current Athlete Data:", athlete);
+
+  // Define allowed fields
+  const allowedFields = [
+    "name", "dob", "gender", "nationality", "address", "phoneNumber",
+    "schoolName", "year", "studentId", "schoolEmail", "schoolWebsite",
+    "sports", "skillLevel", "trainingStartDate", "positions",
+    "dominantHand", "headCoachAssigned", "gymTrainerAssigned",
+    "medicalStaffAssigned", "height", "weight", "bloodGroup",
+    "allergies", "medicalConditions", "emergencyContactName",
+    "emergencyContactNumber", "emergencyContactRelationship",
+    "avatar"
+  ];
+
+  // Check for invalid fields
+  const invalidFields = Object.keys(updateFields).filter(
+    (key) => !allowedFields.includes(key)
+  );
+
+  if (invalidFields.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid fields: ${invalidFields.join(", ")}`,
+    });
+  }
+
+  // Update valid fields
+  Object.keys(updateFields).forEach((key) => {
+    athlete[key] = updateFields[key];
+  });
+
+  await athlete.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Athlete updated successfully",
+    athlete,
+  });
+});
+
+
+
 const getAthleteById = asyncHandler(async (req, res) => {
   const { athleteId } = req.params;
 
@@ -543,6 +599,41 @@ const registerAdmin = asyncHandler(async (req, res) => {
     }
   });
 });
+
+const updateAdmin = asyncHandler(async (req, res) => {
+  const { adminId } = req.params;
+  const { name, avatar, password } = req.body;
+
+  // Validate adminId
+  if (!mongoose.Types.ObjectId.isValid(adminId)) {
+    throw new ApiError(400, "Invalid Admin ID format");
+  }
+
+  // Find existing admin
+  const admin = await Admin.findById(adminId);
+  if (!admin) {
+    throw new ApiError(404, "Admin not found");
+  }
+
+  // Update fields if provided
+  if (name) admin.name = name;
+  if (avatar) admin.avatar = avatar;
+  if (password) admin.password = password; // Will be hashed in pre-save hook
+
+  await admin.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Admin updated successfully",
+    admin: {
+      _id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      avatar: admin.avatar,
+    },
+  });
+});
+
 
 const getAllAdmins = asyncHandler(async (req, res) => {
   // Extract query parameters
@@ -791,6 +882,79 @@ const coach = await Coach.create({
   });
 });
 
+const updateCoach = asyncHandler(async (req, res, next) => {
+  const { coachId } = req.params;
+  const { name, email, contactNumber, sport, experience, designation, assignedAthletes } = req.body;
+
+  // Extract uploaded files (if any)
+  const profilePhoto = req.files?.profilePhoto ? req.files.profilePhoto[0].path : null;
+  const idProof = req.files?.idProof ? req.files.idProof[0].path : null;
+  const certificates = req.files?.certificates ? req.files.certificates[0].path : null;
+
+  // Validate Coach ID
+  if (!mongoose.Types.ObjectId.isValid(coachId)) {
+      return next(new ApiError(400, "Invalid Coach ID"));
+  }
+
+  // Find the coach
+  let coach = await Coach.findById(coachId);
+  if (!coach) {
+      return next(new ApiError(404, "Coach not found"));
+  }
+
+  // 🔹 Check if email is being updated and already exists
+  if (email && email !== coach.email) {
+      const existingCoach = await Coach.findOne({ email });
+      if (existingCoach) {
+          return next(new ApiError(400, "Email already in use by another coach"));
+      }
+  }
+
+  // 🔹 Handle file deletions (Cloudinary cleanup)
+  if (profilePhoto && coach.profilePhoto) {
+      await cloudinary.uploader.destroy(coach.profilePhoto);
+  }
+  if (idProof && coach.idProof) {
+      await cloudinary.uploader.destroy(coach.idProof);
+  }
+  if (certificates && coach.certificates) {
+      await cloudinary.uploader.destroy(coach.certificates);
+  }
+
+  // 🔹 Validate and Assign Athletes
+  let validAthletes = [];
+  if (assignedAthletes && Array.isArray(assignedAthletes)) {
+      validAthletes = await Athlete.find({ _id: { $in: assignedAthletes } });
+      if (validAthletes.length !== assignedAthletes.length) {
+          return next(new ApiError(400, "Some athletes do not exist"));
+      }
+  }
+
+  // 🔹 Update Coach Details
+  const updatedCoach = await Coach.findByIdAndUpdate(
+      coachId,
+      {
+          $set: {
+              name: name || coach.name,
+              email: email || coach.email,
+              contactNumber: contactNumber || coach.contactNumber,
+              sport: sport || coach.sport,
+              experience: experience || coach.experience,
+              designation: designation || coach.designation,
+              assignedAthletes: validAthletes.map(a => a._id),
+              profilePhoto: profilePhoto || coach.profilePhoto,
+              idProof: idProof || coach.idProof,
+              certificates: certificates || coach.certificates,
+          }
+      },
+      { new: true, runValidators: true }
+  );
+
+  res.status(200).json(new ApiResponse(200, updatedCoach, "Coach details updated successfully"));
+});
+
+
+
 const getAllCoaches = asyncHandler(async (req, res) => {
   // Extract query parameters
   const { 
@@ -899,6 +1063,51 @@ const getAllUsers = asyncHandler(async (req, res) => {
     athletes,
     coaches,
   });
+});
+
+const getOrganizationStats = asyncHandler(async (req, res) => {
+  try {
+    // Get organization ID either from the authenticated admin or from query params
+    let organizationId;
+    
+    if (req.admin) {
+      // If request comes from authenticated admin, use their organization
+      organizationId = req.admin.organization;
+    } else if (req.query.organizationId && mongoose.Types.ObjectId.isValid(req.query.organizationId)) {
+      // Otherwise, if provided in query, use that
+      organizationId = req.query.organizationId;
+    } else {
+      throw new ApiError(400, "Valid organization ID is required");
+    }
+    
+    // Count total number of entities for the organization
+    const [adminCount, coachCount, athleteCount, sponsorCount] = await Promise.all([
+      Admin.countDocuments({ organization: organizationId }),
+      Coach.countDocuments({ organization: organizationId }),
+      Athlete.countDocuments({ organization: organizationId }),
+      // If you have a Sponsor model, use the line below. Otherwise, just return 0
+      Sponsor.countDocuments({ organization: organizationId })
+      // Promise.resolve(0) // Placeholder for sponsors if you don't have a model yet
+    ]);
+    
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          stats: {
+            adminCount: adminCount || 0,
+            coachCount: coachCount || 0,
+            athleteCount: athleteCount || 0,
+            sponsorCount: sponsorCount || 0,
+            // You can add more statistics here as needed
+          }
+        },
+        "Organization statistics fetched successfully"
+      )
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error fetching organization statistics: " + error.message);
+  }
 });
 
 const generateAccessAndRefreshToken = async (userId) => {
@@ -1044,11 +1253,256 @@ const createCustomForm = asyncHandler(async (req, res) => {
   }
 });
 
+//sponsor Mannagement
+const sendSponsorInvitation = asyncHandler(async (req, res, next) => {
+  const { requestType, companyName, contactPerson, email, phone, notes } = req.body;
+  const organizationId = req.admin.organization;
+
+  if (!requestType || !companyName || !contactPerson || !email || !phone) {
+      return next(new ApiError(400, "All fields are required for manual sponsor invitations"));
+  }
+
+  // Check if a sponsor already exists with this email
+  let sponsor = await Sponsor.findOne({ email });
+
+  if (!sponsor) {
+      // If sponsor does not exist, create a new sponsor entry
+      sponsor = await Sponsor.create({ companyName, contactPerson, email, phone });
+  }
+
+  // Check if a pending request already exists for this sponsor
+  const existingRequest = await SponsorRequest.findOne({ organization: organizationId, sponsor: sponsor._id, status: "Pending" });
+  if (existingRequest) {
+      return next(new ApiError(400, "A pending request already exists for this sponsor"));
+  }
+
+  // Create a sponsor request linked to the existing/new sponsor
+  const newRequest = await SponsorRequest.create({
+      organization: organizationId,
+      sponsor: sponsor._id, // Linking request to sponsor
+      requestType,
+      companyName,
+      contactPerson,
+      email,
+      phone,
+      notes,
+      status: "Pending"
+  });
+
+  res.status(201).json(new ApiResponse(201, newRequest, "Sponsor invitation sent successfully!"));
+});
+
+const sendPotentialSponsorRequest = asyncHandler(async (req, res, next) => {
+  const { sponsorId, requestType, title, message } = req.body;
+  const organizationId = req.admin.organization;
+
+  if (!sponsorId || !requestType || !title || !message) {
+      return next(new ApiError(400, "Sponsor ID, request type, title, and message are required"));
+  }
+
+  const sponsor = await Sponsor.findById(sponsorId);
+  if (!sponsor) {
+      return next(new ApiError(404, "Sponsor not found"));
+  }
+
+  // Check if a pending request already exists for this sponsor
+  const existingRequest = await SponsorRequest.findOne({ organization: organizationId, sponsor: sponsorId, status: "Pending" });
+  if (existingRequest) {
+      return next(new ApiError(400, "A pending request already exists for this sponsor"));
+  }
+
+  const newRequest = await SponsorRequest.create({
+      sponsor: sponsorId,
+      organization: organizationId,
+      requestType,
+      title,
+      message,
+      status: "Pending"
+  });
+
+  res.status(201).json(new ApiResponse(201, newRequest, "Sponsor request sent successfully!"));
+});
+
+const getPotentialSponsors = asyncHandler(async (req, res, next) => {
+  const organizationId = req.admin.organization;
+
+  // Get sponsors that are NOT already sponsoring this organization
+  const potentialSponsors = await Sponsor.find({
+      sponsoredOrganizations: { $ne: organizationId }
+  }).select("Name contactName contactNo email");
+
+  if (!potentialSponsors.length) {
+      return next(new ApiError(404, "No potential sponsors found"));
+  }
+
+  res.status(200).json(new ApiResponse(200, potentialSponsors, "Potential sponsors retrieved successfully"));
+});
+
+
+const getCurrentSponsors = asyncHandler(async (req, res, next) => {
+  const organizationId = req.admin.organization; // Get the admin's organization ID
+
+  const currentSponsors = await Sponsor.find({ sponsoredOrganizations: organizationId })
+      .select("companyName contactPerson email phone");
+
+  res.status(200).json(new ApiResponse(200, currentSponsors, "Current sponsors retrieved successfully"));
+});
+
+const deleteSponsorRequest = asyncHandler(async (req, res, next) => {
+    const sponsor = await Sponsor.findById(req.params.sponsorId);
+
+    if (!sponsor) {
+        return next(new ApiError(404, "Sponsor request not found"));
+    }
+
+    await Sponsor.findByIdAndDelete(req.params.sponsorId);
+    res.status(200).json(new ApiResponse(200, null, "Sponsor request removed successfully"));
+});
+
+const getRequestsLog = asyncHandler(async (req, res, next) => {
+  const organizationId = req.admin.organization;
+  const { status, page = 1, limit = 10 } = req.query;
+
+  // Filter by status if provided
+  const filter = { organization: organizationId };
+  if (status && ["Pending", "Accepted", "Declined"].includes(status)) {
+      filter.status = status;
+  }
+
+  // Paginate results
+  const requests = await SponsorRequest.find(filter)
+      .populate("sponsor", "companyName contactPerson email phone")
+      .sort({ createdAt: -1 }) // Newest requests first
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+  // Count total requests for pagination metadata
+  const totalRequests = await SponsorRequest.countDocuments(filter);
+
+  res.status(200).json(
+      new ApiResponse(200, { requests, totalRequests }, "Fetched requests log successfully!")
+  );
+});
+
+//Admin can create custom stats besides the predefined ones
+const addSportStats = asyncHandler(async (req, res, next) => {
+  const { sport, stats } = req.body;
+
+  // Check if sport already exists (predefined or custom)
+  let sportEntry = await SportStats.findOne({ sport });
+
+  if (!sportEntry) {
+      // If it's a new custom sport, allow creation
+      sportEntry = new SportStats({ sport, stats: [...new Set(stats)] });
+  } else {
+      // Merge predefined and custom stats
+      sportEntry.stats = [...new Set([...sportEntry.stats, ...stats])];
+  }
+
+  await sportEntry.save();
+
+  res.status(201).json(new ApiResponse(201, sportEntry, "Sport stats updated successfully"));
+});
+
+
+
+// Controller: Admin - Get Stats for a Sport
+const getSportStats = asyncHandler(async (req, res, next) => {
+  const { sportId } = req.params;
+  const sportStats = await SportStats.findOne({ $or: [{ _id: sportId }, { sport: sportId }] });
+
+  if (!sportStats) {
+      return next(new ApiError(404, "Sport stats not found"));
+  }
+
+  res.status(200).json(new ApiResponse(200, { 
+      sport: sportStats.sport, 
+      stats: sportStats.stats 
+  }, "Sport stats retrieved successfully"));
+});
+
+//Both Coach and Admin can Add/Update Athlete Stats
+const addAthleteStats = asyncHandler(async (req, res, next) => {
+  const { athleteId, sport, stats } = req.body;
+
+  // 1️⃣ Ensure athleteId is provided
+  if (!athleteId) {
+      return next(new ApiError(400, "Athlete ID is required"));
+  }
+
+  // 2️⃣ Validate athlete existence
+  const athleteExists = await Athlete.findById(athleteId);
+  if (!athleteExists) {
+      return next(new ApiError(404, "Athlete not found"));
+  }
+
+  // 3️⃣ Restrict Coaches - Only update their assigned athletes
+  if (req.coach) {
+    const coach = await Coach.findById(req.coach._id);
+    if (!coach) {
+        return next(new ApiError(404, "Coach not found"));
+    }
+    
+    // Check if athlete is assigned to this coach
+    if (!coach.assignedAthletes.includes(athleteId)) {
+        return next(new ApiError(403, "You can only update stats for assigned athletes"));
+    }
+}
+
+  // 4️⃣ Validate sport
+  if (!Object.values(SPORTS_ENUM).includes(sport)) {
+      return next(new ApiError(400, "Invalid sport type"));
+  }
+
+  // Find the sport stats or create a new one if it doesn’t exist
+  let sportStats = await SportStats.findOne({ sport });
+  if (!sportStats) {
+      sportStats = new SportStats({ sport, stats: [] });
+  }
+
+  // Find athlete stats, or create new if it doesn’t exist
+  let athleteStats = await AthleteStats.findOne({ athlete: athleteId, sport });
+  if (!athleteStats) {
+      athleteStats = new AthleteStats({
+          athlete: athleteId,
+          sport,
+          stats: sportStats.stats.map(stat => ({ statName: stat, value: 0 }))
+      });
+  }
+
+  let newCustomStats = [];
+
+  stats.forEach(({ statName, value }) => {
+      const existingStat = athleteStats.stats.find(stat => stat.statName === statName);
+      if (existingStat) {
+          existingStat.value = value;
+      } else {
+          athleteStats.stats.push({ statName, value });
+          newCustomStats.push(statName);
+      }
+  });
+
+  await athleteStats.save();
+
+  // Update SportStats with new custom stats before saving athlete stats
+  if (newCustomStats.length > 0) {
+      sportStats.stats = [...new Set([...sportStats.stats, ...newCustomStats])];
+      await sportStats.save();
+  }
+
+  res.status(200).json(new ApiResponse(200, athleteStats, "Athlete stats updated successfully"));
+});
+
+
+
 export {
   registerOrganizationAthlete,
+  updateOrganizationAthlete,
   getAllAthletes,
   registerAdmin,
+  updateAdmin,
   registerCoach,
+  updateCoach,
   getAllUsers,
   generateAccessAndRefreshToken,
   logoutAdmin,
@@ -1056,5 +1510,19 @@ export {
   getRpeInsights,
   getAllAdmins,
   getAllCoaches,
-  getAthleteById
+  getAthleteById,
+  getOrganizationStats,
+  //sponsor
+  getPotentialSponsors,
+  getCurrentSponsors,
+  deleteSponsorRequest,
+  getRequestsLog,
+  sendSponsorInvitation,
+  sendPotentialSponsorRequest,
+
+  //stats
+  addSportStats,
+  getSportStats,
+  addAthleteStats,
+  getOrganizationStats,
 };

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gdg_app/serivces/auth_service.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
 import 'package:gdg_app/constants/routes.dart';
 
@@ -10,6 +11,7 @@ class CoachProfile extends StatefulWidget {
 }
 
 class _CoachProfileState extends State<CoachProfile> {
+  final _authService = AuthService();
   String _selectedDrawerItem = coachProfileRoute;
 
   void _onSelectDrawerItem(String route) {
@@ -20,9 +22,37 @@ class _CoachProfileState extends State<CoachProfile> {
     Navigator.pushReplacementNamed(context, route);
   }
 
+  // Add these state variables for user info
+  String _userName = "";
+  String _userEmail = "";
+  String? _userAvatar;
+  bool _isLoading = false;
+
   void _handleLogout() {
     Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
   }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+  }
+
+  Future<void> _loadUserInfo() async {
+  try {
+    final userData = await _authService.getCurrentUser();
+    
+    if (userData.isNotEmpty) {
+      setState(() {
+        _userName = userData['name'] ?? "Coach";
+        _userEmail = userData['email'] ?? "";
+        _userAvatar = userData['avatar'];
+      });
+    }
+  } catch (e) {
+    debugPrint('Error loading user info: $e');
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +101,9 @@ class _CoachProfileState extends State<CoachProfile> {
         onSelectDrawerItem: _onSelectDrawerItem,
         drawerItems: drawerItems,
         onLogout: _handleLogout,
+        userName: _userName,
+        userEmail: _userEmail,
+        userAvatarUrl: _userAvatar,
       ),
       body: Container(
         decoration: BoxDecoration(

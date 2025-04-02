@@ -3,7 +3,7 @@ import ApiError from "../utils/ApiError.js"
 import {Sponsor} from "../models/sponsor.model.js"
 import jwt from 'jsonwebtoken'
 import ApiResponse  from "../utils/ApiResponse.js"
-
+import sportsList from "../utils/sportsData.js"
 
 const registerSponsor = asyncHandler(async (req, res) => {
     // Debug what's being received
@@ -291,8 +291,203 @@ const updateSponsorProfile = asyncHandler(async (req, res) => {
         );
 });
 
+
+//Interested Sports
+// Get all sports categorized
+const getSportsList = asyncHandler(async (req, res) => {
+    const teamSports = sportsList.filter(sport => sport.type === "Team");
+    const individualSports = sportsList.filter(sport => sport.type === "Individual");
+  
+    return res.status(200).json(new ApiResponse(200, {
+      allSports: sportsList,
+      teamSports,
+      individualSports
+    }, "Sports data fetched successfully"));
+  });
+
+const getSelectedSports = asyncHandler(async (req, res) => {
+    const sponsor = await Sponsor.findById(req.sponsor._id);
+    if (!sponsor) throw new ApiError(404, "Sponsor not found");
+  
+    return res.status(200).json(new ApiResponse(200, {
+      selectedSports: sponsor.interestedSports
+    }, "Selected sports fetched successfully"));
+  });
+  
+const addSportToSelection = asyncHandler(async (req, res) => {
+    const sponsorId = req.sponsor._id; // Get sponsor ID from logged-in user
+    const { sport, type } = req.body;
+
+    // Validate input
+    if (!sport || !type) {
+        throw new ApiError(400, "Sport and Type are required.");
+    }
+
+    // Validate type value
+    if (!["Team", "Individual"].includes(type)) {
+        throw new ApiError(400, "Invalid sport type. Allowed: 'Team' or 'Individual'.");
+    }
+
+    // Update sponsor document without replacing it
+    const sponsor = await Sponsor.findByIdAndUpdate(
+        sponsorId,
+        { $push: { interestedSports: { sport, type } } }, // Push sport to array
+        { new: true, context: 'query' } // Return updated document & validate
+    );
+
+    if (!sponsor) {
+        throw new ApiError(404, "Sponsor not found.");
+    }
+
+    res.status(200).json(new ApiResponse(200, {}, "Sport added successfully"));
+});
+
+const removeSportFromSelection = asyncHandler(async (req, res) => {
+    const sponsorId = req.sponsor._id;
+    const { sport } = req.body;
+
+    if (!sport) {
+        throw new ApiError(400, "Sport is required.");
+    }
+
+    // Update sponsor by pulling the sport from the array
+    const sponsor = await Sponsor.findByIdAndUpdate(
+        sponsorId,
+        { $pull: { interestedSports: { sport } } }, // Remove the sport
+        { new: true, context: 'query' } // Prevents validation errors
+    );
+
+    if (!sponsor) {
+        throw new ApiError(404, "Sponsor not found.");
+    }
+
+    res.status(200).json(new ApiResponse(200, {}, "Sport removed successfully"));
+});
+
+
+//Sponsor Requests
+
+const getSponsorInvitations = asyncHandler(async (req, res) => {
+    const sponsors = await Sponsor.find({ status: "Pending" });
+    res.status(200).json(new ApiResponse(200, sponsors, "Sponsor invitations fetched successfully"));
+});
+
+const acceptSponsorRequest = asyncHandler(async (req, res, next) => {
+    const sponsor = await Sponsor.findById(req.params.sponsorId);
+
+    if (!sponsor) {
+        return next(new ApiError(404, "Sponsor not found"));
+    }
+
+    if (sponsor.status === "Accepted") {
+        return next(new ApiError(400, "Sponsor is already accepted"));
+    }
+
+    sponsor.status = "Accepted";
+    await sponsor.save();
+
+    res.status(200).json(new ApiResponse(200, sponsor, "Sponsorship request accepted successfully"));
+});
+
+
+
+const getSponsorRequests = asyncHandler(async (req, res, next) => {
+    const sponsorId = req.sponsor._id;
+    const { status } = req.query;
+
+    let filter = { sponsor: sponsorId };
+    if (status) filter.status = status;
+
+    const requests = await SponsorRequest.find(filter).populate("organization", "name").select("title message notes status createdAt requestType viewed");
+    
+    res.status(200).json(new ApiResponse(200, requests, "Sponsorship requests retrieved successfully"));
+});
+
+// Controller: Mark Request as Viewed
+const markRequestAsViewed = asyncHandler(async (req, res, next) => {
+    const { requestId } = req.params;
+    const sponsorId = req.sponsor._id;
+
+    const request = await SponsorRequest.findOneAndUpdate(
+        { _id: requestId, sponsor: sponsorId },
+        { viewed: true },
+        { new: true }
+    );
+
+    if (!request) {
+        return next(new ApiError(404, "Request not found"));
+    }
+
+    res.status(200).json(new ApiResponse(200, request, "Request marked as viewed"));
+});
+
+// Controller: Accept/Decline Sponsorship Request
+const updateRequestStatus = asyncHandler(async (req, res, next) => {
+    const { requestId } = req.params;
+    const { status } = req.body;
+    const sponsorId = req.sponsor._id;
+
+    if (!["Accepted", "Declined"].includes(status)) {
+        return next(new ApiError(400, "Invalid status"));
+    }
+
+    const request = await SponsorRequest.findOneAndUpdate(
+        { _id: requestId, sponsor: sponsorId },
+        { status },
+        { new: true }
+    );
+
+    if (!request) {
+        return next(new ApiError(404, "Request not found"));
+    }
+
+    res.status(200).json(new ApiResponse(200, request, `Request ${status.toLowerCase()} successfully`));
+});
+
+//messages in last 24 hours
+const getNewMessages = asyncHandler(async (req, res, next) => {
+    const sponsorId = req.sponsor._id;
+    const twentyFourHoursAgo = new Date();
+    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+    const messages = await SponsorRequest.find({
+        sponsor: sponsorId,
+        createdAt: { $gte: twentyFourHoursAgo }
+    }).select("title message createdAt requestType viewed");
+
+    res.status(200).json(new ApiResponse(200, messages, "New messages retrieved successfully"));
+});
+
+// Controller: Fetch Unread Invitations
+const getUnreadInvitations = asyncHandler(async (req, res, next) => {
+    const sponsorId = req.sponsor._id;
+
+    const unreadInvitations = await SponsorRequest.find({
+        sponsor: sponsorId,
+        viewed: false
+    }).select("title message createdAt requestType viewed");
+
+    res.status(200).json(new ApiResponse(200, unreadInvitations, "Unread invitations retrieved successfully"));
+});
+
 export {
     registerSponsor,
     loginSponsor,
     logoutSponsor,
- getSponsorProfile, updateSponsorProfile}
+ getSponsorProfile,
+  updateSponsorProfile,
+ 
+
+getSportsList,
+getSelectedSports,
+addSportToSelection,
+removeSportFromSelection,
+
+getSponsorInvitations,
+acceptSponsorRequest,
+getSponsorRequests,
+markRequestAsViewed,
+updateRequestStatus,
+getNewMessages,
+getUnreadInvitations,
+}
