@@ -75,7 +75,7 @@ const loginAdmin = async (req, res) => {
         new ApiResponse (
             200,
             {
-                coach: { _id: coach._id, name:coach.name, email: coach.email, role: coach.role, organization: coach.organization },
+                coach: { _id: coach._id, name:coach.name, email: coach.email, role: coach.role, designation:coach.designation, organization: coach.organization },
                 coachAccessToken,
                 coachRefreshToken
             },

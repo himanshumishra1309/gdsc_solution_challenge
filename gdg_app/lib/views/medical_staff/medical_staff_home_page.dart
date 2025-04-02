@@ -3,23 +3,22 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:gdg_app/constants/routes.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
-import 'package:gdg_app/views/player/player_home.dart';
 import 'package:gdg_app/serivces/auth_service.dart';
 
-class CoachHomePage extends StatefulWidget {
-  const CoachHomePage({super.key});
+class MedicalStaffHomePage extends StatefulWidget {
+  const MedicalStaffHomePage({super.key});
 
   @override
-  _CoachHomePageState createState() => _CoachHomePageState();
+  _MedicalStaffHomePageState createState() => _MedicalStaffHomePageState();
 }
 
-class _CoachHomePageState extends State<CoachHomePage> {
+class _MedicalStaffHomePageState extends State<MedicalStaffHomePage> {
   final _authService = AuthService();
   Map<String, List<dynamic>> _players = {};
   String _selectedSport = 'Cricket';
   List<dynamic> _filteredPlayers = [];
   String _searchQuery = '';
-  String _selectedDrawerItem = coachHomeRoute;
+  String _selectedDrawerItem = medicalStaffHomeRoute;
 
   Future<bool> _onWillPop(BuildContext context) async {
     bool shouldLogout = await showDialog(
@@ -46,6 +45,7 @@ class _CoachHomePageState extends State<CoachHomePage> {
 
     return shouldLogout;
   }
+
   String _userName = "";
   String _userEmail = "";
   String? _userAvatar;
@@ -59,23 +59,24 @@ class _CoachHomePageState extends State<CoachHomePage> {
   }
 
   Future<void> _loadUserInfo() async {
-  try {
-    final userData = await _authService.getCurrentUser();
-    
-    if (userData.isNotEmpty) {
-      setState(() {
-        _userName = userData['name'] ?? "Coach";
-        _userEmail = userData['email'] ?? "";
-        _userAvatar = userData['avatar'];
-      });
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Coach";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
     }
-  } catch (e) {
-    debugPrint('Error loading user info: $e');
   }
-}
 
   Future<void> _loadPlayers() async {
-    final String response = await rootBundle.loadString('assets/json_files/players.json');
+    final String response =
+        await rootBundle.loadString('assets/json_files/players.json');
     final data = await json.decode(response);
     setState(() {
       _players = Map<String, List<dynamic>>.from(data['players']);
@@ -86,7 +87,9 @@ class _CoachHomePageState extends State<CoachHomePage> {
   void _filterPlayers() {
     setState(() {
       _filteredPlayers = _players[_selectedSport]!.where((player) {
-        return player['name'].toLowerCase().contains(_searchQuery.toLowerCase());
+        return player['name']
+            .toLowerCase()
+            .contains(_searchQuery.toLowerCase());
       }).toList();
     });
   }
@@ -111,7 +114,7 @@ class _CoachHomePageState extends State<CoachHomePage> {
   void _handleLogout() {
     Navigator.pushReplacementNamed(context, coachAdminPlayerRoute);
   }
-  
+
   IconData _getSportIcon(String sport) {
     switch (sport) {
       case 'Football':
@@ -132,12 +135,30 @@ class _CoachHomePageState extends State<CoachHomePage> {
   @override
   Widget build(BuildContext context) {
     final List<DrawerItem> drawerItems = [
-      DrawerItem(icon: Icons.people, title: 'View all players', route: coachHomeRoute),
-      DrawerItem(icon: Icons.announcement, title: 'Make announcement', route: coachMakeAnAnnouncementRoute),
-      DrawerItem(icon: Icons.schedule, title: 'Mark upcoming sessions', route: coachMarkSessionRoute),
-      DrawerItem(icon: Icons.schedule, title: 'View Coaching Staffs Assigned', route: viewCoachingStaffsAssignedRoute),
-      DrawerItem(icon: Icons.medical_services, title: 'View Medical records', route: coachViewPlayerMedicalReportRoute),
-      DrawerItem(icon: Icons.person, title: 'View Profile', route: coachProfileRoute),
+      DrawerItem(
+          icon: Icons.people,
+          title: 'View all players',
+          route: medicalStaffHomeRoute),
+      DrawerItem(
+          icon: Icons.announcement,
+          title: 'Make announcement',
+          route: medicalStaffMakeAnAnnouncementRoute),
+      DrawerItem(
+          icon: Icons.schedule,
+          title: 'Mark upcoming sessions',
+          route: medicalStaffMarkSessionRoute),
+      DrawerItem(
+          icon: Icons.schedule,
+          title: 'Update Medical Report',
+          route: medicalStaffUpdateMedicalReportRoute),
+      DrawerItem(
+          icon: Icons.medical_services,
+          title: 'View Medical records',
+          route: medicalStaffViewPlayerMedicalReportRoute),
+      DrawerItem(
+          icon: Icons.person,
+          title: 'View Profile',
+          route: medicalStaffProfileRoute),
     ];
 
     // Get screen width to make layout responsive
@@ -147,12 +168,12 @@ class _CoachHomePageState extends State<CoachHomePage> {
       onWillPop: () => _onWillPop(context),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Coach Dashboard'),
+          title: const Text('Medical Staff Dashboard'),
           backgroundColor: Colors.deepPurple,
           elevation: 0,
           iconTheme: const IconThemeData(color: Colors.white),
           titleTextStyle: const TextStyle(
-            fontSize: 20, 
+            fontSize: 20,
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
@@ -222,11 +243,23 @@ class _CoachHomePageState extends State<CoachHomePage> {
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   child: Row(
                     children: [
-                      _buildStatCard('Total Players', '${_filteredPlayers.length}', Icons.people, Colors.blue),
+                      _buildStatCard(
+                          'Total Patients',
+                          '${_filteredPlayers.length}',
+                          Icons.people,
+                          Colors.blue),
                       const SizedBox(width: 16),
-                      _buildStatCard('Active', '${(_filteredPlayers.length * 0.8).round()}', Icons.check_circle, Colors.green),
+                      _buildStatCard(
+                          'Active Cases',
+                          '${(_filteredPlayers.length * 0.6).round()}',
+                          Icons.medical_services,
+                          Colors.green),
                       const SizedBox(width: 16),
-                      _buildStatCard('Injured', '${(_filteredPlayers.length * 0.2).round()}', Icons.healing, Colors.orange),
+                      _buildStatCard(
+                          'Rehab Cases',
+                          '${(_filteredPlayers.length * 0.4).round()}',
+                          Icons.healing,
+                          Colors.orange),
                     ],
                   ),
                 ),
@@ -251,7 +284,8 @@ class _CoachHomePageState extends State<CoachHomePage> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.deepPurple.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -290,7 +324,8 @@ class _CoachHomePageState extends State<CoachHomePage> {
                             ),
                             const SizedBox(height: 16),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24.0),
                               child: Text(
                                 'No $_selectedSport players found',
                                 style: TextStyle(
@@ -298,7 +333,8 @@ class _CoachHomePageState extends State<CoachHomePage> {
                                   fontWeight: FontWeight.w500,
                                   color: Colors.grey[600],
                                 ),
-                                textAlign: TextAlign.center, // Center align for overflow
+                                textAlign: TextAlign
+                                    .center, // Center align for overflow
                               ),
                             ),
                           ],
@@ -320,7 +356,8 @@ class _CoachHomePageState extends State<CoachHomePage> {
                               onTap: () => _navigateToPlayerProfile(player),
                               child: Padding(
                                 padding: const EdgeInsets.all(12.0),
-                                child: _buildPlayerCardContent(player, screenWidth),
+                                child: _buildPlayerCardContent(
+                                    player, screenWidth),
                               ),
                             ),
                           );
@@ -370,7 +407,8 @@ class _CoachHomePageState extends State<CoachHomePage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.deepPurple, width: 1),
+                  borderSide:
+                      const BorderSide(color: Colors.deepPurple, width: 1),
                 ),
                 fillColor: Colors.white,
                 filled: true,
@@ -420,7 +458,8 @@ class _CoachHomePageState extends State<CoachHomePage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.deepPurple, width: 1),
+                borderSide:
+                    const BorderSide(color: Colors.deepPurple, width: 1),
               ),
               fillColor: Colors.white,
               filled: true,
@@ -467,7 +506,8 @@ class _CoachHomePageState extends State<CoachHomePage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(_getSportIcon(value), size: 16, color: Colors.deepPurple),
+                  Icon(_getSportIcon(value),
+                      size: 16, color: Colors.deepPurple),
                   const SizedBox(width: 8),
                   Text(value),
                 ],
@@ -518,7 +558,7 @@ class _CoachHomePageState extends State<CoachHomePage> {
         ],
       );
     }
-    
+
     // Standard layout for larger screens
     return Row(
       children: [
@@ -542,25 +582,24 @@ class _CoachHomePageState extends State<CoachHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                player['name'],
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(player['name'],
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 4),
-              Text(
-                player['role'],
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
+              Text(player['role'],
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14)),
               const SizedBox(height: 8),
-              _buildPlayerStatsWrap(player),
+              // Medical-specific stats
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildStatBadge('BMI: 22.5', Icons.monitor_weight),
+                  _buildStatBadge(
+                      player['medicalStatus'] ?? 'Fit', Icons.favorite),
+                  _buildStatBadge('Last Check: 3d ago', Icons.calendar_today),
+                ],
+              ),
             ],
           ),
         ),
@@ -583,17 +622,17 @@ class _CoachHomePageState extends State<CoachHomePage> {
   // Changed Row to Wrap for stats to handle overflow
   Widget _buildPlayerStatsWrap(Map<String, dynamic> player) {
     List<Widget> stats = [];
-    
+
     if (player['role'] == 'Batsman' || player['role'] == 'All-rounder') {
       stats.add(_buildStatBadge('Avg: 42.5', Icons.area_chart));
     }
-    
+
     if (player['role'] == 'Bowler' || player['role'] == 'All-rounder') {
       stats.add(_buildStatBadge('Wickets: 32', Icons.sports_cricket));
     }
-    
+
     stats.add(_buildStatBadge('Matches: 24', Icons.calendar_today));
-    
+
     return Wrap(
       spacing: 8, // gap between adjacent stats
       runSpacing: 8, // gap between lines
@@ -601,7 +640,8 @@ class _CoachHomePageState extends State<CoachHomePage> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
       width: 110, // Fixed width to prevent differences in size
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -687,17 +727,18 @@ class PlayerProfileWrapper extends StatefulWidget {
   _PlayerProfileWrapperState createState() => _PlayerProfileWrapperState();
 }
 
-class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with SingleTickerProviderStateMixin {
+class _PlayerProfileWrapperState extends State<PlayerProfileWrapper>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
   final String _selectedSport = 'Cricket';
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -772,8 +813,10 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
                           children: [
                             CircleAvatar(
                               radius: 30,
-                              backgroundImage: AssetImage(widget.player['profileImage']),
-                              onBackgroundImageError: (exception, stackTrace) {},
+                              backgroundImage:
+                                  AssetImage(widget.player['profileImage']),
+                              onBackgroundImageError:
+                                  (exception, stackTrace) {},
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -791,9 +834,13 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      _buildPlayerStat(Icons.sports_cricket, widget.player['nationalRanking'] ?? 'N/A'),
+                                      _buildPlayerStat(
+                                          Icons.sports_cricket,
+                                          widget.player['nationalRanking'] ??
+                                              'N/A'),
                                       const SizedBox(width: 16),
-                                      _buildPlayerStat(Icons.calendar_today, '${widget.player['age'] ?? 'N/A'} years'),
+                                      _buildPlayerStat(Icons.calendar_today,
+                                          '${widget.player['age'] ?? 'N/A'} years'),
                                     ],
                                   ),
                                 ],
@@ -860,8 +907,7 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            // Add quick action for coach
-            _showQuickActions(context);
+            _showMedicalQuickActions(context);
           },
           backgroundColor: Colors.deepPurple,
           child: const Icon(Icons.add),
@@ -869,6 +915,66 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
       ),
     );
   }
+
+  void _showMedicalQuickActions(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Medical Actions',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildActionItem(
+            icon: Icons.medical_services,
+            title: 'New Medical Checkup',
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: Navigate to checkup form
+            },
+          ),
+          _buildActionItem(
+            icon: Icons.healing,
+            title: 'Record Injury',
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: Navigate to injury form
+            },
+          ),
+          _buildActionItem(
+            icon: Icons.restaurant,
+            title: 'Create Nutrition Plan',
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: Navigate to nutrition plan form
+            },
+          ),
+          _buildActionItem(
+            icon: Icons.fitness_center,
+            title: 'Rehabilitation Program',
+            onTap: () {
+              Navigator.pop(context);
+              // TODO: Navigate to rehab program form
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _buildPlayerStat(IconData icon, String text) {
     return Row(
@@ -897,15 +1003,12 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
           _buildSectionTitle('Player Information'),
           _buildInfoCard(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Performance Summary'),
           _buildPerformanceCard(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Recent Activities'),
           _buildRecentActivities(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Notes'),
           _buildNotesCard(),
         ],
@@ -922,11 +1025,9 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
           _buildSectionTitle('Performance Metrics'),
           _buildPerformanceMetrics(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Recent Matches'),
           _buildRecentMatches(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Training Progress'),
           _buildTrainingProgress(),
         ],
@@ -943,11 +1044,9 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
           _buildSectionTitle('Upcoming Sessions'),
           _buildUpcomingSessions(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Practice Schedule'),
           _buildScheduleCalendar(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Team Events'),
           _buildTeamEvents(),
         ],
@@ -964,11 +1063,9 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
           _buildSectionTitle('Financial Summary'),
           _buildFinancialSummary(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Recent Transactions'),
           _buildRecentTransactions(),
           const SizedBox(height: 24),
-          
           _buildSectionTitle('Pending Approvals'),
           _buildPendingApprovals(),
         ],
@@ -1007,9 +1104,11 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
             const Divider(),
             _buildInfoRow('Position', widget.player['role'] ?? 'N/A'),
             const Divider(),
-            _buildInfoRow('Experience', '${widget.player['experience'] ?? 'N/A'} years'),
+            _buildInfoRow(
+                'Experience', '${widget.player['experience'] ?? 'N/A'} years'),
             const Divider(),
-            _buildInfoRow('National Ranking', widget.player['nationalRanking'] ?? 'N/A'),
+            _buildInfoRow(
+                'National Ranking', widget.player['nationalRanking'] ?? 'N/A'),
           ],
         ),
       ),
@@ -1424,633 +1523,634 @@ class _PlayerProfileWrapperState extends State<PlayerProfileWrapper> with Single
   }
 
   Widget _buildMedicalTab() {
-  return SingleChildScrollView(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Medical Status'),
-        _buildMedicalStatusCard(),
-        const SizedBox(height: 24),
-        
-        _buildSectionTitle('Vital Signs'),
-        _buildVitalSignsCard(),
-        const SizedBox(height: 24),
-        
-        _buildSectionTitle('Performance Metrics'),
-        _buildPerformanceMetricsCard(),
-        const SizedBox(height: 24),
-        
-        _buildSectionTitle('Injury History'),
-        _buildInjuryHistoryList(),
-        const SizedBox(height: 24),
-        
-        _buildSectionTitle('Medical Test Results'),
-        _buildMedicalTestsCard(),
-        const SizedBox(height: 24),
-        
-        _buildSectionTitle('Nutrition & Hydration'),
-        _buildNutritionCard(),
-        const SizedBox(height: 24),
-        
-        _buildSectionTitle('Mental Health & Sleep'),
-        _buildMentalHealthCard(),
-        const SizedBox(height: 24),
-        
-        _buildSectionTitle('Fitness Assessment'),
-        _buildFitnessAssessmentCard(),
-        const SizedBox(height: 24),
-        
-        _buildSectionTitle('Medical Clearance'),
-        _buildMedicalClearanceCard(),
-      ],
-    ),
-  );
-}
-
-Widget _buildMedicalStatusCard() {
-  // Mock data for medical status
-  final bool isInjured = false;
-  
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isInjured ? Colors.red.withOpacity(0.1) : Colors.green.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isInjured ? Icons.healing : Icons.check_circle,
-              color: isInjured ? Colors.red : Colors.green,
-              size: 32,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isInjured ? 'Currently Injured' : 'Fit to Play',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: isInjured ? Colors.red : Colors.green,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isInjured 
-                    ? 'Recovery in progress. Expected return: 2 weeks'
-                    : 'No current injuries or medical concerns',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget _buildVitalSignsCard() {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildMetricRow('Resting Heart Rate', '72 bpm'),
-          const Divider(),
-          _buildMetricRow('Blood Pressure', '120/80 mmHg'),
-          const Divider(),
-          _buildMetricRow('Oxygen Saturation', '98%'),
-          const Divider(),
-          _buildMetricRow('Respiratory Rate', '14 breaths/min'),
-          const Divider(),
-          _buildMetricRow('Body Temperature', '36.6°C'),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget _buildPerformanceMetricsCard() {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildMetricRow('VO2 Max', '54.2 ml/kg/min'),
-          const Divider(),
-          _buildMetricRow('Sprint Speed (20m)', '3.2 seconds'),
-          const Divider(),
-          _buildMetricRow('Agility Score', '9.4/10'),
-          const Divider(),
-          _buildMetricRow('Strength Assessment', '82/100'),
-          const Divider(),
-          _buildMetricRow('Flexibility Test', 'Good'),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget _buildMedicalTestsCard() {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: _buildTestItem(
-                  'Blood Test',
-                  'Normal',
-                  Colors.green,
-                  'Last checked: 3 weeks ago',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTestItem(
-                  'ECG',
-                  'Normal',
-                  Colors.green,
-                  'Last checked: 2 months ago',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: _buildTestItem(
-                  'Bone Density',
-                  'Good',
-                  Colors.green,
-                  'Last checked: 6 months ago',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildTestItem(
-                  'Lung Function',
-                  'Above Average',
-                  Colors.green,
-                  'Last checked: 2 months ago',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () {
-              // View detailed test results
-            },
-            icon: const Icon(Icons.visibility, size: 16),
-            label: const Text('View Full Test Results'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.deepPurple,
-              side: const BorderSide(color: Colors.deepPurple),
-            ),
-          ),
+          _buildSectionTitle('Medical Status'),
+          _buildMedicalStatusCard(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Vital Signs'),
+          _buildVitalSignsCard(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Performance Metrics'),
+          _buildPerformanceMetricsCard(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Injury History'),
+          _buildInjuryHistoryList(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Medical Test Results'),
+          _buildMedicalTestsCard(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Nutrition & Hydration'),
+          _buildNutritionCard(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Mental Health & Sleep'),
+          _buildMentalHealthCard(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Fitness Assessment'),
+          _buildFitnessAssessmentCard(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('Medical Clearance'),
+          _buildMedicalClearanceCard(),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildTestItem(String title, String result, Color statusColor, String date) {
-  return Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.grey.shade100,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
+  Widget _buildMedicalStatusCard() {
+    // Mock data for medical status
+    final bool isInjured = false;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
           children: [
             Container(
-              width: 10,
-              height: 10,
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
+                color: isInjured
+                    ? Colors.red.withOpacity(0.1)
+                    : Colors.green.withOpacity(0.1),
                 shape: BoxShape.circle,
-                color: statusColor,
+              ),
+              child: Icon(
+                isInjured ? Icons.healing : Icons.check_circle,
+                color: isInjured ? Colors.red : Colors.green,
+                size: 32,
               ),
             ),
-            const SizedBox(width: 6),
-            Text(
-              result,
-              style: TextStyle(
-                color: statusColor,
-                fontWeight: FontWeight.w500,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isInjured ? 'Currently Injured' : 'Fit to Play',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isInjured ? Colors.red : Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isInjured
+                        ? 'Recovery in progress. Expected return: 2 weeks'
+                        : 'No current injuries or medical concerns',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildVitalSignsCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildMetricRow('Resting Heart Rate', '72 bpm'),
+            const Divider(),
+            _buildMetricRow('Blood Pressure', '120/80 mmHg'),
+            const Divider(),
+            _buildMetricRow('Oxygen Saturation', '98%'),
+            const Divider(),
+            _buildMetricRow('Respiratory Rate', '14 breaths/min'),
+            const Divider(),
+            _buildMetricRow('Body Temperature', '36.6°C'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPerformanceMetricsCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildMetricRow('VO2 Max', '54.2 ml/kg/min'),
+            const Divider(),
+            _buildMetricRow('Sprint Speed (20m)', '3.2 seconds'),
+            const Divider(),
+            _buildMetricRow('Agility Score', '9.4/10'),
+            const Divider(),
+            _buildMetricRow('Strength Assessment', '82/100'),
+            const Divider(),
+            _buildMetricRow('Flexibility Test', 'Good'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMedicalTestsCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: _buildTestItem(
+                    'Blood Test',
+                    'Normal',
+                    Colors.green,
+                    'Last checked: 3 weeks ago',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildTestItem(
+                    'ECG',
+                    'Normal',
+                    Colors.green,
+                    'Last checked: 2 months ago',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: _buildTestItem(
+                    'Bone Density',
+                    'Good',
+                    Colors.green,
+                    'Last checked: 6 months ago',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildTestItem(
+                    'Lung Function',
+                    'Above Average',
+                    Colors.green,
+                    'Last checked: 2 months ago',
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () {
+                // View detailed test results
+              },
+              icon: const Icon(Icons.visibility, size: 16),
+              label: const Text('View Full Test Results'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.deepPurple,
+                side: const BorderSide(color: Colors.deepPurple),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestItem(
+      String title, String result, Color statusColor, String date) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: statusColor,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                result,
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            date,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNutritionCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _buildNutrientWidget(
+                      'Calories', '2400 kcal', Colors.deepPurple),
+                ),
+                Expanded(
+                  child: _buildNutrientWidget('Water', '3.2 L', Colors.blue),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text(
+              'Supplementation',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _buildSupplementTag('Protein Powder'),
+                _buildSupplementTag('Creatine'),
+                _buildSupplementTag('Multivitamin'),
+                _buildSupplementTag('Omega-3'),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Nutrient Deficiencies',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'None Detected',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNutrientWidget(String label, String value, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            label == 'Calories'
+                ? Icons.local_fire_department
+                : Icons.water_drop,
+            color: color,
+            size: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.grey[700],
+          ),
+        ),
         const SizedBox(height: 4),
         Text(
-          date,
+          value,
           style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildNutritionCard() {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _buildNutrientWidget('Calories', '2400 kcal', Colors.deepPurple),
-              ),
-              Expanded(
-                child: _buildNutrientWidget('Water', '3.2 L', Colors.blue),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          const Text(
-            'Supplementation',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildSupplementTag('Protein Powder'),
-              _buildSupplementTag('Creatine'),
-              _buildSupplementTag('Multivitamin'),
-              _buildSupplementTag('Omega-3'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Nutrient Deficiencies',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'None Detected',
+  Widget _buildSupplementTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          color: Colors.blue,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMentalHealthCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildMentalHealthMeter('Stress Level', 0.35, Colors.amber),
+            const SizedBox(height: 16),
+            _buildMentalHealthMeter('Sleep Quality', 0.80, Colors.blue),
+            const SizedBox(height: 16),
+            _buildMentalHealthMeter('Focus/Concentration', 0.75, Colors.purple),
+            const SizedBox(height: 16),
+            _buildMentalHealthMeter('Motivation', 0.90, Colors.green),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.nightlight, color: Colors.indigo),
+                const SizedBox(width: 8),
+                const Text(
+                  'Average Sleep:',
                   style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.green,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-Widget _buildNutrientWidget(String label, String value, Color color) {
-  return Column(
-    children: [
-      Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          label == 'Calories' ? Icons.local_fire_department : Icons.water_drop,
-          color: color,
-          size: 24,
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.grey[700],
-        ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        value,
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: color,
-        ),
-      ),
-    ],
-  );
-}
-
-Widget _buildSupplementTag(String label) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: Colors.blue.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.blue.withOpacity(0.3)),
-    ),
-    child: Text(
-      label,
-      style: const TextStyle(
-        fontSize: 12,
-        color: Colors.blue,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-  );
-}
-
-Widget _buildMentalHealthCard() {
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildMentalHealthMeter('Stress Level', 0.35, Colors.amber),
-          const SizedBox(height: 16),
-          _buildMentalHealthMeter('Sleep Quality', 0.80, Colors.blue),
-          const SizedBox(height: 16),
-          _buildMentalHealthMeter('Focus/Concentration', 0.75, Colors.purple),
-          const SizedBox(height: 16),
-          _buildMentalHealthMeter('Motivation', 0.90, Colors.green),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.nightlight, color: Colors.indigo),
-              const SizedBox(width: 8),
-              const Text(
-                'Average Sleep:',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                const SizedBox(width: 8),
+                Text(
+                  '7.5 hours/night',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo.shade700,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '7.5 hours/night',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.indigo.shade700,
-                ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
-
-Widget _buildMentalHealthMeter(String label, double value, Color color) {
-  String valueText;
-  if (label == 'Stress Level') {
-    // For stress, lower is better
-    valueText = value < 0.3 ? 'Low' : (value < 0.7 ? 'Moderate' : 'High');
-  } else {
-    // For others, higher is better
-    valueText = value < 0.3 ? 'Poor' : (value < 0.7 ? 'Good' : 'Excellent');
+    );
   }
-  
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
-          Text(
-            valueText,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-      LinearProgressIndicator(
-        value: value,
-        backgroundColor: Colors.grey[200],
-        valueColor: AlwaysStoppedAnimation<Color>(color),
-        minHeight: 8,
-        borderRadius: BorderRadius.circular(4),
-      ),
-    ],
-  );
-}
 
-Widget _buildMedicalClearanceCard() {
-  // Status can be "Full Clearance", "Partial Clearance" or "No Clearance"
-  final String clearanceStatus = "Full Clearance";
-  final Color statusColor = clearanceStatus == "Full Clearance" 
-      ? Colors.green 
-      : (clearanceStatus == "Partial Clearance" ? Colors.orange : Colors.red);
-  
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  clearanceStatus == "Full Clearance" 
-                      ? Icons.check_circle
-                      : (clearanceStatus == "Partial Clearance" ? Icons.warning : Icons.cancel),
-                  color: statusColor,
-                  size: 28,
-                ),
+  Widget _buildMentalHealthMeter(String label, double value, Color color) {
+    String valueText;
+    if (label == 'Stress Level') {
+      // For stress, lower is better
+      valueText = value < 0.3 ? 'Low' : (value < 0.7 ? 'Moderate' : 'High');
+    } else {
+      // For others, higher is better
+      valueText = value < 0.3 ? 'Poor' : (value < 0.7 ? 'Good' : 'Excellent');
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      clearanceStatus,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: statusColor,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      "Cleared for all training and competition",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          const Text(
-            "Doctor's Notes",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
             ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Player is in excellent health and has no restrictions. Follow-up "
-            "general assessment recommended in 6 months. Continue with current "
-            "training program and maintain proper hydration and nutrition.",
-            style: TextStyle(fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Next Assessment:",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w500,
-                ),
+            Text(
+              valueText,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
-              const Text(
-                "October 15, 2025",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "Medical Team:",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Text(
-                "Dr. Sarah Johnson",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: value,
+          backgroundColor: Colors.grey[200],
+          valueColor: AlwaysStoppedAnimation<Color>(color),
+          minHeight: 8,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMedicalClearanceCard() {
+    // Status can be "Full Clearance", "Partial Clearance" or "No Clearance"
+    final String clearanceStatus = "Full Clearance";
+    final Color statusColor = clearanceStatus == "Full Clearance"
+        ? Colors.green
+        : (clearanceStatus == "Partial Clearance" ? Colors.orange : Colors.red);
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-    ),
-  );
-}
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    clearanceStatus == "Full Clearance"
+                        ? Icons.check_circle
+                        : (clearanceStatus == "Partial Clearance"
+                            ? Icons.warning
+                            : Icons.cancel),
+                    color: statusColor,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        clearanceStatus,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: statusColor,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Cleared for all training and competition",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text(
+              "Doctor's Notes",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Player is in excellent health and has no restrictions. Follow-up "
+              "general assessment recommended in 6 months. Continue with current "
+              "training program and maintain proper hydration and nutrition.",
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Next Assessment:",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Text(
+                  "October 15, 2025",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Medical Team:",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Text(
+                  "Dr. Sarah Johnson",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildInjuryHistoryList() {
     final injuries = [
@@ -2094,7 +2194,8 @@ Widget _buildMedicalClearanceCard() {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
@@ -2261,7 +2362,9 @@ Widget _buildMedicalClearanceCard() {
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isTeam ? Colors.blue.withOpacity(0.1) : Colors.deepPurple.withOpacity(0.1),
+                color: isTeam
+                    ? Colors.blue.withOpacity(0.1)
+                    : Colors.deepPurple.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -2451,12 +2554,8 @@ Widget _buildMedicalClearanceCard() {
   }
 
   Widget _buildFinanceSummaryItem(
-    String label, 
-    String value, 
-    Color color, 
-    IconData icon, 
-    {bool isLarge = false}
-  ) {
+      String label, String value, Color color, IconData icon,
+      {bool isLarge = false}) {
     return Column(
       children: [
         Container(
@@ -2527,7 +2626,9 @@ Widget _buildMedicalClearanceCard() {
             leading: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: isIncome ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                color: isIncome
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -2629,7 +2730,8 @@ Widget _buildMedicalClearanceCard() {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.amber.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -2803,8 +2905,8 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-    BuildContext context, 
-    double shrinkOffset, 
+    BuildContext context,
+    double shrinkOffset,
     bool overlapsContent,
   ) {
     return Container(

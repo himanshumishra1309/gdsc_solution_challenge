@@ -6,14 +6,14 @@ import 'package:gdg_app/constants/routes.dart';
 import 'dart:math' as math;
 import 'package:intl/intl.dart';
 
-class CoachViewPlayerReport extends StatefulWidget {
-  const CoachViewPlayerReport({super.key});
+class TrainerPlayerReport extends StatefulWidget {
+  const TrainerPlayerReport({super.key});
 
   @override
-  _CoachViewPlayerReportState createState() => _CoachViewPlayerReportState();
+  _TrainerPlayerReportState createState() => _TrainerPlayerReportState();
 }
 
-class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
+class _TrainerPlayerReportState extends State<TrainerPlayerReport> {
   final _authService = AuthService();
   String _searchQuery = '';
   String _selectedSport = 'All Sports';
@@ -982,7 +982,7 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
         toolbarHeight: 65.0,
       ),
       drawer: CustomDrawer(
-        selectedDrawerItem: coachViewPlayerMedicalReportRoute,
+        selectedDrawerItem: trainerViewPlayerMedicalReportRoute,
         onSelectDrawerItem: (route) {
           Navigator.pop(context);
           if (ModalRoute.of(context)?.settings.name != route) {
@@ -992,28 +992,28 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
         drawerItems: [
           DrawerItem(
               icon: Icons.people,
-              title: 'View all players',
-              route: coachHomeRoute),
+              title: 'View All Players',
+              route: trainerHomeRoute),
           DrawerItem(
               icon: Icons.announcement,
-              title: 'Make announcement',
-              route: coachMakeAnAnnouncementRoute),
+              title: 'Make Announcements',
+              route: trainerMakeAnAnnouncementRoute),
           DrawerItem(
               icon: Icons.schedule,
-              title: 'Mark upcoming sessions',
-              route: coachMarkSessionRoute),
+              title: 'Session Management',
+              route: trainerMarkSessionRoute),
           DrawerItem(
-              icon: Icons.schedule,
-              title: 'View Coaching Staffs Assigned',
-              route: viewCoachingStaffsAssignedRoute),
+              icon: Icons.fitness_center,
+              title: 'Training Plans',
+              route: trainerUpdateGymPlanRoute),
           DrawerItem(
               icon: Icons.medical_services,
-              title: 'View Medical records',
-              route: coachViewPlayerMedicalReportRoute),
+              title: 'Medical Records',
+              route: trainerViewPlayerMedicalReportRoute),
           DrawerItem(
               icon: Icons.person,
-              title: 'View Profile',
-              route: coachProfileRoute),
+              title: 'My Profile',
+              route: trainerProfileRoute),
         ],
         onLogout: () => _handleLogout(context),
         userName: _userName,

@@ -110,6 +110,63 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
   // Navigate based on user type and with user data
   void _navigateToHomePage([Map<String, dynamic>? userData]) {
     // Navigate to different pages based on the sourcePage
+    if (userData != null && userData.containsKey('designation') && userData['designation'] != null) {
+    String designation = userData['designation'].toString().toLowerCase();
+    print('Checking designation: $designation');
+    
+    // Handle organization ID safely
+    var organizationId = userData['organization'] is String 
+        ? userData['organization'] 
+        : userData['organization']?['_id'] ?? '';
+    
+    // Route based on designation
+    if (designation.contains('medical')) {
+      print('Routing to Medical Staff Home');
+      Navigator.pushReplacementNamed(
+        context, 
+        medicalStaffHomeRoute,
+        arguments: {
+          'staffId': userData['_id'],
+          'staffName': userData['name'],
+          'organizationId': organizationId,
+          'role': userData['role'] ?? 'Medical Staff',
+          'designation': userData['designation']
+        }
+      );
+      return; // Important: exit the method after navigation
+    } 
+    
+    if (designation.contains('trainer')) {
+      print('Routing to Trainer Home');
+      Navigator.pushReplacementNamed(
+        context, 
+        trainerHomeRoute,
+        arguments: {
+          'trainerId': userData['_id'],
+          'trainerName': userData['name'],
+          'organizationId': organizationId,
+          'role': userData['role'] ?? 'Trainer',
+          'designation': userData['designation']
+        }
+      );
+      return; // Important: exit the method after navigation
+    }
+    if (designation.contains('coach')) {
+  print('Routing to Coach Home - Coach Designation: $designation');
+  Navigator.pushReplacementNamed(
+    context, 
+    coachHomeRoute,
+    arguments: {
+      'coachId': userData['_id'],
+      'coachName': userData['name'],
+      'organizationId': organizationId,
+      'role': userData['role'] ?? 'Coach',
+      'designation': userData['designation']
+    }
+  );
+  return; // Important: exit the method after navigation
+}
+  }
     switch (widget.sourcePage) {
       case 'individualRegister':
         Navigator.pushReplacementNamed(
@@ -123,17 +180,6 @@ class _LoginViewState extends State<LoginView> with SingleTickerProviderStateMix
         break;
       case 'landingPage':
         Navigator.pushReplacementNamed(context, landingPageRoute);
-        break;
-      case 'coachHome':
-        Navigator.pushReplacementNamed(
-          context, 
-          coachHomeRoute,
-          arguments: {
-            'coachId': userData?['_id'],
-            'coachName': userData?['name'],
-            'organizationId': userData?['organization']?['_id'] ?? userData?['organization'],
-          }
-        );
         break;
       case 'adminHome':
   Navigator.pushReplacementNamed(

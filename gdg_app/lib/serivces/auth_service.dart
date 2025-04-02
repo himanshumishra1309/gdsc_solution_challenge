@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/api_constants.dart';
+import '../constants/routes.dart';
 import 'dart:math';
 
 enum UserType { admin, coach, athlete, sponsor, independentAthlete, unknown }
@@ -49,26 +50,70 @@ class AuthService {
     }
   }
 
+  // Gets the correct home route based on designation
+  String getRouteBasedOnDesignation(String designation) {
+    // Standardize designation string for comparison
+    final normalizedDesignation = designation.trim().toLowerCase();
+    
+    print('Determining route based on designation: $normalizedDesignation');
+    
+    if (normalizedDesignation.contains('medical')) {
+      print('Routing to Medical Staff Home');
+      return medicalStaffHomeRoute;
+    } else if (normalizedDesignation.contains('coach')) {
+      print('Routing to Coach Home');
+      return coachHomeRoute;
+    } else if (normalizedDesignation.contains('trainer')) {
+      print('Routing to Trainer Home');
+      return trainerHomeRoute;
+    } else {
+      // Default route if designation is unrecognized
+      print('Unrecognized designation, defaulting to Coach Home');
+      return coachHomeRoute;
+    }
+  }
+
   // Main login method that routes to the appropriate login endpoint
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
     required UserType userType,
   }) async {
+    Map<String, dynamic> result;
+    
     switch (userType) {
       case UserType.admin:
-        return await _loginAdmin(email, password);
+        result = await _loginAdmin(email, password);
+        break;
       case UserType.coach:
-        return await _loginCoach(email, password);
+        result = await _loginCoach(email, password);
+        break;
       case UserType.athlete:
-        return await _loginAthlete(email, password);
+        result = await _loginAthlete(email, password);
+        break;
       case UserType.sponsor:
-        return await _loginSponsor(email, password);
+        result = await _loginSponsor(email, password);
+        break;
       case UserType.independentAthlete:
-        return await _loginIndependentAthlete(email, password);
+        result = await _loginIndependentAthlete(email, password);
+        break;
       default:
-        return {'success': false, 'message': 'Unknown user type'};
+        result = {'success': false, 'message': 'Unknown user type'};
     }
+    
+    if (result['success'] && !result.containsKey('targetRoute')) {
+      // If login successful but no target route (for backward compatibility)
+      // Get user designation and determine route
+      final designation = await getUserDesignation();
+      if (designation.isNotEmpty) {
+        result['targetRoute'] = getRouteBasedOnDesignation(designation);
+      } else {
+        // Default route if designation is not available
+        result['targetRoute'] = coachHomeRoute;
+      }
+    }
+    
+    return result;
   }
 
   // Add this method to your AuthService class
@@ -147,6 +192,16 @@ class AuthService {
           await prefs.setString('userAvatar', freshUserData['avatar']);
         }
 
+        // Save role if available
+        if (freshUserData['role'] != null) {
+          await prefs.setString('userRole', freshUserData['role']);
+        }
+
+        // Save designation if available
+        if (freshUserData['designation'] != null) {
+          await prefs.setString('userDesignation', freshUserData['designation']);
+        }
+
         return freshUserData;
       } else {
         // If API request fails, return cached data
@@ -163,7 +218,31 @@ class AuthService {
         'name': prefs.getString('userName') ?? 'User',
         'email': prefs.getString('userEmail') ?? '',
         'avatar': prefs.getString('userAvatar'),
+        'role': prefs.getString('userRole') ?? '',
+        'designation': prefs.getString('userDesignation') ?? '',
       };
+    }
+  }
+
+  // Get user role
+  Future<String> getUserRole() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('userRole') ?? '';
+    } catch (e) {
+      print('Error getting user role: $e');
+      return '';
+    }
+  }
+
+  // Get user designation
+  Future<String> getUserDesignation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('userDesignation') ?? '';
+    } catch (e) {
+      print('Error getting user designation: $e');
+      return '';
     }
   }
 
@@ -200,29 +279,30 @@ class AuthService {
   }
 
   // Coach login
-  Future<Map<String, dynamic>> _loginCoach(
-      String email, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse(ApiConstants.coachLogin),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      );
-
-      return _processLoginResponse(response, UserType.coach);
-    } catch (e) {
-      print('Coach login error: $e');
-      return {
-        'success': false,
-        'message': 'Network error: $e',
-      };
-    }
+Future<Map<String, dynamic>> _loginCoach(String email, String password) async {
+  try {
+    final response = await http.post(
+      Uri.parse(ApiConstants.coachLogin),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'email': email,
+        'password': password,
+      }),
+    );
+    
+    // Add debugging to see the response
+    print('Coach login response: ${response.statusCode}');
+    print('Coach login body: ${response.body}');
+    
+    return _processLoginResponse(response, UserType.coach);
+  } catch (e) {
+    // More detailed error logging
+    print('Coach login error: $e');
+    return {'success': false, 'message': 'Login failed: $e'};
   }
+}
 
   // Athlete login
   Future<Map<String, dynamic>> _loginAthlete(
@@ -360,7 +440,9 @@ class AuthService {
         'adminAccessToken',
         'adminRefreshToken',
         'sponsorAccessToken',
-        'sponsorRefreshToken'
+        'sponsorRefreshToken',
+        'userRole',
+        'userDesignation'
       ];
 
       print('\n🔐 CHECKING FOR AUTH KEYS:');
@@ -450,6 +532,10 @@ class AuthService {
         await prefs.remove('sponsorRefreshToken');
       }
 
+      // Also clear user role and designation
+      await prefs.remove('userRole');
+      await prefs.remove('userDesignation');
+
       print('User logged out locally: $userType');
       return true;
     } catch (e) {
@@ -485,7 +571,6 @@ class AuthService {
   }
 
   // Helper method to process login responses
-  // Updated _processLoginResponse method with special handling for admin user data
   Future<Map<String, dynamic>> _processLoginResponse(
       http.Response response, UserType userType) async {
     try {
@@ -502,14 +587,16 @@ class AuthService {
       }
 
       final responseData = jsonDecode(response.body);
-      print(
-          'Full login response: ${response.body.substring(0, min(300, response.body.length))}');
+      print('Full login response: ${response.body}');
 
       if (response.statusCode == 200) {
         // Extract tokens and user data based on user type
         String? accessToken;
         String? refreshToken;
         Map<String, dynamic> userData = {};
+        String userRole = '';
+        String userDesignation = '';
+        String targetRoute = coachHomeRoute; // Default route
 
         if (responseData['data'] != null) {
           // Special handling for admin user data - it's in 'admin', not 'user'
@@ -530,9 +617,28 @@ class AuthService {
               await prefs.setString('organizationId', orgId);
               print('✅ Organization ID saved from admin login: $orgId');
             }
+          } else if (userType == UserType.coach) {
+            // For coach, the data is in 'coach'
+            userData = responseData['data']['coach'] ?? {};
+            print('Coach data extracted: ${jsonEncode(userData)}');
           } else {
             // Other user types use standard 'user' key
             userData = responseData['data']['user'] ?? {};
+          }
+
+          // Extract user role and designation if available
+          if (userData.containsKey('role')) {
+            userRole = userData['role'] ?? '';
+            print('Found user role: $userRole');
+          }
+          
+          if (userData.containsKey('designation')) {
+            userDesignation = userData['designation'] ?? '';
+            print('Found user designation: $userDesignation');
+            
+            // Determine route based on designation
+            targetRoute = getRouteBasedOnDesignation(userDesignation);
+            print('Determined target route: $targetRoute based on designation: $userDesignation');
           }
 
           // Extract tokens based on user type
@@ -572,6 +678,9 @@ class AuthService {
           'message': responseData['message'] ?? 'Login successful',
           'userType': userType.toString(),
           'userData': userData,
+          'role': userRole,
+          'designation': userDesignation,
+          'targetRoute': targetRoute,
         };
       } else {
         return {
@@ -662,6 +771,18 @@ class AuthService {
         if (userData['_id'] != null) {
           await prefs.setString('userId', userData['_id']);
           print('✅ Saved user ID: ${userData['_id']}');
+        }
+
+        // Save user role if present
+        if (userData['role'] != null) {
+          await prefs.setString('userRole', userData['role']);
+          print('✅ Saved user role: ${userData['role']}');
+        }
+        
+        // Save user designation if present
+        if (userData['designation'] != null) {
+          await prefs.setString('userDesignation', userData['designation']);
+          print('✅ Saved user designation: ${userData['designation']}');
         }
 
         // Special handling for organization ID
