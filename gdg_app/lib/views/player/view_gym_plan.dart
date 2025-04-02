@@ -415,10 +415,7 @@ class _ViewGymPlanState extends State<ViewGymPlan>
               icon: Icons.fitness_center,
               title: 'View Gym Plan',
               route: viewGymPlanRoute),
-          DrawerItem(
-              icon: Icons.edit,
-              title: 'Fill Injury Form',
-              route: fillInjuryFormRoute),
+          
           DrawerItem(
               icon: Icons.attach_money,
               title: 'Finances',

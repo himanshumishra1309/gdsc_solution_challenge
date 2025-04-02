@@ -231,10 +231,7 @@ class _NutritionPlanState extends State<NutritionPlan> {
               icon: Icons.fitness_center,
               title: 'View Gym Plan',
               route: viewGymPlanRoute),
-          DrawerItem(
-              icon: Icons.edit,
-              title: 'Fill Injury Form',
-              route: fillInjuryFormRoute),
+          
           DrawerItem(
               icon: Icons.attach_money,
               title: 'Finances',
@@ -650,22 +647,17 @@ class _NutritionPlanState extends State<NutritionPlan> {
                 ),
                 const SizedBox(height: 8),
                 // Macronutrients
-                Row(
-                  children: [
-                    _buildMacroIndicator(
-                        'P', meal['protein'], 'g', Colors.red.shade400),
-                    const SizedBox(width: 12),
-                    _buildMacroIndicator(
-                        'C', meal['carbohydrates'], 'g', Colors.green.shade400),
-                    const SizedBox(width: 12),
-                    _buildMacroIndicator(
-                        'F', meal['fat'], 'g', Colors.amber.shade400),
-                    const SizedBox(width: 12),
-                    if (meal.containsKey('calories'))
-                      _buildMacroIndicator(
-                          'Cal', meal['calories'], '', Colors.blue.shade400),
-                  ],
-                ),
+                Wrap(
+  spacing: 8, // horizontal spacing
+  runSpacing: 8, // vertical spacing
+  children: [
+    _buildMacroIndicator('P', meal['protein'], 'g', Colors.red.shade400),
+    _buildMacroIndicator('C', meal['carbohydrates'], 'g', Colors.green.shade400),
+    _buildMacroIndicator('F', meal['fat'], 'g', Colors.amber.shade400),
+    if (meal.containsKey('calories'))
+      _buildMacroIndicator('Cal', meal['calories'], '', Colors.blue.shade400),
+  ],
+),
                 const SizedBox(height: 8),
                 // Medicines
                 if (meal.containsKey('medicines') && meal['medicines'] != null)

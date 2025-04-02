@@ -955,8 +955,6 @@ class _AdminViewPlayersState extends State<AdminViewPlayers>
               title: 'Video Analysis',
               route: videoAnalysisRoute),
           DrawerItem(
-              icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-          DrawerItem(
               icon: Icons.attach_money,
               title: 'Manage Player Finances',
               route: adminManagePlayerFinancesRoute),
