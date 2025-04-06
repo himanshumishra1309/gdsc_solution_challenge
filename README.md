@@ -249,10 +249,12 @@ Enjoy tracking and optimizing performance! 🚀
 | Role                 | Email                         | Password   |
 |----------------------|-------------------------------|------------|
 | Admin                | mainadmin@gmail.com           | 1234       |
-| Coach                | coachjohn@example.com         | John@123   |
+| Head/Assistant Coach | coachjohn@example.com         | John@123   |
 | Athlete              | johndoe@example.com           | 1234       |
 | Independent Athlete  | individualathlete@gmail.com   | 1234       |
 | Sponsor              | sponsor@gmail.com             | 1234       |
+| Medical Staff        | deepak@gmail.com              | 123456     |
+| Trainer              | jay@gmail.com                 | 123456     |
 
 > **Security Reminder:** Update all passwords for production environments.
 
