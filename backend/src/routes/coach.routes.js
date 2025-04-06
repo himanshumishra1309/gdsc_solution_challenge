@@ -1,9 +1,7 @@
 import { Router } from "express";
 import {
     getCoaches,
-    logoutUser,
-    getCoachProfile
-    // loginAdmin,
+    getCoachProfile,
     logoutUser,
 } from "../controllers/coach.controllers.js";
 import { addAthleteStats } from "../controllers/admin.controllers.js";

@@ -1524,5 +1524,4 @@ export {
   addSportStats,
   getSportStats,
   addAthleteStats,
-  getOrganizationStats,
 };

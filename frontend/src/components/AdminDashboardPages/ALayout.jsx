@@ -66,7 +66,7 @@ function ALayout({ userType, navItems = [], organizationId, children }) {
         <nav className="flex-1 p-4 space-y-2">
           {navItems.map((item, index) => {
             const fullPath = `/${userType.toLowerCase()}-dashboard/${organizationId}/${item.path}`;
-            const isActive = location.pathname.includes(item.path);
+            const isActive = location.pathname === fullPath;
 
             return (
               <Link key={index} to={fullPath}>

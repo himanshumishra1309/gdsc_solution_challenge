@@ -175,13 +175,13 @@ function App() {
         </Route>
 
         <Route path="/admin-dashboard/:organizationId/*" element={<AdminDashboard />} >
+        <Route index element={<AdminHome />} />  {/* Default route */}
           <Route path="admin" element={<AdminManagement />} />
           <Route path="sponsor" element={<SponsorManagement />} />
           <Route path="athlete" element={<AthleteManagement />} />
           <Route path="video" element={<VideoAnalysis />} />
           <Route path="form" element={<FormManagement />} />
           <Route path="coach" element={<CoachManagement />} />
-          <Route path="adminhome" element={<AdminHome />} />          
         </Route>
 
         <Route path="/player-dashboard/:organizationId/:playerName/*" element={<PlayerDashboard />}>
