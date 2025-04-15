@@ -1,0 +1,103 @@
+{
+    "players": [
+      {
+        "name": "Virat Kohli",
+        "image": "assets/images/player1.png",
+        "sport": "Cricket",
+        "total_funds": 500000.0,
+        "remaining": 325000.0,
+        "status": "Active",
+        "lastTransaction": "2023-03-15"
+      },
+      {
+        "name": "Saina Nehwal",
+        "image": "assets/images/player2.jpg",
+        "sport": "Badminton",
+        "total_funds": 350000.0,
+        "remaining": 120000.0,
+        "status": "Active",
+        "lastTransaction": "2023-03-10"
+      },
+      {
+        "name": "Sunil Chhetri",
+        "image": "assets/images/player3.jpg",
+        "sport": "Football",
+        "total_funds": 425000.0,
+        "remaining": 380000.0,
+        "status": "Active",
+        "lastTransaction": "2023-03-05"
+      },
+      {
+        "name": "PV Sindhu",
+        "image": "assets/images/player4.png",
+        "sport": "Badminton",
+        "total_funds": 450000.0,
+        "remaining": 290000.0,
+        "status": "Active",
+        "lastTransaction": "2023-03-12"
+      }
+    ],
+    "financeCategories": {
+      "Salary/Stipend": {
+        "amount": 5000.0,
+        "description": "Monthly stipend paid to player",
+        "icon": "account_balance_wallet",
+        "color": "green"
+      },
+      "Prize Money": {
+        "amount": 2000.0,
+        "description": "Tournament winnings allocation",
+        "icon": "emoji_events",
+        "color": "amber"
+      },
+      "Sponsorship": {
+        "amount": 10000.0,
+        "description": "Revenue from brand sponsorships",
+        "icon": "handshake",
+        "color": "blue"
+      },
+      "Training": {
+        "amount": 3000.0,
+        "description": "Training facilities and coaching",
+        "icon": "fitness_center",
+        "color": "orange"
+      },
+      "Travel": {
+        "amount": 4000.0,
+        "description": "Transportation and accommodation",
+        "icon": "flight",
+        "color": "purple"
+      },
+      "Medical": {
+        "amount": 2000.0,
+        "description": "Healthcare and insurance",
+        "icon": "medical_services",
+        "color": "red"
+      },
+      "Equipment": {
+        "amount": 2500.0,
+        "description": "Sports gear and equipment",
+        "icon": "sports_cricket",
+        "color": "teal"
+      }
+    },
+    "sportFilters": [
+      {"name": "All Sports", "icon": "sports"},
+      {"name": "Cricket", "icon": "sports_cricket"},
+      {"name": "Badminton", "icon": "sports_tennis"},
+      {"name": "Football", "icon": "sports_soccer"},
+      {"name": "Basketball", "icon": "sports_basketball"}
+    ],
+    "budgetSummary": {
+      "totalBudget": "₹16.25L",
+      "allocated": "₹11.15L",
+      "available": "₹5.10L"
+    },
+    "transferPurposes": [
+      {"name": "Training", "icon": "fitness_center"},
+      {"name": "Travel", "icon": "flight"},
+      {"name": "Medical", "icon": "medical_services"},
+      {"name": "Stipend", "icon": "attach_money"},
+      {"name": "Equipment", "icon": "sports_cricket"}
+    ]
+  }
