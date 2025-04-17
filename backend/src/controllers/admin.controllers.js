@@ -1667,7 +1667,7 @@ export {
   getRequestsLog,
   sendSponsorInvitation,
   sendPotentialSponsorRequest,
-
+getOrganizationStats,
   //stats
   addSportStats,
   getSportStats,
