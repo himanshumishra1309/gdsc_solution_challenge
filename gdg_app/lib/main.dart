@@ -14,6 +14,12 @@ import 'package:gdg_app/views/admin/admin_view_request_sponsors.dart';
 import 'package:gdg_app/views/coach/coach_mark_session.dart';
 import 'package:gdg_app/views/coach/coach_view_coaching_staffs_assigned.dart';
 import 'package:gdg_app/views/coach/coach_view_player_report.dart';
+import 'package:gdg_app/views/gym_trainer/gym_trainer_home_view.dart';
+import 'package:gdg_app/views/gym_trainer/gym_trainer_make_An_announcement.dart';
+import 'package:gdg_app/views/gym_trainer/gym_trainer_mark_session_view.dart';
+import 'package:gdg_app/views/gym_trainer/gym_trainer_profile.dart';
+import 'package:gdg_app/views/gym_trainer/gym_trainer_update_gym_plan_view.dart';
+import 'package:gdg_app/views/gym_trainer/gym_trainer_view_player_medical_report.dart';
 import 'package:gdg_app/views/individual/individual_achievement_view.dart';
 import 'package:gdg_app/views/individual/individual_contact_sponsor_view.dart';
 import 'package:gdg_app/views/individual/individual_daily_diet_view.dart';
@@ -21,6 +27,12 @@ import 'package:gdg_app/views/individual/individual_finances_view.dart';
 import 'package:gdg_app/views/individual/individual_game_view.dart';
 import 'package:gdg_app/views/individual/individual_gym_plan_view.dart';
 import 'package:gdg_app/views/individual/individual_home_view.dart';
+import 'package:gdg_app/views/medical_staff/medical_staff_home_page.dart';
+import 'package:gdg_app/views/medical_staff/medical_staff_make_an_announcement_view.dart';
+import 'package:gdg_app/views/medical_staff/medical_staff_mark_session.dart';
+import 'package:gdg_app/views/medical_staff/medical_staff_profile.dart';
+import 'package:gdg_app/views/medical_staff/medical_staff_put_records.dart';
+import 'package:gdg_app/views/medical_staff/medical_staff_view_player_medical_report.dart';
 import 'package:gdg_app/views/player/calendar_view.dart';
 import 'package:gdg_app/views/coach/coach_home_page.dart';
 import 'package:gdg_app/views/coach/coach_make_an_announcement.dart';
@@ -111,6 +123,18 @@ void main() {
       coachViewPlayerMedicalReportRoute: (context) => const CoachViewPlayerReport(),
       viewCoachingStaffsAssignedRoute: (context) => const CoachViewCoachingStaffsAssigned(),
       sponsorRegisterViewRoute: (context) => const SponsorRegisterView(),
+      medicalStaffHomeRoute: (context) => const MedicalStaffHomePage(),
+      medicalStaffUpdateMedicalReportRoute: (context) => const MedicalStaffPutRecords(),
+      medicalStaffMakeAnAnnouncementRoute: (context) => const MedicalStaffMakeAnAnnouncement(),
+      medicalStaffMarkSessionRoute: (context) => const MedicalStaffMarkSession(),
+      medicalStaffViewPlayerMedicalReportRoute: (context) => const MedicalStaffPlayerReport(),
+      trainerHomeRoute: (context) => const TrainerHomePage(),
+      trainerMakeAnAnnouncementRoute: (context) => const GymTrainerMakeAnAnnouncement(),
+      trainerMarkSessionRoute: (context) => const TrainerMarkSession(),
+      trainerUpdateGymPlanRoute: (context) => const GymTrainerUpdateGymPlanView(),
+      trainerViewPlayerMedicalReportRoute: (context) => const TrainerPlayerReport(),
+      medicalStaffProfileRoute: (context) => const MedicalStaffProfile(),
+      trainerProfileRoute: (context) => const GymTrainerProfile(),
     },
   ));
 }

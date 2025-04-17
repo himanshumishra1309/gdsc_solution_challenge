@@ -6,14 +6,14 @@ import 'package:gdg_app/constants/routes.dart';
 import 'dart:math' as math;
 import 'package:intl/intl.dart';
 
-class CoachViewPlayerReport extends StatefulWidget {
-  const CoachViewPlayerReport({super.key});
+class MedicalStaffPlayerReport extends StatefulWidget {
+  const MedicalStaffPlayerReport({super.key});
 
   @override
-  _CoachViewPlayerReportState createState() => _CoachViewPlayerReportState();
+  _MedicalStaffPlayerReportState createState() => _MedicalStaffPlayerReportState();
 }
 
-class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
+class _MedicalStaffPlayerReportState extends State<MedicalStaffPlayerReport> {
   final _authService = AuthService();
   String _searchQuery = '';
   String _selectedSport = 'All Sports';
@@ -982,7 +982,7 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
         toolbarHeight: 65.0,
       ),
       drawer: CustomDrawer(
-        selectedDrawerItem: coachViewPlayerMedicalReportRoute,
+        selectedDrawerItem: medicalStaffViewPlayerMedicalReportRoute,
         onSelectDrawerItem: (route) {
           Navigator.pop(context);
           if (ModalRoute.of(context)?.settings.name != route) {
@@ -993,27 +993,27 @@ class _CoachViewPlayerReportState extends State<CoachViewPlayerReport> {
           DrawerItem(
               icon: Icons.people,
               title: 'View all players',
-              route: coachHomeRoute),
+              route: medicalStaffHomeRoute),
           DrawerItem(
               icon: Icons.announcement,
               title: 'Make announcement',
-              route: coachMakeAnAnnouncementRoute),
+              route: medicalStaffMakeAnAnnouncementRoute),
           DrawerItem(
               icon: Icons.schedule,
               title: 'Mark upcoming sessions',
-              route: coachMarkSessionRoute),
+              route: medicalStaffMarkSessionRoute),
           DrawerItem(
               icon: Icons.schedule,
-              title: 'View Coaching Staffs Assigned',
-              route: viewCoachingStaffsAssignedRoute),
+              title: 'Update Medical Report',
+              route: medicalStaffUpdateMedicalReportRoute),
           DrawerItem(
               icon: Icons.medical_services,
               title: 'View Medical records',
-              route: coachViewPlayerMedicalReportRoute),
+              route: medicalStaffViewPlayerMedicalReportRoute),
           DrawerItem(
               icon: Icons.person,
               title: 'View Profile',
-              route: coachProfileRoute),
+              route: medicalStaffProfileRoute),
         ],
         onLogout: () => _handleLogout(context),
         userName: _userName,

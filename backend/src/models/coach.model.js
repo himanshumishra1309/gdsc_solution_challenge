@@ -76,8 +76,8 @@ const coachSchema = new mongoose.Schema(
       enum: [
         "Head Coach",
         "Assistant Coach",
-        "Athletes",
-        "Training and Conditioning Staff",
+        "Medical Staff",
+        "Trainer",
       ],
       default: "Assistant Coach"
     },

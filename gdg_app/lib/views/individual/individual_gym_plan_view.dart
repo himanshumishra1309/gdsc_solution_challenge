@@ -879,28 +879,50 @@ bool _isLoading = false;
                 ],
               ),
               const Spacer(),
-              OutlinedButton.icon(
-                onPressed: () {
-                  // Copy to own plan
-                  setState(() {
-                    _exercises[day] = List.from(exercises);
-                    _selectedPlan = 'Own Plan';
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Copied to My Plan'),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.copy, size: 16),
-                label: const Text('Copy to My Plan'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.deepPurple,
-                  side: const BorderSide(color: Colors.deepPurple),
-                ),
-              ),
+Tooltip(
+  message: 'Copy to My Plan',
+  child: MediaQuery.of(context).size.width < 400 
+    ? IconButton(
+        onPressed: () {
+          // Copy to own plan
+          setState(() {
+            _exercises[day] = List.from(exercises);
+            _selectedPlan = 'Own Plan';
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Copied to My Plan'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        icon: const Icon(Icons.copy, color: Colors.deepPurple),
+      )
+    : OutlinedButton.icon(
+        onPressed: () {
+          // Copy to own plan
+          setState(() {
+            _exercises[day] = List.from(exercises);
+            _selectedPlan = 'Own Plan';
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Copied to My Plan'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        icon: const Icon(Icons.copy, size: 16),
+        label: const Text('Copy to My Plan'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.deepPurple,
+          side: const BorderSide(color: Colors.deepPurple),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+        ),
+      ),
+),
             ],
           ),
         ),

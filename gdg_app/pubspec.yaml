@@ -89,6 +89,9 @@ flutter:
     - assets/json_files/coaches_profiles.json
     - assets/json_files/sponsors_view.json
     - assets/json_files/sponsors_request.json
+    - assets/json_files/player_finance_data.json
+    - assets/json_files/coach_directory_data.json
+    - assets/json_files/sponsors_data.json
     - assets/images/news.jpg
     - assets/images/player1.png
     - assets/images/player2.jpg

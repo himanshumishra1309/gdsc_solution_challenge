@@ -416,7 +416,7 @@ const CoachManagement = () => {
               )}
 
               {/* Form Fields - Basic Information */}
-              // Replace the current form fields section with this complete version
+              // Replace the current form fields section with this complete version           
 <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
   {/* Basic Information */}
   <h3 className="font-medium text-lg">Basic Information</h3>

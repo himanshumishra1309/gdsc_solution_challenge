@@ -1,0 +1,73 @@
+{
+    "sportFilters": [
+      {"name": "All", "icon": "sports"},
+      {"name": "Football", "icon": "sports_soccer", "color": "green"},
+      {"name": "Cricket", "icon": "sports_cricket", "color": "blue"},
+      {"name": "Basketball", "icon": "sports_basketball", "color": "orange"},
+      {"name": "Tennis", "icon": "sports_tennis", "color": "red"},
+      {"name": "Badminton", "icon": "sports_tennis", "color": "purple"},
+      {"name": "Swimming", "icon": "pool", "color": "cyan"},
+      {"name": "Volleyball", "icon": "sports_volleyball", "color": "amber"}
+    ],
+    "sortOptions": [
+      {"id": "nameAsc", "label": "Name (A-Z)", "field": "name", "order": "asc"},
+      {"id": "nameDesc", "label": "Name (Z-A)", "field": "name", "order": "desc"},
+      {"id": "sport", "label": "Sport", "field": "sport", "order": "asc"},
+      {"id": "expDesc", "label": "Experience (Most)", "field": "experience", "order": "desc"},
+      {"id": "expAsc", "label": "Experience (Least)", "field": "experience", "order": "asc"}
+    ],
+    "helpItems": [
+      {
+        "icon": "search",
+        "title": "Search Coaches",
+        "description": "Use the search bar to find coaches by name."
+      },
+      {
+        "icon": "filter_alt",
+        "title": "Filter by Sport",
+        "description": "Filter the coach list by their primary sport."
+      },
+      {
+        "icon": "sort",
+        "title": "Sort Coaches",
+        "description": "Sort coaches by name, sport, or years of experience."
+      },
+      {
+        "icon": "grid_view",
+        "title": "Change View",
+        "description": "Toggle between list and grid view."
+      }
+    ],
+    "profileSections": {
+      "tabs": [
+        {"id": "overview", "label": "Overview"},
+        {"id": "teams", "label": "Teams"},
+        {"id": "schedule", "label": "Schedule"},
+        {"id": "performance", "label": "Performance"}
+      ],
+      "defaultBio": "Professional coach with expertise in {sport}. Specializing in {specialization}. Passionate about developing athletes to reach their full potential through personalized training and mentorship.",
+      "defaultPhilosophy": "I believe in a holistic approach to training that focuses on technical skill development, physical conditioning, and mental preparation. My coaching methodology emphasizes personalized attention to each athlete's unique needs and talents, fostering an environment of continuous improvement and teamwork.",
+      "philosophyItems": [
+        {"label": "Technical Excellence", "icon": "sports_soccer"},
+        {"label": "Mental Toughness", "icon": "psychology"},
+        {"label": "Team Spirit", "icon": "people"}
+      ],
+      "defaultAchievements": [
+        {
+          "title": "National Championship Winner",
+          "year": "2018",
+          "description": "Led team to national victory"
+        },
+        {
+          "title": "Advanced Coaching Certification",
+          "year": "2020",
+          "description": "International coaching association"
+        },
+        {
+          "title": "Coach of the Year",
+          "year": "2022",
+          "description": "Regional sports association award"
+        }
+      ]
+    }
+  }

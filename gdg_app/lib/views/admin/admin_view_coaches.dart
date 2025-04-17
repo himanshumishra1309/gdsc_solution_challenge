@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gdg_app/widgets/custom_drawer.dart';
@@ -38,24 +39,13 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
   String _userEmail = "";
   String? _userAvatar;
 
-  final List<String> _sportFilters = [
-    'All',
-    'Football',
-    'Cricket',
-    'Basketball',
-    'Tennis',
-    'Badminton',
-    'Swimming',
-    'Volleyball'
-  ];
-  final List<String> _sortOptions = [
-    'Name (A-Z)',
-    'Name (Z-A)',
-    'Sport',
-    'Experience (Most)',
-    'Experience (Least)'
-  ];
+  // Replace your existing hardcoded lists with these
+  List<dynamic> _sportFilters = [];
+  List<dynamic> _sortOptions = [];
+  List<dynamic> _helpItems = [];
+  Map<String, dynamic> _profileSections = {};
 
+// Add this to your initState method after _animationController initialization
   @override
   void initState() {
     super.initState();
@@ -63,25 +53,117 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
+    _loadJsonData(); // Add this line
     _loadCoaches();
     _loadUserInfo();
   }
 
-  Future<void> _loadUserInfo() async {
-  try {
-    final userData = await _authService.getCurrentUser();
-    
-    if (userData.isNotEmpty) {
+// Add this method to load JSON data
+  Future<void> _loadJsonData() async {
+    try {
+      final String jsonString = await rootBundle
+          .loadString('assets/json_files/coach_directory_data.json');
+      final data = json.decode(jsonString);
+
       setState(() {
-        _userName = userData['name'] ?? "Admin";
-        _userEmail = userData['email'] ?? "";
-        _userAvatar = userData['avatar'];
+        _sportFilters = data['sportFilters'] ?? [];
+        _sortOptions = data['sortOptions'] ?? [];
+        _helpItems = data['helpItems'] ?? [];
+        _profileSections = data['profileSections'] ?? {};
+
+        // Initialize selections if needed
+        if (_selectedSport.isEmpty && _sportFilters.isNotEmpty) {
+          _selectedSport = _sportFilters[0]['name'];
+        }
       });
+    } catch (e) {
+      debugPrint('Error loading coach directory data: $e');
     }
-  } catch (e) {
-    debugPrint('Error loading user info: $e');
   }
-}
+
+// Helper method to convert string icon names to IconData
+  IconData _getIconFromString(String iconName) {
+    switch (iconName) {
+      case 'sports':
+        return Icons.sports;
+      case 'sports_soccer':
+        return Icons.sports_soccer;
+      case 'sports_cricket':
+        return Icons.sports_cricket;
+      case 'sports_basketball':
+        return Icons.sports_basketball;
+      case 'sports_tennis':
+        return Icons.sports_tennis;
+      case 'sports_volleyball':
+        return Icons.sports_volleyball;
+      case 'pool':
+        return Icons.pool;
+      case 'search':
+        return Icons.search;
+      case 'filter_alt':
+        return Icons.filter_alt;
+      case 'sort':
+        return Icons.sort;
+      case 'grid_view':
+        return Icons.grid_view;
+      case 'psychology':
+        return Icons.psychology;
+      case 'people':
+        return Icons.people;
+      default:
+        return Icons.circle;
+    }
+  }
+
+// Update your existing _getSportColor method to use the loaded data
+  Color _getSportColor(String sport) {
+    // Find the sport in the loaded data
+    final sportItem = _sportFilters.firstWhere((item) => item['name'] == sport,
+        orElse: () => {'color': 'deepPurple'});
+
+    // Convert string color to Color object
+    return _getColorFromString(sportItem['color'] ?? 'deepPurple');
+  }
+
+// Helper method to convert string color names to Color objects
+  Color _getColorFromString(String colorName) {
+    switch (colorName) {
+      case 'green':
+        return Colors.green;
+      case 'blue':
+        return Colors.blue;
+      case 'orange':
+        return Colors.orange;
+      case 'red':
+        return Colors.red;
+      case 'purple':
+        return Colors.purple;
+      case 'cyan':
+        return Colors.cyan;
+      case 'amber':
+        return Colors.amber;
+      case 'deepPurple':
+        return Colors.deepPurple;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Future<void> _loadUserInfo() async {
+    try {
+      final userData = await _authService.getCurrentUser();
+
+      if (userData.isNotEmpty) {
+        setState(() {
+          _userName = userData['name'] ?? "Admin";
+          _userEmail = userData['email'] ?? "";
+          _userAvatar = userData['avatar'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -274,7 +356,7 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
   void _showFilterBottomSheet() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // This allows the bottom sheet to expand
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -282,10 +364,9 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
         return StatefulBuilder(
           builder: (context, setModalState) {
             return DraggableScrollableSheet(
-              initialChildSize: 0.6, // Initial height (60% of screen)
-              minChildSize:
-                  0.3, // Minimum height when collapsed (30% of screen)
-              maxChildSize: 0.9, // Maximum height when expanded (90% of screen)
+              initialChildSize: 0.6,
+              minChildSize: 0.3,
+              maxChildSize: 0.9,
               expand: false,
               builder: (context, scrollController) {
                 return SingleChildScrollView(
@@ -333,18 +414,34 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: _sportFilters.map((sport) {
+                          children: _sportFilters.map<Widget>((sport) {
                             return FilterChip(
-                              label: Text(sport),
-                              selected: _selectedSport == sport,
+                              label: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (sport.containsKey('icon'))
+                                    Icon(
+                                      _getIconFromString(sport['icon']),
+                                      size: 16,
+                                      color: _selectedSport == sport['name']
+                                          ? Colors.white
+                                          : _getColorFromString(
+                                              sport['color'] ?? 'deepPurple'),
+                                    ),
+                                  if (sport.containsKey('icon'))
+                                    const SizedBox(width: 4),
+                                  Text(sport['name']),
+                                ],
+                              ),
+                              selected: _selectedSport == sport['name'],
                               selectedColor: Colors.deepPurple.withOpacity(0.2),
                               checkmarkColor: Colors.deepPurple,
                               onSelected: (selected) {
                                 setModalState(() {
-                                  _selectedSport = sport;
+                                  _selectedSport = sport['name'];
                                 });
                                 setState(() {
-                                  _selectedSport = sport;
+                                  _selectedSport = sport['name'];
                                   _sortCoaches();
                                 });
                               },
@@ -363,17 +460,17 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: _sortOptions.map((option) {
+                          children: _sortOptions.map<Widget>((option) {
                             return ChoiceChip(
-                              label: Text(option),
-                              selected: _sortBy == option,
+                              label: Text(option['label']),
+                              selected: _sortBy == option['label'],
                               selectedColor: Colors.deepPurple.withOpacity(0.2),
                               onSelected: (selected) {
                                 setModalState(() {
-                                  _sortBy = option;
+                                  _sortBy = option['label'];
                                 });
                                 setState(() {
-                                  _sortBy = option;
+                                  _sortBy = option['label'];
                                   _sortCoaches();
                                 });
                               },
@@ -381,84 +478,7 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
                           }).toList(),
                         ),
 
-                        // Additional filters can be added here
-                        const SizedBox(height: 20),
-                        const Text(
-                          'Experience Level',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            activeTrackColor: Colors.deepPurple,
-                            inactiveTrackColor:
-                                Colors.deepPurple.withOpacity(0.2),
-                            thumbColor: Colors.deepPurple,
-                            overlayColor: Colors.deepPurple.withOpacity(0.1),
-                          ),
-                          child: Slider(
-                            value:
-                                5, // Replace with your actual experience filter value
-                            min: 0,
-                            max: 20,
-                            divisions: 20,
-                            label: '5+ years',
-                            onChanged: (value) {
-                              // Update your experience filter
-                              setModalState(() {
-                                // _experienceFilter = value;
-                              });
-                            },
-                          ),
-                        ),
-
-                        const SizedBox(height: 30),
-                        // Replace the Apply Filters button in the _showFilterBottomSheet method (around line 297)
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.deepPurple,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onPressed: () {
-                              // Load data with filters
-                              setState(() {
-                                _currentPage =
-                                    1; // Reset to page 1 when applying filters
-                                _loadCoaches();
-                              });
-                              Navigator.pop(context);
-                            },
-                            child: const Text('Apply Filters'),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Update the reset filters text button in _showFilterBottomSheet (around line 311)
-                        Center(
-                          child: TextButton(
-                            onPressed: () {
-                              setModalState(() {
-                                _selectedSport = 'All';
-                                _sortBy = 'Name (A-Z)';
-                              });
-                              setState(() {
-                                _selectedSport = 'All';
-                                _sortBy = 'Name (A-Z)';
-                                _currentPage = 1; // Reset to page 1
-                                _loadCoaches(); // Re-fetch data from API
-                              });
-                            },
-                            child: const Text('Reset All Filters'),
-                          ),
-                        ),
+                        // Rest of the existing code...
                       ],
                     ),
                   ),
@@ -508,31 +528,18 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
                   ],
                 ),
                 const SizedBox(height: 20),
-                _buildHelpItem(
-                  icon: Icons.search,
-                  title: 'Search Coaches',
-                  description: 'Use the search bar to find coaches by name.',
-                ),
-                const SizedBox(height: 16),
-                _buildHelpItem(
-                  icon: Icons.filter_alt,
-                  title: 'Filter by Sport',
-                  description: 'Filter the coach list by their primary sport.',
-                ),
-                const SizedBox(height: 16),
-                _buildHelpItem(
-                  icon: Icons.sort,
-                  title: 'Sort Coaches',
-                  description:
-                      'Sort coaches by name, sport, or years of experience.',
-                ),
-                const SizedBox(height: 16),
-                _buildHelpItem(
-                  icon: Icons.grid_view,
-                  title: 'Change View',
-                  description: 'Toggle between list and grid view.',
-                ),
-                const SizedBox(height: 20),
+                ..._helpItems
+                    .map((item) => Column(
+                          children: [
+                            _buildHelpItem(
+                              icon: _getIconFromString(item['icon']),
+                              title: item['title'],
+                              description: item['description'],
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ))
+                    .toList(),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
                   style: TextButton.styleFrom(
@@ -601,7 +608,10 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CoachProfileWrapper(coach: coach),
+        builder: (context) => CoachProfileWrapper(
+          coach: coach,
+          profileSections: _profileSections, // Add this line to pass the data
+        ),
       ),
     );
   }
@@ -810,15 +820,13 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
               title: 'Video Analysis',
               route: videoAnalysisRoute),
           DrawerItem(
-              icon: Icons.edit, title: 'Edit Forms', route: editFormsRoute),
-          DrawerItem(
               icon: Icons.attach_money,
               title: 'Manage Player Finances',
               route: adminManagePlayerFinancesRoute),
         ],
         onLogout: () => _handleLogout(context),
         userName: _userName,
-        userEmail: _userEmail, 
+        userEmail: _userEmail,
         userAvatarUrl: _userAvatar,
       ),
       body: Column(
@@ -1246,33 +1254,16 @@ class _AdminViewCoachesState extends State<AdminViewCoaches>
       ),
     );
   }
-
-  Color _getSportColor(String sport) {
-    switch (sport) {
-      case 'Football':
-        return Colors.green;
-      case 'Cricket':
-        return Colors.blue;
-      case 'Basketball':
-        return Colors.orange;
-      case 'Tennis':
-        return Colors.red;
-      case 'Badminton':
-        return Colors.purple;
-      case 'Swimming':
-        return Colors.cyan;
-      case 'Volleyball':
-        return Colors.amber;
-      default:
-        return Colors.deepPurple;
-    }
-  }
 }
 
 class CoachProfileWrapper extends StatelessWidget {
   final Map<String, dynamic> coach;
+  final Map<String, dynamic> profileSections; // Add this field
 
-  const CoachProfileWrapper({required this.coach, super.key});
+  const CoachProfileWrapper(
+      {required this.coach,
+      required this.profileSections, // Add this parameter
+      super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -1293,15 +1284,22 @@ class CoachProfileWrapper extends StatelessWidget {
     }
 
     return Scaffold(
-      body: CoachProfilePage(coachData: safeCoachData),
+      body: CoachProfilePage(
+        coachData: safeCoachData,
+        profileSections: profileSections, // Pass the data to CoachProfilePage
+      ),
     );
   }
 }
 
 class CoachProfilePage extends StatefulWidget {
   final Map<String, dynamic> coachData;
+  final Map<String, dynamic> profileSections; // Add this field
 
-  const CoachProfilePage({required this.coachData, super.key});
+  const CoachProfilePage(
+      {required this.coachData,
+      required this.profileSections, // Add this parameter
+      super.key});
 
   @override
   _CoachProfilePageState createState() => _CoachProfilePageState();
@@ -1603,6 +1601,23 @@ class _CoachProfilePageState extends State<CoachProfilePage>
   Widget _buildOverviewTab() {
     final sportColor = _getSportColor(widget.coachData['primarySport'] ?? '');
 
+    // Get default bio from JSON data if available
+    String defaultBio = '';
+    if (widget.profileSections.containsKey('defaultBio')) {
+      defaultBio = widget.profileSections['defaultBio']
+          .replaceAll('{sport}', widget.coachData['primarySport'] ?? 'sports')
+          .replaceAll('{specialization}',
+              widget.coachData['specialization'] ?? 'training');
+    } else {
+      defaultBio =
+          'Professional coach with expertise in ${widget.coachData['primarySport']}...';
+    }
+
+    // And similarly for other uses of _profileSections
+    List<dynamic> philosophyItems = [];
+    if (widget.profileSections.containsKey('philosophyItems')) {
+      philosophyItems = widget.profileSections['philosophyItems'];
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
