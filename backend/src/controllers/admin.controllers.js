@@ -1739,9 +1739,10 @@ export {
   getRequestsLog,
   sendSponsorInvitation,
   sendPotentialSponsorRequest,
+
+  //stats
   addSportStats,
   getSportStats,
   addAthleteStats,
   getOrganizationStats,
-  getAthleteFullDetails,
 };
