@@ -114,6 +114,7 @@ const handleSignUp = async (e) => {
       const userData = response.data.data.user;
       localStorage.setItem("user", JSON.stringify(userData));
       localStorage.setItem("userType", "sponsor");
+      sessionStorage.setItem("sponsorAccessToken", response.data.data.sponsorAccessToken);
       
       // Navigate to sponsor dashboard after a short delay
       setTimeout(() => {
@@ -174,6 +175,7 @@ const handleSignUp = async (e) => {
         const userData = response.data.data.user;
         localStorage.setItem("user", JSON.stringify(userData));
         localStorage.setItem("userType", "sponsor");
+        sessionStorage.setItem("sponsorAccessToken", response.data.data.sponsorAccessToken);
         
         // Navigate to sponsor dashboard after a short delay
         setTimeout(() => {

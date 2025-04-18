@@ -31,6 +31,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Loader } from "lucide-react";
 
 const sportsEnum = [
   "Cricket",
@@ -68,6 +69,10 @@ const AthleteManagement = () => {
 
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedAthlete, setSelectedAthlete] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+const [profileError, setProfileError] = useState(null);
+const [athleteDetails, setAthleteDetails] = useState(null);
+
 
   // Performance data for athlete profile
   const [performanceData, setPerformanceData] = useState({
@@ -395,9 +400,55 @@ const AthleteManagement = () => {
   };
 
   // View athlete profile
-  const handleViewProfile = (athlete) => {
+  const handleViewProfile = async (athlete) => {
     setSelectedAthlete(athlete);
     setProfileDialogOpen(true);
+    setProfileLoading(true);
+    setProfileError(null);
+    
+    try {
+      const response = await axios.get(
+        `http://localhost:8000/api/v1/admins/athletes/${athlete._id}/details`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          },
+          withCredentials: true
+        }
+      );
+      
+      if (response.data && response.data.data && response.data.data.athlete) {
+        setAthleteDetails(response.data.data.athlete);
+        
+        // Set performance data if available in the response
+        if (response.data.data.athlete.sportsInfo.stats && 
+            response.data.data.athlete.sportsInfo.stats.length) {
+          // Find the primary sport's stats or use the first one
+          const primarySport = response.data.data.athlete.sportsInfo.stats[0];
+          const perfStats = {};
+          
+          // Map stats to performance metrics
+          primarySport.stats.forEach(stat => {
+            if (stat.statName === 'consistency') perfStats.consistency = stat.value;
+            if (stat.statName === 'technique') perfStats.technique = stat.value;
+            if (stat.statName === 'stamina') perfStats.stamina = stat.value;
+          });
+          
+          setPerformanceData({
+            consistency: perfStats.consistency || 70,
+            technique: perfStats.technique || 65,
+            stamina: perfStats.stamina || 80
+          });
+        }
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (err) {
+      console.error("Error fetching athlete details:", err);
+      setProfileError(err.response?.data?.message || "Failed to load athlete details");
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
   // Handle adding new athlete
@@ -1955,311 +2006,392 @@ const AthleteManagement = () => {
       )}
 
       {/* Athlete Profile Dialog */}
-      {selectedAthlete && (
-        <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-          <DialogContent className="max-w-5xl p-8 rounded-lg bg-white shadow-lg overflow-y-auto max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">
-                {selectedAthlete.name}
-              </DialogTitle>
-            </DialogHeader>
+{selectedAthlete && (
+  <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+    <DialogContent className="max-w-5xl p-8 rounded-lg bg-white shadow-lg overflow-y-auto max-h-[90vh]">
+      <DialogHeader>
+        <DialogTitle className="text-2xl font-bold">
+          {selectedAthlete.name}
+        </DialogTitle>
+      </DialogHeader>
 
-            {/* Profile content here */}
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Left column - Basic info */}
-              <div className="space-y-6">
-                <div className="flex flex-col items-center">
-                  <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 mb-4">
-                    {selectedAthlete.avatar ? (
-                      <img
-                        src={selectedAthlete.avatar}
-                        alt={selectedAthlete.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center">
-                        <span className="text-gray-500 text-3xl font-medium">
-                          {selectedAthlete.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+      {profileLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <span className="ml-3 text-gray-600">Loading athlete details...</span>
+        </div>
+      ) : profileError ? (
+        <Alert variant="destructive" className="my-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{profileError}</AlertDescription>
+        </Alert>
+      ) : athleteDetails ? (
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Left column - Basic info */}
+          <div className="space-y-6">
+            <div className="flex flex-col items-center">
+              <div className="h-32 w-32 rounded-full overflow-hidden bg-gray-200 mb-4">
+                {athleteDetails.basicInfo.avatar ? (
+                  <img
+                    src={athleteDetails.basicInfo.avatar}
+                    alt={athleteDetails.basicInfo.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center">
+                    <span className="text-gray-500 text-3xl font-medium">
+                      {athleteDetails.basicInfo.name.charAt(0).toUpperCase()}
+                    </span>
                   </div>
-                  <h3 className="text-xl font-semibold">
-                    {selectedAthlete.name}
-                  </h3>
-                  <p className="text-gray-500 text-sm">
-                    {selectedAthlete.email}
-                  </p>
-                </div>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">
-                      Personal Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-2">
-                    <div>
-                      <p className="text-sm text-gray-500">Age</p>
-                      <p className="font-medium">
-                        {selectedAthlete.dob
-                          ? calculateAge(selectedAthlete.dob)
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Gender</p>
-                      <p className="font-medium">
-                        {selectedAthlete.gender || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Nationality</p>
-                      <p className="font-medium">
-                        {selectedAthlete.nationality || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Phone</p>
-                      <p className="font-medium">
-                        {selectedAthlete.phoneNumber || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Address</p>
-                      <p className="font-medium">
-                        {selectedAthlete.address || "N/A"}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                )}
               </div>
-
-              {/* Middle column - School & Sports */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">
-                      Academic Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-2">
-                    <div>
-                      <p className="text-sm text-gray-500">School Name</p>
-                      <p className="font-medium">
-                        {selectedAthlete.schoolName || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Grade/Year</p>
-                      <p className="font-medium">
-                        {selectedAthlete.year || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Student ID</p>
-                      <p className="font-medium">
-                        {selectedAthlete.studentId || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">School Email</p>
-                      <p className="font-medium">
-                        {selectedAthlete.schoolEmail || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Training Since</p>
-                      <p className="font-medium">
-                        {selectedAthlete.trainingStartDate
-                          ? new Date(
-                              selectedAthlete.trainingStartDate
-                            ).toLocaleDateString()
-                          : "N/A"}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">
-                      Sports Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-2">
-                    <div>
-                      <p className="text-sm text-gray-500">Sports</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {selectedAthlete.sports?.map((sport, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800"
-                          >
-                            {sport}
-                          </span>
-                        )) || <p className="text-gray-500">No sports listed</p>}
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Skill Level</p>
-                      <p className="font-medium">
-                        {selectedAthlete.skillLevel || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Dominant Hand</p>
-                      <p className="font-medium">
-                        {selectedAthlete.dominantHand || "N/A"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Coach</p>
-                      <p className="font-medium">
-                        {selectedAthlete.headCoachName || "Not Assigned"}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right column - Medical & Performance */}
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">
-                      Medical Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-2">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500">Height</p>
-                        <p className="font-medium">
-                          {selectedAthlete.height
-                            ? `${selectedAthlete.height} cm`
-                            : "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Weight</p>
-                        <p className="font-medium">
-                          {selectedAthlete.weight
-                            ? `${selectedAthlete.weight} kg`
-                            : "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">BMI</p>
-                        <p className="font-medium">
-                          {selectedAthlete.height && selectedAthlete.weight
-                            ? (
-                                selectedAthlete.weight /
-                                Math.pow(selectedAthlete.height / 100, 2)
-                              ).toFixed(1)
-                            : "N/A"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500">Blood Group</p>
-                        <p className="font-medium">
-                          {selectedAthlete.bloodGroup || "N/A"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-gray-500">Allergies</p>
-                      <p className="font-medium">
-                        {selectedAthlete.allergies?.join(", ") ||
-                          "None reported"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-sm text-gray-500">
-                        Medical Conditions
-                      </p>
-                      <p className="font-medium">
-                        {selectedAthlete.medicalConditions?.join(", ") ||
-                          "None reported"}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">
-                      Performance Metrics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-4">
-                    <div className="text-center mb-2">
-                      <span className="text-3xl font-bold text-blue-600">
-                        {overallRating}
-                      </span>
-                      <p className="text-sm text-gray-500">Overall Rating</p>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">Consistency</span>
-                        <span className="text-sm font-medium">
-                          {consistency}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${consistency}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">Technique</span>
-                        <span className="text-sm font-medium">
-                          {technique}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${technique}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm">Stamina</span>
-                        <span className="text-sm font-medium">{stamina}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-purple-600 h-2 rounded-full"
-                          style={{ width: `${stamina}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              <h3 className="text-xl font-semibold">
+                {athleteDetails.basicInfo.name}
+              </h3>
+              <p className="text-gray-500 text-sm">
+                {athleteDetails.basicInfo.email}
+              </p>
+              <div className="mt-2 py-1 px-3 bg-blue-100 text-blue-800 rounded-full text-xs">
+                Athlete ID: {athleteDetails.basicInfo.athleteId}
               </div>
             </div>
 
-            <DialogFooter className="mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setProfileDialogOpen(false)}
-              >
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Personal Information</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-2">
+                <div>
+                  <p className="text-sm text-gray-500">Age</p>
+                  <p className="font-medium">{athleteDetails.basicInfo.age} years</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Gender</p>
+                  <p className="font-medium">{athleteDetails.basicInfo.gender}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Nationality</p>
+                  <p className="font-medium">{athleteDetails.basicInfo.nationality}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Phone</p>
+                  <p className="font-medium">{athleteDetails.basicInfo.phoneNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Address</p>
+                  <p className="font-medium">{athleteDetails.basicInfo.address}</p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Emergency Contact</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-2">
+                <div>
+                  <p className="text-sm text-gray-500">Name</p>
+                  <p className="font-medium">{athleteDetails.emergencyContact.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Phone</p>
+                  <p className="font-medium">{athleteDetails.emergencyContact.number}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Relationship</p>
+                  <p className="font-medium">{athleteDetails.emergencyContact.relationship}</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Middle column - School & Sports */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Academic Information</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-2">
+                <div>
+                  <p className="text-sm text-gray-500">School Name</p>
+                  <p className="font-medium">{athleteDetails.schoolInfo.schoolName}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Grade/Year</p>
+                  <p className="font-medium">{athleteDetails.schoolInfo.year}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Student ID</p>
+                  <p className="font-medium">{athleteDetails.schoolInfo.studentId}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">School Email</p>
+                  <p className="font-medium">{athleteDetails.schoolInfo.schoolEmail}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  {athleteDetails.schoolInfo.uploadSchoolId && (
+                    <a
+                      href={athleteDetails.schoolInfo.uploadSchoolId}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center bg-blue-50 hover:bg-blue-100 text-blue-700 p-2 rounded-md text-xs"
+                    >
+                      <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 10V16M12 16L15 13M12 16L9 13M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      School ID
+                    </a>
+                  )}
+                  {athleteDetails.schoolInfo.latestMarksheet && (
+                    <a
+                      href={athleteDetails.schoolInfo.latestMarksheet}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center bg-green-50 hover:bg-green-100 text-green-700 p-2 rounded-md text-xs"
+                    >
+                      <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 10V16M12 16L15 13M12 16L9 13M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Marksheet
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Sports Information</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <div>
+                  <p className="text-sm text-gray-500">Sports</p>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {athleteDetails.sportsInfo.sports.map((sport, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800"
+                      >
+                        {sport}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Skill Level</p>
+                  <p className="font-medium">{athleteDetails.sportsInfo.skillLevel}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Training Duration</p>
+                  <p className="font-medium">{athleteDetails.sportsInfo.trainingDuration}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Dominant Hand</p>
+                  <p className="font-medium">{athleteDetails.sportsInfo.dominantHand}</p>
+                </div>
+                
+                {Object.keys(athleteDetails.sportsInfo.positions).length > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-500">Positions</p>
+                    <div className="mt-1 space-y-1">
+                      {Object.entries(athleteDetails.sportsInfo.positions).map(([sport, position]) => (
+                        <div key={sport} className="flex items-center justify-between">
+                          <span className="text-xs font-medium">{sport}:</span>
+                          <span className="text-xs bg-gray-100 px-2 py-1 rounded">{position}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Staff Assignments</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-3">
+                <div>
+                  <p className="text-sm text-gray-500">Head Coach</p>
+                  <p className="font-medium">
+                    {athleteDetails.staffAssignments.headCoach ? 
+                      athleteDetails.staffAssignments.headCoach.name : 
+                      "Not assigned"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Gym Trainer</p>
+                  <p className="font-medium">
+                    {athleteDetails.staffAssignments.gymTrainer ? 
+                      athleteDetails.staffAssignments.gymTrainer.name : 
+                      "Not assigned"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Medical Staff</p>
+                  <p className="font-medium">
+                    {athleteDetails.staffAssignments.medicalStaff ? 
+                      athleteDetails.staffAssignments.medicalStaff.name : 
+                      "Not assigned"}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right column - Medical & Performance */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Medical Information</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500">Height</p>
+                    <p className="font-medium">{athleteDetails.medicalInfo.height} cm</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Weight</p>
+                    <p className="font-medium">{athleteDetails.medicalInfo.weight} kg</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">BMI</p>
+                    <p className="font-medium">{athleteDetails.medicalInfo.bmi}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Blood Group</p>
+                    <p className="font-medium">{athleteDetails.medicalInfo.bloodGroup}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Allergies</p>
+                  <p className="font-medium">
+                    {athleteDetails.medicalInfo.allergies.join(", ")}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-500">Medical Conditions</p>
+                  <p className="font-medium">
+                    {athleteDetails.medicalInfo.medicalConditions.join(", ")}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Performance Metrics</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-4">
+                <div className="text-center mb-2">
+                  <span className="text-3xl font-bold text-blue-600">
+                    {overallRating}
+                  </span>
+                  <p className="text-sm text-gray-500">Overall Rating</p>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm">Consistency</span>
+                    <span className="text-sm font-medium">{consistency}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-600 h-2 rounded-full"
+                      style={{ width: `${consistency}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm">Technique</span>
+                    <span className="text-sm font-medium">{technique}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full"
+                      style={{ width: `${technique}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-sm">Stamina</span>
+                    <span className="text-sm font-medium">{stamina}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-purple-600 h-2 rounded-full"
+                      style={{ width: `${stamina}%` }}
+                    ></div>
+                  </div>
+                </div>
+                
+                {athleteDetails.sportsInfo.stats && athleteDetails.sportsInfo.stats.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-sm font-medium mb-3">Sport-Specific Stats</p>
+                    {athleteDetails.sportsInfo.stats.map((sportStat, idx) => (
+                      <div key={idx} className="mb-3">
+                        <p className="text-xs font-medium text-gray-700 mb-1">{sportStat.sport}</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {sportStat.stats.map((stat, statIdx) => (
+                            <div key={statIdx} className="bg-gray-50 p-2 rounded">
+                              <span className="text-xs text-gray-500 block">{stat.statName}</span>
+                              <span className="text-sm font-medium">{stat.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Organization</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0 space-y-2">
+                <div className="flex items-center">
+                  {athleteDetails.organization.logo && (
+                    <img 
+                      src={athleteDetails.organization.logo} 
+                      alt="Organization Logo" 
+                      className="h-10 w-10 mr-3 object-contain"
+                    />
+                  )}
+                  <div>
+                    <p className="font-medium">{athleteDetails.organization.name}</p>
+                    <p className="text-xs text-gray-500">Member since {new Date(athleteDetails.metadata.createdAt).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        <div className="py-12 text-center text-gray-500">
+          No athlete details available
+        </div>
       )}
+
+      <DialogFooter className="mt-6">
+        <Button
+          variant="outline"
+          onClick={() => setProfileDialogOpen(false)}
+        >
+          Close
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
+)}
     </div>
   );
 };
