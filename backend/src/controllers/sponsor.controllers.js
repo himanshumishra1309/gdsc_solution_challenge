@@ -155,7 +155,7 @@ const loginSponsor = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse (
                 200, {
-                    user: loggedInSponsor
+                    user: loggedInSponsor, sponsorRefreshToken, sponsorAccessToken
                 },
                 "Sponsor logged in Successfully"
             )
@@ -239,56 +239,85 @@ const updateSponsorProfile = asyncHandler(async (req, res) => {
         sponsorshipEnd
     } = req.body;
 
-    // Create update object with only provided fields
-    const updateFields = {};
-    
-    if (name) updateFields.name = name;
-    if (email) updateFields.email = email;
-    if (address) updateFields.address = address;
-    if (state) updateFields.state = state;
-    if (contactName) updateFields.contactName = contactName;
-    if (contactNo) updateFields.contactNo = contactNo;
-    
-    // Handle sponsorship range updates if either value is provided
-    if (sponsorshipStart !== undefined || sponsorshipEnd !== undefined) {
-        // Get current sponsor to access existing values
+    try {
+        // Get current sponsor to check email uniqueness and access existing values
         const currentSponsor = await Sponsor.findById(req.sponsor?._id);
         
-        updateFields.sponsorshipRange = {
-            start: sponsorshipStart !== undefined ? 
+        if (!currentSponsor) {
+            throw new ApiError(404, "Sponsor not found");
+        }
+
+        // Check email uniqueness if it's being updated
+        if (email && email !== currentSponsor.email) {
+            const existingEmailSponsor = await Sponsor.findOne({ email, _id: { $ne: req.sponsor._id } });
+            if (existingEmailSponsor) {
+                throw new ApiError(400, "Email already in use by another sponsor");
+            }
+        }
+
+        // Create update object with only provided fields
+        const updateFields = {};
+        
+        if (name) updateFields.name = name;
+        if (email) updateFields.email = email;
+        if (address) updateFields.address = address;
+        if (state) updateFields.state = state;
+        if (contactName) updateFields.contactName = contactName;
+        if (contactNo) updateFields.contactNo = contactNo;
+        
+        // Handle sponsorship range updates if either value is provided
+        if (sponsorshipStart !== undefined || sponsorshipEnd !== undefined) {
+            const start = sponsorshipStart !== undefined ? 
                 parseInt(sponsorshipStart) : 
-                currentSponsor.sponsorshipRange.start,
-            end: sponsorshipEnd !== undefined ? 
+                currentSponsor.sponsorshipRange.start;
+                
+            const end = sponsorshipEnd !== undefined ? 
                 parseInt(sponsorshipEnd) : 
-                currentSponsor.sponsorshipRange.end
-        };
+                currentSponsor.sponsorshipRange.end;
+                
+            // Validate that start is less than end
+            if (start > end) {
+                throw new ApiError(400, "Sponsorship start amount cannot be greater than end amount");
+            }
+            
+            updateFields.sponsorshipRange = { start, end };
+        }
+
+        // Handle file/avatar upload if provided
+        if (req.file) {
+            updateFields.avatar = req.file.path;
+        }
+
+        // Update the sponsor profile with new data
+        const updatedSponsor = await Sponsor.findByIdAndUpdate(
+            req.sponsor._id,
+            { $set: updateFields },
+            { new: true, runValidators: true }
+        ).select("-password -refreshToken");
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    200,
+                    { sponsor: updatedSponsor },
+                    "Sponsor profile updated successfully"
+                )
+            );
+    } catch (error) {
+        // Handle Mongoose validation errors
+        if (error.name === 'ValidationError') {
+            const validationErrors = Object.keys(error.errors).map(field => ({
+                field,
+                message: error.errors[field].message
+            }));
+            
+            throw new ApiError(400, "Validation failed", validationErrors);
+        }
+        
+        // Rethrow other errors
+        throw error;
     }
-
-    // Handle file/avatar upload if provided
-    if (req.file) {
-        updateFields.avatar = req.file.path;
-    }
-
-    // Update the sponsor profile with new data
-    const updatedSponsor = await Sponsor.findByIdAndUpdate(
-        req.sponsor?._id,
-        { $set: updateFields },
-        { new: true, runValidators: true }
-    ).select("-password -refreshToken");
-
-    if (!updatedSponsor) {
-        throw new ApiError(404, "Sponsor not found");
-    }
-
-    return res
-        .status(200)
-        .json(
-            new ApiResponse (
-                200,
-                { sponsor: updatedSponsor },
-                "Sponsor profile updated successfully"
-            )
-        );
 });
 
 

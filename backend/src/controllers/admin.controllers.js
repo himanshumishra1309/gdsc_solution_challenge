@@ -5,7 +5,7 @@ import { Athlete } from "../models/athlete.model.js";
 import { Coach } from "../models/coach.model.js";
 import { Organization } from "../models/organization.model.js";
 import { Sponsor } from "../models/sponsor.model.js";
-// import {sendEmail} from "../utils/sendEmail.js"
+
 import ApiResponse from "../utils/ApiResponse.js";
 import { CustomForm } from "../models/customForm.model.js";
 import { SponsorRequest } from "../models/SponsorRequest.model.js";
@@ -17,9 +17,7 @@ import SPORTS_ENUM from "../utils/sportsEnum.js";
 import mongoose from "mongoose";
 
 const registerOrganizationAthlete = asyncHandler(async (req, res) => {
-  // Extract all fields from request
   const {
-    // Basic Information
     name,
     dob,
     gender,
@@ -27,51 +25,42 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
     address,
     phoneNumber,
 
-    // School Information
     schoolName,
     year,
     studentId,
     schoolEmail,
     schoolWebsite,
 
-    // Sports Information
     sports,
     skillLevel,
     trainingStartDate,
     positions,
     dominantHand,
 
-    // Staff Assignments
     headCoachAssigned,
     gymTrainerAssigned,
     medicalStaffAssigned,
 
-    // Medical Information
     height,
     weight,
     bloodGroup,
     allergies,
     medicalConditions,
 
-    // Emergency Contact
     emergencyContactName,
     emergencyContactNumber,
     emergencyContactRelationship,
 
-    // Authentication
     email,
     password,
 
-    // Organization
     organizationId,
 
-    // If updating an existing athlete
     athleteId,
   } = req.body;
 
   console.log("response: ", req.body);
 
-  // Validate required fields
   if (
     !name ||
     !dob ||
@@ -97,12 +86,10 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All required fields must be provided");
   }
 
-  // Validate organization ID
   if (!mongoose.Types.ObjectId.isValid(organizationId)) {
     throw new ApiError(400, "Invalid Organization ID format");
   }
 
-  // Check if organization exists
   const organization = await Organization.findById(organizationId);
   if (!organization) {
     throw new ApiError(
@@ -111,14 +98,11 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
     );
   }
 
-  // Check for existing athlete - using ID if provided, otherwise email
   let existingAthlete = null;
 
   if (athleteId && mongoose.Types.ObjectId.isValid(athleteId)) {
-    // If ID is provided, look up by ID
     existingAthlete = await Athlete.findById(athleteId);
 
-    // If found but email doesn't match, verify it's not assigned to someone else
     if (existingAthlete && existingAthlete.email !== email) {
       const duplicateEmail = await Athlete.findOne({ email });
       if (duplicateEmail) {
@@ -126,14 +110,12 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
       }
     }
   } else {
-    // Otherwise check by email
     existingAthlete = await Athlete.findOne({ email });
     if (existingAthlete) {
       throw new ApiError(400, "Athlete with this email already exists");
     }
   }
 
-  // Create a unique athleteId if not updating an existing athlete
   let athleteIdCode;
 
   if (!existingAthlete) {
@@ -141,62 +123,43 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
     const yearPrefix = currentDate.getFullYear().toString().slice(-2);
     const orgPrefix = organization.name.substring(0, 3).toUpperCase();
 
-    // Find last athlete ID for this org to create a sequential number
     const lastAthlete = await Athlete.findOne({
       organization: organizationId,
     }).sort({ createdAt: -1 });
 
     let sequentialNumber = 1;
     if (lastAthlete && lastAthlete.athleteId) {
-      // Try to extract sequential number from existing ID
       const match = lastAthlete.athleteId.match(/\d+$/);
       if (match) {
         sequentialNumber = parseInt(match[0]) + 1;
       }
     }
 
-    // Format sequential number with leading zeros
     const paddedNumber = sequentialNumber.toString().padStart(4, "0");
 
-    // Generate athleteId: ORG-YY-0001
     athleteIdCode = `${orgPrefix}-${yearPrefix}-${paddedNumber}`;
   } else {
-    // Keep existing code if updating
     athleteIdCode = existingAthlete.athleteId;
   }
 
-  // Add this code before line 200 (where you create the positionsMap)
-
-  // Handle file uploads
   let avatarUrl = null;
   let uploadSchoolIdUrl = null;
   let latestMarksheetUrl = null;
 
-  // If files were uploaded, handle them
   if (req.files) {
-    // Process avatar if uploaded
     if (req.files.avatar) {
-      // In a real implementation, you would upload to a cloud storage
-      // and get back the URL. For now, we'll just use a placeholder.
       avatarUrl = `/uploads/avatars/${Date.now()}-${req.files.avatar[0].originalname}`;
-
-      // If using local storage, you might save the file like this:
-      // const avatarFile = req.files.avatar[0];
-      // fs.writeFileSync(path.join(__dirname, '..', 'public', avatarUrl), avatarFile.buffer);
     }
 
-    // Process school ID document if uploaded
     if (req.files.uploadSchoolId) {
       uploadSchoolIdUrl = `/uploads/school-ids/${Date.now()}-${req.files.uploadSchoolId[0].originalname}`;
     }
 
-    // Process marksheet if uploaded
     if (req.files.latestMarksheet) {
       latestMarksheetUrl = `/uploads/marksheets/${Date.now()}-${req.files.latestMarksheet[0].originalname}`;
     }
   }
 
-  // Convert positions from object to Map
   const positionsMap = new Map();
   if (positions) {
     Object.keys(positions).forEach((sport) => {
@@ -204,11 +167,9 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create or update athlete
   let athlete;
 
   if (existingAthlete) {
-    // Update existing athlete
     athlete = await Athlete.findByIdAndUpdate(
       existingAthlete._id,
       {
@@ -254,14 +215,13 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
         emergencyContactNumber,
         emergencyContactRelationship,
         email,
-        // Don't update password unless specifically requested
+
         ...(req.body.updatePassword && { password }),
         organization: organizationId,
       },
       { new: true }
     );
   } else {
-    // Create new athlete
     athlete = await Athlete.create({
       name,
       athleteId: athleteIdCode,
@@ -308,7 +268,6 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
       organization: organizationId,
     });
 
-    // Send welcome email for new athletes
     try {
       await sendEmail({
         email: athlete.email,
@@ -329,7 +288,6 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
     }
   }
 
-  // Calculate age for response
   const birthDate = new Date(dob);
   const today = new Date();
   let age = today.getFullYear() - birthDate.getFullYear();
@@ -338,7 +296,6 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
     age--;
   }
 
-  // Return success response
   res.status(201).json(
     new ApiResponse(
       201,
@@ -366,16 +323,14 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
 
 const updateOrganizationAthlete = asyncHandler(async (req, res) => {
   const { athleteId } = req.params;
-  const updateFields = req.body; // Get all updatable fields from request
+  const updateFields = req.body;
 
   console.log("🛠 Incoming update request:", updateFields);
 
-  // Validate athleteId
   if (!mongoose.Types.ObjectId.isValid(athleteId)) {
     throw new ApiError(400, "Invalid Athlete ID format");
   }
 
-  // Find the athlete
   const athlete = await Athlete.findById(athleteId);
   if (!athlete) {
     throw new ApiError(404, "Athlete not found");
@@ -383,7 +338,6 @@ const updateOrganizationAthlete = asyncHandler(async (req, res) => {
 
   console.log("📌 Current Athlete Data:", athlete);
 
-  // Define allowed fields
   const allowedFields = [
     "name",
     "dob",
@@ -415,7 +369,6 @@ const updateOrganizationAthlete = asyncHandler(async (req, res) => {
     "avatar",
   ];
 
-  // Check for invalid fields
   const invalidFields = Object.keys(updateFields).filter(
     (key) => !allowedFields.includes(key)
   );
@@ -427,7 +380,6 @@ const updateOrganizationAthlete = asyncHandler(async (req, res) => {
     });
   }
 
-  // Update valid fields
   Object.keys(updateFields).forEach((key) => {
     athlete[key] = updateFields[key];
   });
@@ -482,7 +434,6 @@ const getAthleteById = asyncHandler(async (req, res) => {
 });
 
 const getAllAthletes = asyncHandler(async (req, res) => {
-  // Extract query parameters
   const {
     page = 1,
     limit = 10,
@@ -495,37 +446,29 @@ const getAllAthletes = asyncHandler(async (req, res) => {
     organizationId,
   } = req.query;
 
-  // Build filter object
   const filter = {};
 
-  // Add organization filter based on user role
   if (req.admin) {
-    // If admin, filter by their organization
     filter.organization = req.admin.organization;
   } else if (
     organizationId &&
     mongoose.Types.ObjectId.isValid(organizationId)
   ) {
-    // If organization ID provided and valid, use it
     filter.organization = organizationId;
   }
 
-  // Add sport filter if provided
   if (sport) {
     filter.sports = { $in: [sport] };
   }
 
-  // Add skill level filter if provided
   if (skillLevel) {
     filter.skillLevel = skillLevel;
   }
 
-  // Add gender filter if provided
   if (gender) {
     filter.gender = gender;
   }
 
-  // Add search functionality (search by name or athleteId)
   if (search) {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
@@ -534,17 +477,14 @@ const getAllAthletes = asyncHandler(async (req, res) => {
     ];
   }
 
-  // Set up pagination
   const pageNumber = parseInt(page, 10);
   const limitNumber = parseInt(limit, 10);
   const skip = (pageNumber - 1) * limitNumber;
 
-  // Set up sort option
   const sortOption = {};
   sortOption[sort] = order === "asc" ? 1 : -1;
 
   try {
-    // Get athletes with pagination, filtering, and sorting
     const athletes = await Athlete.find(filter)
       .sort(sortOption)
       .skip(skip)
@@ -559,11 +499,9 @@ const getAllAthletes = asyncHandler(async (req, res) => {
         select: "name email",
       });
 
-    // Get total count for pagination info
     const totalAthletes = await Athlete.countDocuments(filter);
     const totalPages = Math.ceil(totalAthletes / limitNumber);
 
-    // Return response
     return res.status(200).json(
       new ApiResponse(
         200,
@@ -589,23 +527,19 @@ const getAllAthletes = asyncHandler(async (req, res) => {
 const registerAdmin = asyncHandler(async (req, res) => {
   const { name, email, password, organizationId, avatar } = req.body;
 
-  // Validate required fields
   if (!name || !email || !password || !organizationId) {
     throw new ApiError(400, "All required fields must be provided");
   }
 
-  // Check if admin with email already exists
   const existingAdmin = await Admin.findOne({ email });
   if (existingAdmin) {
     throw new ApiError(400, "Admin with this email already exists");
   }
 
-  // Validate organization ID
   if (!mongoose.Types.ObjectId.isValid(organizationId)) {
     throw new ApiError(400, "Invalid Organization ID format");
   }
 
-  // Verify organization exists
   const organization = await Organization.findById(organizationId);
   if (!organization) {
     throw new ApiError(
@@ -614,32 +548,15 @@ const registerAdmin = asyncHandler(async (req, res) => {
     );
   }
 
-  // Create admin
   const admin = await Admin.create({
     name,
     email,
-    password, // Password will be hashed by the model's pre-save hook
+    password,
     avatar: avatar || "",
     organization: organizationId,
     role: "admin",
   });
 
-  // // Send welcome email
-  // await sendEmail({
-  //   email: admin.email,
-  //   subject: "Welcome to AMS - Admin Account Created",
-  //   message: `
-  //     <h3>Hi ${admin.name},</h3>
-  //     <p>Your admin account has been created in the Athlete Management System.</p>
-  //     <p><strong>Email:</strong> ${admin.email}</p>
-  //     <p><strong>Password:</strong> ${password}</p>
-  //     <p>Please log in and change your password at your earliest convenience.</p>
-  //     <p>You have been assigned as an administrator for ${organization.name}.</p>
-  //     <p>Thank you!</p>
-  //   `,
-  // });
-
-  // Send success response (without password)
   res.status(201).json({
     success: true,
     message: "Admin registered successfully",
@@ -657,21 +574,18 @@ const updateAdmin = asyncHandler(async (req, res) => {
   const { adminId } = req.params;
   const { name, avatar, password } = req.body;
 
-  // Validate adminId
   if (!mongoose.Types.ObjectId.isValid(adminId)) {
     throw new ApiError(400, "Invalid Admin ID format");
   }
 
-  // Find existing admin
   const admin = await Admin.findById(adminId);
   if (!admin) {
     throw new ApiError(404, "Admin not found");
   }
 
-  // Update fields if provided
   if (name) admin.name = name;
   if (avatar) admin.avatar = avatar;
-  if (password) admin.password = password; // Will be hashed in pre-save hook
+  if (password) admin.password = password;
 
   await admin.save();
 
@@ -688,7 +602,6 @@ const updateAdmin = asyncHandler(async (req, res) => {
 });
 
 const getAllAdmins = asyncHandler(async (req, res) => {
-  // Extract query parameters
   const {
     page = 1,
     limit = 10,
@@ -698,27 +611,21 @@ const getAllAdmins = asyncHandler(async (req, res) => {
     organizationId,
   } = req.query;
 
-  // Build filter object
   const filter = {};
 
-  // Add organization filter based on user role or query parameter
   if (req.admin && req.admin.role === "superadmin") {
-    // Super admins can see all admins or filter by organization
     if (organizationId && mongoose.Types.ObjectId.isValid(organizationId)) {
       filter.organization = organizationId;
     }
   } else if (req.admin) {
-    // Regular admins can only see admins from their own organization
     filter.organization = req.admin.organization;
   } else if (
     organizationId &&
     mongoose.Types.ObjectId.isValid(organizationId)
   ) {
-    // If no logged-in admin but organization ID provided in query
     filter.organization = organizationId;
   }
 
-  // Add search functionality (search by name or email)
   if (search) {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
@@ -726,32 +633,27 @@ const getAllAdmins = asyncHandler(async (req, res) => {
     ];
   }
 
-  // Set up pagination
   const pageNumber = parseInt(page, 10);
   const limitNumber = parseInt(limit, 10);
   const skip = (pageNumber - 1) * limitNumber;
 
-  // Set up sort option
   const sortOption = {};
   sortOption[sort] = order === "asc" ? 1 : -1;
 
   try {
-    // Get admins with pagination, filtering, and sorting
     const admins = await Admin.find(filter)
       .sort(sortOption)
       .skip(skip)
       .limit(limitNumber)
-      .select("-password -refreshToken") // Exclude sensitive fields
+      .select("-password -refreshToken")
       .populate({
         path: "organization",
         select: "name logo",
       });
 
-    // Get total count for pagination info
     const totalAdmins = await Admin.countDocuments(filter);
     const totalPages = Math.ceil(totalAdmins / limitNumber);
 
-    // Return response
     return res.status(200).json(
       new ApiResponse(
         200,
@@ -793,7 +695,7 @@ const registerCoach = asyncHandler(async (req, res) => {
     experience,
     certifications,
     previousOrganizations,
-    designation, // Default value
+    designation,
     profilePhoto,
     idProof,
     certificatesFile,
@@ -802,7 +704,6 @@ const registerCoach = asyncHandler(async (req, res) => {
 
   console.log("Received Organization ID:", organizationId);
 
-  // Validate required fields
   if (
     !name ||
     !email ||
@@ -819,13 +720,11 @@ const registerCoach = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please provide all required fields");
   }
 
-  // Validate organization ID
   if (!mongoose.Types.ObjectId.isValid(organizationId)) {
     throw new ApiError(400, "Invalid Organization ID format");
   }
   const orgId = new mongoose.Types.ObjectId(organizationId);
 
-  // Verify organization exists
   const organization = await Organization.findById(orgId);
   console.log("Organization Query Result:", organization);
 
@@ -836,33 +735,21 @@ const registerCoach = asyncHandler(async (req, res) => {
     );
   }
 
-  // Validate sport against organization's sports
-  // if (!organization.sportType.includes(sport)) {
-  //   throw new ApiError(
-  //     400,
-  //     `Invalid sport. Allowed sports: ${organization.sportType.join(", ")}`
-  //   );
-  // }
-
-  // Check if coach with email already exists
   const existingCoach = await Coach.findOne({ email });
   if (existingCoach) {
     throw new ApiError(400, "Coach with this email already exists");
   }
 
-  // Parse date of birth
   const dobDate = new Date(dob);
   if (isNaN(dobDate.getTime())) {
     throw new ApiError(400, "Invalid date of birth format");
   }
 
-  // Parse experience as a number
   const experienceYears = parseInt(experience);
   if (isNaN(experienceYears)) {
     throw new ApiError(400, "Experience must be a valid number");
   }
 
-  // Format certifications and previous organizations
   const certificationsList = certifications
     ? certifications.split(",").map((cert) => cert.trim())
     : [];
@@ -870,7 +757,6 @@ const registerCoach = asyncHandler(async (req, res) => {
     ? previousOrganizations.split(",").map((org) => org.trim())
     : [];
 
-  // Modify the coach creation part around line 730
   const coach = await Coach.create({
     name,
     email,
@@ -891,12 +777,11 @@ const registerCoach = asyncHandler(async (req, res) => {
     experience: experienceYears,
     certifications: certificationsList.length
       ? certificationsList
-      : ["Default Certification"], // Add a default if empty
+      : ["Default Certification"],
     previousOrganizations: previousOrgList,
     designation,
     avatar: profilePhoto || "",
     documents: {
-      // Use placeholder values instead of empty strings
       idProof: idProof || "placeholder-id-proof.jpg",
       certificates: certificatesFile || "placeholder-certificates.pdf",
     },
@@ -904,23 +789,6 @@ const registerCoach = asyncHandler(async (req, res) => {
     joined_date: new Date(),
   });
 
-  // // Send welcome email with login credentials
-  // await sendEmail({
-  //   email: coach.email,
-  //   subject: "Welcome to AMS - Coach Login Details",
-  //   message: `
-  //     <h3>Hi ${coach.name},</h3>
-  //     <p>Your account has been created in the Athlete Management System.</p>
-  //     <p><strong>Email:</strong> ${coach.email}</p>
-  //     <p><strong>Password:</strong> ${password}</p>
-  //     <p>Please log in and change your password at your earliest convenience.</p>
-  //     <p>You have been assigned to ${organization.name} as a ${designation} for ${sport}.</p>
-  //     <p>For any questions, please contact the system administrator.</p>
-  //     <p>Thank you!</p>
-  //   `,
-  // });
-
-  // Send success response
   res.status(201).json({
     success: true,
     message: "Coach registered successfully, welcome email sent.",
@@ -950,7 +818,6 @@ const updateCoach = asyncHandler(async (req, res, next) => {
     assignedAthletes,
   } = req.body;
 
-  // Extract uploaded files (if any)
   const profilePhoto = req.files?.profilePhoto
     ? req.files.profilePhoto[0].path
     : null;
@@ -959,18 +826,15 @@ const updateCoach = asyncHandler(async (req, res, next) => {
     ? req.files.certificates[0].path
     : null;
 
-  // Validate Coach ID
   if (!mongoose.Types.ObjectId.isValid(coachId)) {
     return next(new ApiError(400, "Invalid Coach ID"));
   }
 
-  // Find the coach
   let coach = await Coach.findById(coachId);
   if (!coach) {
     return next(new ApiError(404, "Coach not found"));
   }
 
-  // 🔹 Check if email is being updated and already exists
   if (email && email !== coach.email) {
     const existingCoach = await Coach.findOne({ email });
     if (existingCoach) {
@@ -978,7 +842,6 @@ const updateCoach = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // 🔹 Handle file deletions (Cloudinary cleanup)
   if (profilePhoto && coach.profilePhoto) {
     await cloudinary.uploader.destroy(coach.profilePhoto);
   }
@@ -989,7 +852,6 @@ const updateCoach = asyncHandler(async (req, res, next) => {
     await cloudinary.uploader.destroy(coach.certificates);
   }
 
-  // 🔹 Validate and Assign Athletes
   let validAthletes = [];
   if (assignedAthletes && Array.isArray(assignedAthletes)) {
     validAthletes = await Athlete.find({ _id: { $in: assignedAthletes } });
@@ -998,7 +860,6 @@ const updateCoach = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // 🔹 Update Coach Details
   const updatedCoach = await Coach.findByIdAndUpdate(
     coachId,
     {
@@ -1026,7 +887,6 @@ const updateCoach = asyncHandler(async (req, res, next) => {
 });
 
 const getAllCoaches = asyncHandler(async (req, res) => {
-  // Extract query parameters
   const {
     page = 1,
     limit = 10,
@@ -1038,32 +898,25 @@ const getAllCoaches = asyncHandler(async (req, res) => {
     organizationId,
   } = req.query;
 
-  // Build filter object
   const filter = {};
 
-  // Add organization filter based on user role
   if (req.admin) {
-    // If admin, filter by their organization
     filter.organization = req.admin.organization;
   } else if (
     organizationId &&
     mongoose.Types.ObjectId.isValid(organizationId)
   ) {
-    // If organization ID provided and valid, use it
     filter.organization = organizationId;
   }
 
-  // Add sport filter if provided
   if (sport) {
     filter.sport = sport;
   }
 
-  // Add designation filter if provided
   if (designation) {
     filter.designation = designation;
   }
 
-  // Add search functionality (search by name or email)
   if (search) {
     filter.$or = [
       { name: { $regex: search, $options: "i" } },
@@ -1072,22 +925,19 @@ const getAllCoaches = asyncHandler(async (req, res) => {
     ];
   }
 
-  // Set up pagination
   const pageNumber = parseInt(page, 10);
   const limitNumber = parseInt(limit, 10);
   const skip = (pageNumber - 1) * limitNumber;
 
-  // Set up sort option
   const sortOption = {};
   sortOption[sort] = order === "asc" ? 1 : -1;
 
   try {
-    // Get coaches with pagination, filtering, and sorting
     const coaches = await Coach.find(filter)
       .sort(sortOption)
       .skip(skip)
       .limit(limitNumber)
-      .select("-password -refreshToken") // Exclude sensitive fields
+      .select("-password -refreshToken")
       .populate({
         path: "organization",
         select: "name logo",
@@ -1095,14 +945,12 @@ const getAllCoaches = asyncHandler(async (req, res) => {
       .populate({
         path: "assignedAthletes",
         select: "name athleteId avatar",
-        options: { limit: 5 }, // Limit number of populated athletes
+        options: { limit: 5 },
       });
 
-    // Get total count for pagination info
     const totalCoaches = await Coach.countDocuments(filter);
     const totalPages = Math.ceil(totalCoaches / limitNumber);
 
-    // Return response
     return res.status(200).json(
       new ApiResponse(
         200,
@@ -1140,31 +988,26 @@ const getAllUsers = asyncHandler(async (req, res) => {
 
 const getOrganizationStats = asyncHandler(async (req, res) => {
   try {
-    // Get organization ID either from the authenticated admin or from query params
     let organizationId;
 
     if (req.admin) {
-      // If request comes from authenticated admin, use their organization
       organizationId = req.admin.organization;
     } else if (
       req.query.organizationId &&
       mongoose.Types.ObjectId.isValid(req.query.organizationId)
     ) {
-      // Otherwise, if provided in query, use that
       organizationId = req.query.organizationId;
     } else {
       throw new ApiError(400, "Valid organization ID is required");
     }
 
-    // Count total number of entities for the organization
     const [adminCount, coachCount, athleteCount, sponsorCount] =
       await Promise.all([
         Admin.countDocuments({ organization: organizationId }),
         Coach.countDocuments({ organization: organizationId }),
         Athlete.countDocuments({ organization: organizationId }),
-        // If you have a Sponsor model, use the line below. Otherwise, just return 0
+
         Sponsor.countDocuments({ organization: organizationId }),
-        // Promise.resolve(0) // Placeholder for sponsors if you don't have a model yet
       ]);
 
     return res.status(200).json(
@@ -1176,7 +1019,6 @@ const getOrganizationStats = asyncHandler(async (req, res) => {
             coachCount: coachCount || 0,
             athleteCount: athleteCount || 0,
             sponsorCount: sponsorCount || 0,
-            // You can add more statistics here as needed
           },
         },
         "Organization statistics fetched successfully"
@@ -1194,8 +1036,6 @@ const generateAccessAndRefreshToken = async (userId) => {
   try {
     const admin = await Admin.findById(userId);
 
-    //we save refresh token in db
-    // If no teacher is found, throw an error
     if (!admin) {
       throw new ApiError(404, "Admin not found");
     }
@@ -1347,11 +1187,9 @@ const sendSponsorInvitation = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Check if a sponsor already exists with this email
   let sponsor = await Sponsor.findOne({ email });
 
   if (!sponsor) {
-    // If sponsor does not exist, create a new sponsor entry
     sponsor = await Sponsor.create({
       companyName,
       contactPerson,
@@ -1360,7 +1198,6 @@ const sendSponsorInvitation = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Check if a pending request already exists for this sponsor
   const existingRequest = await SponsorRequest.findOne({
     organization: organizationId,
     sponsor: sponsor._id,
@@ -1372,10 +1209,9 @@ const sendSponsorInvitation = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // Create a sponsor request linked to the existing/new sponsor
   const newRequest = await SponsorRequest.create({
     organization: organizationId,
-    sponsor: sponsor._id, // Linking request to sponsor
+    sponsor: sponsor._id,
     requestType,
     companyName,
     contactPerson,
@@ -1410,7 +1246,6 @@ const sendPotentialSponsorRequest = asyncHandler(async (req, res, next) => {
     return next(new ApiError(404, "Sponsor not found"));
   }
 
-  // Check if a pending request already exists for this sponsor
   const existingRequest = await SponsorRequest.findOne({
     organization: organizationId,
     sponsor: sponsorId,
@@ -1441,7 +1276,6 @@ const sendPotentialSponsorRequest = asyncHandler(async (req, res, next) => {
 const getPotentialSponsors = asyncHandler(async (req, res, next) => {
   const organizationId = req.admin.organization;
 
-  // Get sponsors that are NOT already sponsoring this organization
   const potentialSponsors = await Sponsor.find({
     sponsoredOrganizations: { $ne: organizationId },
   }).select("Name contactName contactNo email");
@@ -1462,7 +1296,7 @@ const getPotentialSponsors = asyncHandler(async (req, res, next) => {
 });
 
 const getCurrentSponsors = asyncHandler(async (req, res, next) => {
-  const organizationId = req.admin.organization; // Get the admin's organization ID
+  const organizationId = req.admin.organization;
 
   const currentSponsors = await Sponsor.find({
     sponsoredOrganizations: organizationId,
@@ -1496,20 +1330,17 @@ const getRequestsLog = asyncHandler(async (req, res, next) => {
   const organizationId = req.admin.organization;
   const { status, page = 1, limit = 10 } = req.query;
 
-  // Filter by status if provided
   const filter = { organization: organizationId };
   if (status && ["Pending", "Accepted", "Declined"].includes(status)) {
     filter.status = status;
   }
 
-  // Paginate results
   const requests = await SponsorRequest.find(filter)
     .populate("sponsor", "companyName contactPerson email phone")
-    .sort({ createdAt: -1 }) // Newest requests first
+    .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(parseInt(limit));
 
-  // Count total requests for pagination metadata
   const totalRequests = await SponsorRequest.countDocuments(filter);
 
   res
@@ -1526,14 +1357,11 @@ const getRequestsLog = asyncHandler(async (req, res, next) => {
 const addSportStats = asyncHandler(async (req, res, next) => {
   const { sport, stats } = req.body;
 
-  // Check if sport already exists (predefined or custom)
   let sportEntry = await SportStats.findOne({ sport });
 
   if (!sportEntry) {
-    // If it's a new custom sport, allow creation
     sportEntry = new SportStats({ sport, stats: [...new Set(stats)] });
   } else {
-    // Merge predefined and custom stats
     sportEntry.stats = [...new Set([...sportEntry.stats, ...stats])];
   }
 
@@ -1569,25 +1397,21 @@ const getSportStats = asyncHandler(async (req, res, next) => {
 const addAthleteStats = asyncHandler(async (req, res, next) => {
   const { athleteId, sport, stats } = req.body;
 
-  // 1️⃣ Ensure athleteId is provided
   if (!athleteId) {
     return next(new ApiError(400, "Athlete ID is required"));
   }
 
-  // 2️⃣ Validate athlete existence
   const athleteExists = await Athlete.findById(athleteId);
   if (!athleteExists) {
     return next(new ApiError(404, "Athlete not found"));
   }
 
-  // 3️⃣ Restrict Coaches - Only update their assigned athletes
   if (req.coach) {
     const coach = await Coach.findById(req.coach._id);
     if (!coach) {
       return next(new ApiError(404, "Coach not found"));
     }
 
-    // Check if athlete is assigned to this coach
     if (!coach.assignedAthletes.includes(athleteId)) {
       return next(
         new ApiError(403, "You can only update stats for assigned athletes")
@@ -1595,18 +1419,15 @@ const addAthleteStats = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // 4️⃣ Validate sport
   if (!Object.values(SPORTS_ENUM).includes(sport)) {
     return next(new ApiError(400, "Invalid sport type"));
   }
 
-  // Find the sport stats or create a new one if it doesn’t exist
   let sportStats = await SportStats.findOne({ sport });
   if (!sportStats) {
     sportStats = new SportStats({ sport, stats: [] });
   }
 
-  // Find athlete stats, or create new if it doesn’t exist
   let athleteStats = await AthleteStats.findOne({ athlete: athleteId, sport });
   if (!athleteStats) {
     athleteStats = new AthleteStats({
@@ -1632,7 +1453,6 @@ const addAthleteStats = asyncHandler(async (req, res, next) => {
 
   await athleteStats.save();
 
-  // Update SportStats with new custom stats before saving athlete stats
   if (newCustomStats.length > 0) {
     sportStats.stats = [...new Set([...sportStats.stats, ...newCustomStats])];
     await sportStats.save();
@@ -1645,9 +1465,261 @@ const addAthleteStats = asyncHandler(async (req, res, next) => {
     );
 });
 
+const getAthleteFullDetails = asyncHandler(async (req, res) => {
+  const { athleteId } = req.params;
+  
+  // Validate athlete ID
+  if (!mongoose.Types.ObjectId.isValid(athleteId)) {
+    throw new ApiError(400, "Invalid athlete ID format");
+  }
+  
+  // Get the admin's organization ID
+  const organizationId = req.admin.organization;
+  
+  try {
+    // Fetch athlete basic information first
+    const athlete = await Athlete.findById(athleteId);
+    
+    // Verify athlete exists
+    if (!athlete) {
+      throw new ApiError(404, "Athlete not found");
+    }
+    
+    // Verify the admin has access to this athlete's data
+    if (athlete.organization.toString() !== organizationId.toString()) {
+      throw new ApiError(403, "You don't have permission to access this athlete's data");
+    }
+    
+    // Populate fields safely with separate queries
+    const populatedData = {
+      organization: null,
+      headCoachAssigned: null,
+      gymTrainerAssigned: null,
+      medicalStaffAssigned: null
+    };
+    
+    // Populate organization
+    try {
+      if (athlete.organization) {
+        const org = await Organization.findById(athlete.organization).select("name logo");
+        populatedData.organization = org;
+      }
+    } catch (err) {
+      console.error("Error populating organization:", err);
+    }
+    
+    // Populate headCoachAssigned
+    try {
+      if (athlete.headCoachAssigned) {
+        const coach = await Coach.findById(athlete.headCoachAssigned).select("name email avatar contactNumber");
+        populatedData.headCoachAssigned = coach;
+      }
+    } catch (err) {
+      console.error("Error populating headCoach:", err);
+    }
+    
+    // Populate gymTrainerAssigned
+    try {
+      if (athlete.gymTrainerAssigned) {
+        const trainer = await Coach.findById(athlete.gymTrainerAssigned).select("name email avatar contactNumber");
+        populatedData.gymTrainerAssigned = trainer;
+      }
+    } catch (err) {
+      console.error("Error populating gymTrainer:", err);
+    }
+    
+    // Don't attempt to populate medicalStaffAssigned if the model doesn't exist
+    
+    // Get athleteStats if available
+    let athleteStats = [];
+    try {
+      athleteStats = await AthleteStats.find({ athlete: athleteId });
+    } catch (err) {
+      console.error("Error fetching athlete stats:", err);
+    }
+    
+    // Format positions from Map to Object
+    const positions = {};
+    if (athlete.positions && athlete.positions.size > 0) {
+      for (const [sport, position] of athlete.positions.entries()) {
+        positions[sport] = position;
+      }
+    }
+    
+    // Calculate training duration
+    const trainingStartDate = new Date(athlete.trainingStartDate);
+    const today = new Date();
+    let trainingYears = today.getFullYear() - trainingStartDate.getFullYear();
+    const trainingMonths = today.getMonth() - trainingStartDate.getMonth();
+    if (trainingMonths < 0 || (trainingMonths === 0 && today.getDate() < trainingStartDate.getDate())) {
+      trainingYears--;
+    }
+    
+    // Format complete athlete details
+    const athleteDetails = {
+      basicInfo: {
+        id: athlete._id,
+        athleteId: athlete.athleteId,
+        name: athlete.name,
+        email: athlete.email,
+        age: athlete.age, // Virtual field from schema
+        dob: athlete.dob,
+        gender: athlete.gender,
+        nationality: athlete.nationality,
+        address: athlete.address,
+        phoneNumber: athlete.phoneNumber,
+        avatar: athlete.avatar
+      },
+      schoolInfo: {
+        schoolName: athlete.schoolName,
+        year: athlete.year,
+        studentId: athlete.studentId,
+        schoolEmail: athlete.schoolEmail || "Not provided",
+        schoolWebsite: athlete.schoolWebsite || "Not provided",
+        uploadSchoolId: athlete.uploadSchoolId,
+        latestMarksheet: athlete.latestMarksheet
+      },
+      sportsInfo: {
+        sports: athlete.sports,
+        skillLevel: athlete.skillLevel,
+        trainingStartDate: athlete.trainingStartDate,
+        trainingDuration: `${trainingYears} years, ${Math.abs(trainingMonths)} months`,
+        positions: positions,
+        dominantHand: athlete.dominantHand || "Not specified",
+        stats: athleteStats || []
+      },
+      staffAssignments: {
+        headCoach: populatedData.headCoachAssigned || null,
+        gymTrainer: populatedData.gymTrainerAssigned || null,
+        medicalStaff: null // We're not attempting to populate this
+      },
+      medicalInfo: {
+        height: athlete.height, // in cm
+        weight: athlete.weight, // in kg
+        bmi: (athlete.weight / Math.pow(athlete.height/100, 2)).toFixed(2),
+        bloodGroup: athlete.bloodGroup || "Not recorded",
+        allergies: athlete.allergies.length > 0 ? athlete.allergies : ["None reported"],
+        medicalConditions: athlete.medicalConditions.length > 0 ? athlete.medicalConditions : ["None reported"]
+      },
+      emergencyContact: {
+        name: athlete.emergencyContactName,
+        number: athlete.emergencyContactNumber,
+        relationship: athlete.emergencyContactRelationship
+      },
+      organization: {
+        id: athlete.organization,
+        name: populatedData.organization?.name || "Unknown Organization",
+        logo: populatedData.organization?.logo || null
+      },
+      metadata: {
+        createdAt: athlete.createdAt,
+        updatedAt: athlete.updatedAt
+      }
+    };
+    
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        { athlete: athleteDetails },
+        "Athlete details retrieved successfully"
+      )
+    );
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, "Error fetching athlete details: " + error.message);
+  }
+});
+
+const getAllSponsors = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 10,
+    sort = "companyName",
+    order = "asc",
+    search = "",
+    status = "", // "active", "potential", "all"
+  } = req.query;
+
+  // Get the admin's organization ID
+  const organizationId = req.admin.organization;
+
+  // Build filter based on query params
+  const filter = {};
+  
+  // Filter by sponsorship status if specified
+  if (status === "active") {
+    filter.sponsoredOrganizations = organizationId;
+  } else if (status === "potential") {
+    filter.sponsoredOrganizations = { $ne: organizationId };
+  }
+  
+  // Add search functionality
+  if (search) {
+    filter.$or = [
+      { companyName: { $regex: search, $options: "i" } },
+      { contactPerson: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { phone: { $regex: search, $options: "i" } }
+    ];
+  }
+
+  // Set up pagination
+  const pageNumber = parseInt(page, 10);
+  const limitNumber = parseInt(limit, 10);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  // Set up sorting
+  const sortOption = {};
+  sortOption[sort] = order === "asc" ? 1 : -1;
+
+  try {
+    // Fetch sponsors with pagination and sorting
+    const sponsors = await Sponsor.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limitNumber)
+      .select("companyName contactPerson email phone logo industry sponsoredOrganizations interestLevel");
+
+    // Add isCurrentSponsor flag to each sponsor
+    const sponsorsWithStatus = sponsors.map(sponsor => {
+      const sponsorObj = sponsor.toObject();
+      sponsorObj.isCurrentSponsor = sponsor.sponsoredOrganizations?.includes(organizationId);
+      return sponsorObj;
+    });
+    
+    // Get total count for pagination
+    const totalSponsors = await Sponsor.countDocuments(filter);
+    const totalPages = Math.ceil(totalSponsors / limitNumber);
+
+    // Return response
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          sponsors: sponsorsWithStatus,
+          pagination: {
+            totalSponsors,
+            totalPages,
+            currentPage: pageNumber,
+            limit: limitNumber,
+            hasNextPage: pageNumber < totalPages,
+            hasPrevPage: pageNumber > 1,
+          },
+        },
+        "Sponsors retrieved successfully"
+      )
+    );
+  } catch (error) {
+    throw new ApiError(500, "Error fetching sponsors: " + error.message);
+  }
+});
+
 export {
   registerOrganizationAthlete,
   updateOrganizationAthlete,
+  getAllSponsors,
   getAllAthletes,
   registerAdmin,
   updateAdmin,
@@ -1667,10 +1739,9 @@ export {
   getRequestsLog,
   sendSponsorInvitation,
   sendPotentialSponsorRequest,
-
-  //stats
   addSportStats,
   getSportStats,
   addAthleteStats,
   getOrganizationStats,
+  getAthleteFullDetails,
 };
