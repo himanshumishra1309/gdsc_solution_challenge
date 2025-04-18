@@ -27,7 +27,7 @@ import {
 } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import toast from "react-hot-toast"; // Import without destructuring
+import toast from "react-hot-toast";
 
 // Fallback sports in case API fails
 const fallbackSports = {
@@ -185,7 +185,6 @@ const SProfile = () => {
     }
   };
 
-  // Change this part in handleSaveProfile
   const handleSaveProfile = async () => {
     try {
       const accessToken = sessionStorage.getItem("sponsorAccessToken");
@@ -209,7 +208,6 @@ const SProfile = () => {
       
       console.log("Sending to API:", backendData);
       
-      // Use POST instead of PATCH to avoid CORS issues
       const response = await axios.patch(
         "http://localhost:8000/api/v1/sponsors/profile",
         backendData,
@@ -359,11 +357,16 @@ const SProfile = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 overflow-x-hidden">
+    <div className="p-2 md:p-6 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6 text-gray-800">
-          Sponsor Dashboard
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            Sponsor Dashboard
+          </h1>
+          <div className="text-sm text-gray-500">
+            Last updated: {new Date().toLocaleDateString()}
+          </div>
+        </div>
 
         {/* Main content container */}
         <Tabs
@@ -372,43 +375,59 @@ const SProfile = () => {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          <TabsList className="grid w-full grid-cols-2 mb-6 overflow-hidden">
-            <TabsTrigger value="profile" className="text-sm md:text-base py-2 md:py-3">
+          <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 p-1 rounded-lg">
+            <TabsTrigger 
+              value="profile" 
+              className="px-4 py-2 md:py-2 transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md "
+            >
               <FaUserCircle className="mr-2" /> Profile Information
             </TabsTrigger>
-            <TabsTrigger value="sports" className="text-sm md:text-base py-2 md:py-3">
+            <TabsTrigger 
+              value="sports" 
+              className=" px-4 py-2 md:py-2 transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md "
+            >
               <FaRunning className="mr-2" /> Sports Interests
             </TabsTrigger>
           </TabsList>
 
           {/* Profile Tab Content */}
-          <TabsContent value="profile" className="mt-0 space-y-4">
-            <Card className="bg-white shadow-md overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-800 h-24 md:h-32"></div>
+          <TabsContent value="profile" className="mt-0">
+            <Card className="bg-white shadow-sm rounded-xl border border-gray-200 overflow-hidden">
+              {/* Header with gradient background */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-800 h-16 md:h-24 relative">
+                <div className="absolute bottom-4 left-4 md:left-8">
+                  <h2 className="text-xl md:text-2xl font-bold text-white">
+                    Company Profile
+                  </h2>
+                </div>
+              </div>
 
-              <div className="px-4 md:px-8 pb-6 pt-0 relative">
-                <div className="absolute -top-12 md:-top-16 left-4 md:left-8">
-                  <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-white">
+              {/* Avatar positioned over the header */}
+              <div className="px-6 md:px-8 pb-6 mt-4 md:mt-6 relative z-10">
+                <div className="flex justify-center">
+                  <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-white shadow-md">
                     {sponsor?.logo ? (
                       <AvatarImage
                         src={sponsor.logo}
                         alt={sponsor.companyName}
+                        className="object-cover"
                       />
                     ) : (
-                      <AvatarFallback className="bg-blue-100 text-blue-800 text-2xl md:text-4xl">
+                      <AvatarFallback className="bg-blue-100 text-blue-800 text-2xl md:text-4xl font-medium">
                         {getInitials(sponsor?.companyName)}
                       </AvatarFallback>
                     )}
                   </Avatar>
                 </div>
 
-                <div className="mt-16 md:mt-20 flex flex-col md:flex-row justify-between items-start gap-4">
-                  <div>
+                {/* Profile content with proper spacing */}
+                <div className="mt-4 md:mt-6 flex flex-col md:flex-row justify-between items-start gap-4">
+                  <div className="space-y-1">
                     <h2 className="text-xl md:text-2xl font-bold text-gray-800">
                       {sponsor?.companyName || "Your Company"}
                     </h2>
-                    <p className="text-gray-500 flex items-center mt-1">
-                      <FaBuilding className="mr-2" />
+                    <p className="text-gray-500 flex items-center">
+                      <FaBuilding className="mr-2 text-blue-500" />
                       {sponsor?.industry || "Sports & Youth Development"}
                     </p>
                   </div>
@@ -417,46 +436,44 @@ const SProfile = () => {
                     <Button
                       variant="outline"
                       onClick={() => setIsEditing(true)}
-                      className="flex items-center gap-2 mt-2 md:mt-0"
+                      className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
                     >
-                      <FaEdit />
-                      Edit Profile
+                      <FaEdit className="text-blue-600" />
+                      <span>Edit Profile</span>
                     </Button>
                   ) : (
-                    <div className="flex gap-2 mt-2 md:mt-0">
+                    <div className="flex gap-2">
                       <Button
                         onClick={handleSaveProfile}
                         className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
                       >
                         <FaSave />
-                        Save
+                        Save Changes
                       </Button>
                       <Button
                         variant="outline"
                         onClick={handleCancelEdit}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
                       >
-                        <FaTimes />
+                        <FaTimes className="text-gray-600" />
                         Cancel
                       </Button>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-6 md:mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Main content grid */}
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Contact Information */}
-                  <div className="space-y-4 md:space-y-6">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 border-b pb-2">
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
                       Contact Information
                     </h3>
 
                     <div className="space-y-4">
                       <div>
-                        <Label
-                          htmlFor="email"
-                          className="text-gray-500 font-medium"
-                        >
-                          Email
+                        <Label htmlFor="email" className="text-gray-600 mb-1">
+                          Email Address
                         </Label>
                         {isEditing ? (
                           <Input
@@ -464,21 +481,20 @@ const SProfile = () => {
                             name="email"
                             value={editedSponsor?.email || ""}
                             onChange={handleChange}
-                            className="mt-1"
+                            className="mt-1 bg-gray-50 border-gray-300"
                           />
                         ) : (
-                          <p className="font-medium flex items-center text-gray-800 mt-1 break-words">
-                            <FaEnvelope className="mr-2 text-blue-600 flex-shrink-0" />
-                            <span className="break-all">{sponsor?.email || "Not provided"}</span>
-                          </p>
+                          <div className="flex items-start mt-1">
+                            <FaEnvelope className="text-blue-500 mt-1 mr-3 flex-shrink-0" />
+                            <p className="text-gray-800 break-all">
+                              {sponsor?.email || "Not provided"}
+                            </p>
+                          </div>
                         )}
                       </div>
 
                       <div>
-                        <Label
-                          htmlFor="contactPerson"
-                          className="text-gray-500 font-medium"
-                        >
+                        <Label htmlFor="contactPerson" className="text-gray-600 mb-1">
                           Contact Person
                         </Label>
                         {isEditing ? (
@@ -487,21 +503,20 @@ const SProfile = () => {
                             name="contactPerson"
                             value={editedSponsor?.contactPerson || ""}
                             onChange={handleChange}
-                            className="mt-1"
+                            className="mt-1 bg-gray-50 border-gray-300"
                           />
                         ) : (
-                          <p className="font-medium flex items-center text-gray-800 mt-1">
-                            <FaUserCircle className="mr-2 text-blue-600 flex-shrink-0" />
-                            {sponsor?.contactPerson || "Not provided"}
-                          </p>
+                          <div className="flex items-center mt-1">
+                            <FaUserCircle className="text-blue-500 mr-3" />
+                            <p className="text-gray-800">
+                              {sponsor?.contactPerson || "Not provided"}
+                            </p>
+                          </div>
                         )}
                       </div>
 
                       <div>
-                        <Label
-                          htmlFor="phone"
-                          className="text-gray-500 font-medium"
-                        >
+                        <Label htmlFor="phone" className="text-gray-600 mb-1">
                           Phone Number
                         </Label>
                         {isEditing ? (
@@ -510,31 +525,30 @@ const SProfile = () => {
                             name="phone"
                             value={editedSponsor?.phone || ""}
                             onChange={handleChange}
-                            className="mt-1"
+                            className="mt-1 bg-gray-50 border-gray-300"
                           />
                         ) : (
-                          <p className="font-medium flex items-center text-gray-800 mt-1">
-                            <FaPhone className="mr-2 text-blue-600 flex-shrink-0" />
-                            {sponsor?.phone || "Not provided"}
-                          </p>
+                          <div className="flex items-center mt-1">
+                            <FaPhone className="text-blue-500 mr-3" />
+                            <p className="text-gray-800">
+                              {sponsor?.phone || "Not provided"}
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Location & Sponsorship Details */}
-                  <div className="space-y-4 md:space-y-6">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 border-b pb-2">
-                      Address & Sponsorship
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
+                      Company Details
                     </h3>
 
                     <div className="space-y-4">
                       <div>
-                        <Label
-                          htmlFor="address"
-                          className="text-gray-500 font-medium"
-                        >
-                          Address
+                        <Label htmlFor="address" className="text-gray-600 mb-1">
+                          Company Address
                         </Label>
                         {isEditing ? (
                           <Textarea
@@ -542,23 +556,22 @@ const SProfile = () => {
                             name="address"
                             value={editedSponsor?.address || ""}
                             onChange={handleChange}
-                            className="mt-1"
-                            rows={2}
+                            className="mt-1 bg-gray-50 border-gray-300"
+                            rows={3}
                           />
                         ) : (
-                          <p className="font-medium flex items-start text-gray-800 mt-1">
-                            <FaMapMarkerAlt className="mr-2 text-blue-600 mt-1 flex-shrink-0" />
-                            <span className="break-words">{sponsor?.address || "Not provided"}</span>
-                          </p>
+                          <div className="flex items-start mt-1">
+                            <FaMapMarkerAlt className="text-blue-500 mt-1 mr-3 flex-shrink-0" />
+                            <p className="text-gray-800">
+                              {sponsor?.address || "Not provided"}
+                            </p>
+                          </div>
                         )}
                       </div>
 
                       <div>
-                        <Label
-                          htmlFor="state"
-                          className="text-gray-500 font-medium"
-                        >
-                          State
+                        <Label htmlFor="state" className="text-gray-600 mb-1">
+                          State/Region
                         </Label>
                         {isEditing ? (
                           <Input
@@ -566,40 +579,29 @@ const SProfile = () => {
                             name="state"
                             value={editedSponsor?.state || ""}
                             onChange={handleChange}
-                            className="mt-1"
+                            className="mt-1 bg-gray-50 border-gray-300"
                           />
                         ) : (
-                          <p className="font-medium flex items-center text-gray-800 mt-1">
-                            <FaMapMarkerAlt className="mr-2 text-blue-600 flex-shrink-0" />
-                            {sponsor?.state || "Not provided"}
-                          </p>
+                          <div className="flex items-center mt-1">
+                            <FaMapMarkerAlt className="text-blue-500 mr-3" />
+                            <p className="text-gray-800">
+                              {sponsor?.state || "Not provided"}
+                            </p>
+                          </div>
                         )}
                       </div>
 
                       {sponsor?.sponsorshipRange && (
                         <div>
-                          <p className="text-gray-500 font-medium">
+                          <Label className="text-gray-600 mb-1">
                             Sponsorship Range
-                          </p>
-                          <p className="font-medium flex items-center text-gray-800 mt-1">
-                            <FaMoneyBillWave className="mr-2 text-green-600 flex-shrink-0" />₹
-                            {sponsor.sponsorshipRange.start} - ₹
-                            {sponsor.sponsorshipRange.end}
-                          </p>
-                        </div>
-                      )}
-
-                      {sponsor?.sponsorshipStartDate && (
-                        <div>
-                          <p className="text-gray-500 font-medium">
-                            Started Sponsoring
-                          </p>
-                          <p className="font-medium flex items-center text-gray-800 mt-1">
-                            <FaCalendarAlt className="mr-2 text-blue-600 flex-shrink-0" />
-                            {new Date(
-                              sponsor.sponsorshipStartDate
-                            ).toLocaleDateString()}
-                          </p>
+                          </Label>
+                          <div className="flex items-center mt-1">
+                            <FaMoneyBillWave className="text-green-500 mr-3" />
+                            <p className="text-gray-800">
+                              ₹{sponsor.sponsorshipRange.start} - ₹{sponsor.sponsorshipRange.end}
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -609,42 +611,63 @@ const SProfile = () => {
                 {/* Sponsorship Stats if available */}
                 {(sponsor?.sponsoredAthletes?.length > 0 ||
                   sponsor?.sponsoredOrganizations?.length > 0) && (
-                  <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t">
-                    <h3 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">
+                  <div className="mt-8 pt-6 border-t">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
                       Sponsorship Statistics
                     </h3>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <Card className="bg-blue-50 border-blue-200">
+                      <Card className="bg-blue-50 border-blue-100 rounded-lg">
                         <CardContent className="p-4">
-                          <p className="text-blue-600 font-semibold">
-                            Sponsored Athletes
-                          </p>
-                          <p className="text-2xl md:text-3xl font-bold mt-2 text-gray-800">
-                            {sponsor?.sponsoredAthletes?.length || 0}
-                          </p>
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 rounded-full bg-blue-100">
+                              <FaUserCircle className="text-blue-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-blue-600 font-medium">
+                                Sponsored Athletes
+                              </p>
+                              <p className="text-2xl font-bold text-gray-800">
+                                {sponsor?.sponsoredAthletes?.length || 0}
+                              </p>
+                            </div>
+                          </div>
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-green-50 border-green-200">
+                      <Card className="bg-green-50 border-green-100 rounded-lg">
                         <CardContent className="p-4">
-                          <p className="text-green-600 font-semibold">
-                            Sponsored Organizations
-                          </p>
-                          <p className="text-2xl md:text-3xl font-bold mt-2 text-gray-800">
-                            {sponsor?.sponsoredOrganizations?.length || 0}
-                          </p>
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 rounded-full bg-green-100">
+                              <FaUsers className="text-green-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-green-600 font-medium">
+                                Sponsored Organizations
+                              </p>
+                              <p className="text-2xl font-bold text-gray-800">
+                                {sponsor?.sponsoredOrganizations?.length || 0}
+                              </p>
+                            </div>
+                          </div>
                         </CardContent>
                       </Card>
 
-                      <Card className="bg-purple-50 border-purple-200">
+                      <Card className="bg-purple-50 border-purple-100 rounded-lg">
                         <CardContent className="p-4">
-                          <p className="text-purple-600 font-semibold">
-                            Total Investment
-                          </p>
-                          <p className="text-2xl md:text-3xl font-bold mt-2 text-gray-800">
-                            ₹{sponsor?.totalInvestment || "0"}
-                          </p>
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 rounded-full bg-purple-100">
+                              <FaMoneyBillWave className="text-purple-600" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-purple-600 font-medium">
+                                Total Investment
+                              </p>
+                              <p className="text-2xl font-bold text-gray-800">
+                                ₹{sponsor?.totalInvestment || "0"}
+                              </p>
+                            </div>
+                          </div>
                         </CardContent>
                       </Card>
                     </div>
@@ -656,111 +679,114 @@ const SProfile = () => {
 
           {/* Sports Interests Tab Content */}
           <TabsContent value="sports" className="mt-0">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Selected Sports */}
-              <Card className="shadow-md h-auto">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg md:text-xl flex items-center gap-2">
-                    <FaCheck className="text-green-600" />
-                    Your Selected Sports
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-auto pb-6">
-                  {selectedSports.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      <p>You haven't selected any sports yet.</p>
-                      <p className="mt-2">
-                        Select sports from the lists below to indicate your interests.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="font-medium text-gray-600 mb-2">
-                          Team Sports
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedSports
-                            .filter((sport) => sport.type === "Team")
-                            .map((sport) => (
-                              <Badge
-                                key={sport.sport}
-                                className="px-3 py-1 bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition-colors group flex items-center"
-                              >
-                                {sport.sport}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="ml-2 h-4 w-4 p-0 text-blue-800 opacity-60 group-hover:opacity-100"
-                                  onClick={() => handleRemoveSport(sport.sport)}
-                                  disabled={sportLoading}
-                                >
-                                  <FaMinus size={10} />
-                                </Button>
-                              </Badge>
-                            ))}
-                            
-                            {selectedSports.filter(sport => sport.type === "Team").length === 0 && (
-                              <span className="text-sm text-gray-500">No team sports selected</span>
-                            )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="font-medium text-gray-600 mb-2">
-                          Individual Sports
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedSports
-                            .filter((sport) => sport.type === "Individual")
-                            .map((sport) => (
-                              <Badge
-                                key={sport.sport}
-                                className="px-3 py-1 bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 transition-colors group flex items-center"
-                              >
-                                {sport.sport}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="ml-2 h-4 w-4 p-0 text-green-800 opacity-60 group-hover:opacity-100"
-                                  onClick={() => handleRemoveSport(sport.sport)}
-                                  disabled={sportLoading}
-                                >
-                                  <FaMinus size={10} />
-                                </Button>
-                              </Badge>
-                            ))}
-                            
-                            {selectedSports.filter(sport => sport.type === "Individual").length === 0 && (
-                              <span className="text-sm text-gray-500">No individual sports selected</span>
-                            )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Available Sports */}
-              <div className="space-y-6">
-                {/* Team Sports */}
-                <Card className="shadow-md">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg md:text-xl flex items-center gap-2">
-                      <FaUsers className="text-blue-600" />
-                      Team Sports
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Selected Sports - Full width on mobile, 1/3 on desktop */}
+              <div className="lg:col-span-1">
+                <Card className="shadow-sm rounded-xl h-full">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FaCheck className="text-green-500" />
+                      <span>Your Selected Sports</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pb-6">
+                  <CardContent>
+                    {selectedSports.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>You haven't selected any sports yet.</p>
+                        <p className="mt-2 text-sm">
+                          Select sports from the lists to indicate your interests.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-5">
+                        <div>
+                          <h3 className="font-medium text-gray-600 mb-3 text-sm uppercase tracking-wider">
+                            Team Sports ({selectedSports.filter(sport => sport.type === "Team").length})
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedSports
+                              .filter((sport) => sport.type === "Team")
+                              .map((sport) => (
+                                <Badge
+                                  key={sport.sport}
+                                  className="px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100 transition-colors group flex items-center rounded-lg"
+                                >
+                                  {sport.sport}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-2 h-5 w-5 p-0 text-blue-700 opacity-60 group-hover:opacity-100 hover:bg-transparent"
+                                    onClick={() => handleRemoveSport(sport.sport)}
+                                    disabled={sportLoading}
+                                  >
+                                    <FaMinus size={10} />
+                                  </Button>
+                                </Badge>
+                              ))}
+                            
+                            {selectedSports.filter(sport => sport.type === "Team").length === 0 && (
+                              <p className="text-sm text-gray-500">No team sports selected</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="font-medium text-gray-600 mb-3 text-sm uppercase tracking-wider">
+                            Individual Sports ({selectedSports.filter(sport => sport.type === "Individual").length})
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedSports
+                              .filter((sport) => sport.type === "Individual")
+                              .map((sport) => (
+                                <Badge
+                                  key={sport.sport}
+                                  className="px-3 py-1.5 bg-green-50 text-green-700 border border-green-100 hover:bg-green-100 transition-colors group flex items-center rounded-lg"
+                                >
+                                  {sport.sport}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="ml-2 h-5 w-5 p-0 text-green-700 opacity-60 group-hover:opacity-100 hover:bg-transparent"
+                                    onClick={() => handleRemoveSport(sport.sport)}
+                                    disabled={sportLoading}
+                                  >
+                                    <FaMinus size={10} />
+                                  </Button>
+                                </Badge>
+                              ))}
+                            
+                            {selectedSports.filter(sport => sport.type === "Individual").length === 0 && (
+                              <p className="text-sm text-gray-500">No individual sports selected</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Available Sports - Full width on mobile, 2/3 on desktop */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Team Sports */}
+                <Card className="shadow-sm rounded-xl">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FaUsers className="text-blue-500" />
+                      <span>Team Sports</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {allSports.teamSports && allSports.teamSports.length > 0 ? (
                         allSports.teamSports.map((sport) => (
                           <Badge
                             key={sport.name}
-                            className={`px-3 py-1 ${
+                            variant={isSportSelected(sport.name) ? "secondary" : "default"}
+                            className={`px-3 py-1.5 rounded-lg transition-all ${
                               isSportSelected(sport.name)
-                                ? "bg-gray-100 text-gray-500 border border-gray-200"
-                                : "bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 cursor-pointer transition-colors"
+                                ? "bg-gray-100 text-gray-500 cursor-default"
+                                : "bg-blue-50 text-blue-700 hover:bg-blue-100 cursor-pointer"
                             } flex items-center`}
                             onClick={() => {
                               if (!isSportSelected(sport.name) && !sportLoading) {
@@ -770,7 +796,7 @@ const SProfile = () => {
                           >
                             {sport.name}
                             {isSportSelected(sport.name) ? (
-                              <FaCheck className="ml-2 h-3 w-3 text-green-600" />
+                              <FaCheck className="ml-2 h-3 w-3 text-green-500" />
                             ) : (
                               <FaPlus className="ml-2 h-3 w-3" />
                             )}
@@ -784,23 +810,24 @@ const SProfile = () => {
                 </Card>
 
                 {/* Individual Sports */}
-                <Card className="shadow-md">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg md:text-xl flex items-center gap-2">
-                      <FaRunning className="text-green-600" />
-                      Individual Sports
+                <Card className="shadow-sm rounded-xl">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <FaRunning className="text-green-500" />
+                      <span>Individual Sports</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pb-6">
+                  <CardContent>
                     <div className="flex flex-wrap gap-2">
                       {allSports.individualSports && allSports.individualSports.length > 0 ? (
                         allSports.individualSports.map((sport) => (
                           <Badge
                             key={sport.name}
-                            className={`px-3 py-1 ${
+                            variant={isSportSelected(sport.name) ? "secondary" : "default"}
+                            className={`px-3 py-1.5 rounded-lg transition-all ${
                               isSportSelected(sport.name)
-                                ? "bg-gray-100 text-gray-500 border border-gray-200"
-                                : "bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 cursor-pointer transition-colors"
+                                ? "bg-gray-100 text-gray-500 cursor-default"
+                                : "bg-green-50 text-green-700 hover:bg-green-100 cursor-pointer"
                             } flex items-center`}
                             onClick={() => {
                               if (!isSportSelected(sport.name) && !sportLoading) {
@@ -810,7 +837,7 @@ const SProfile = () => {
                           >
                             {sport.name}
                             {isSportSelected(sport.name) ? (
-                              <FaCheck className="ml-2 h-3 w-3 text-green-600" />
+                              <FaCheck className="ml-2 h-3 w-3 text-green-500" />
                             ) : (
                               <FaPlus className="ml-2 h-3 w-3" />
                             )}
