@@ -182,7 +182,14 @@ const handleSignIn = async () => {
       </section>
 
       {/* Role Selection Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(isOpen) => {
+        
+        if (!isOpen) {
+          setOrgOptions(false);
+          setRoleOptions(false);
+        }
+        setOpen(isOpen);
+       }}>
         <DialogContent className="p-4 sm:p-5 max-w-lg rounded-2xl bg-white shadow-lg border border-gray-200 transform transition-all scale-95">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl font-bold text-center text-gray-900">
@@ -199,19 +206,30 @@ const handleSignIn = async () => {
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-yellow-600 text-yellow-600 hover:bg-yellow-600 hover:text-white transition-all" onClick={() => setOrgOptions(true)}>Organization</Button>
             </div>
           ) : !roleOptions ? (
+            <>
             <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-4 sm:mt-5">
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all" onClick={() => setRoleOptions(true)}>Existing Organization</Button>
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-all" onClick={() => navigate("/organization-signup")}>New Organization</Button>
             </div>
+            <div className="mt-3 flex justify-center">
+              <Button variant="outline" className="text-gray-600 hover:text-blue-500 transition-all text-xs sm:text-sm" onClick={() => setOrgOptions(false)}> ← Back </Button>
+            </div>
+            </>
           ) : (
+            <>
             <div className="grid grid-cols-1 gap-3 sm:gap-4 mt-4 sm:mt-5">
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Player")}>Player</Button>
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-teal-600 text-teal-600 hover:bg-teal-600 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Admin")}>Admin</Button>
               <Button variant="outline" className="py-2 text-xs sm:text-sm rounded-xl border-gray-700 text-gray-700 hover:bg-gray-700 hover:text-white transition-all" onClick={() => handleRoleSelectionForOrganization("Coach")}>Coach</Button>
             </div>
+            <div className="mt-3 flex justify-center">
+              <Button variant="outline" className="text-gray-600 hover:text-blue-500 transition-all text-xs sm:text-sm" onClick={() => setRoleOptions(false)}>← Back</Button>
+
+            </div>
+            </>
           )}
-          <div className="mt-4 sm:mt-5 flex justify-center">
-            <Button variant="ghost" className="text-gray-600 hover:text-red-500 transition-all" onClick={() => { setOpen(false); setOrgOptions(false); setRoleOptions(false); }}>Cancel</Button>
+          <div className="mt-3 sm:mt-2 flex justify-center">
+            <Button variant="outline" className="text-gray-600 hover:text-red-500 transition-all" onClick={() => { setOpen(false); setOrgOptions(false); setRoleOptions(false); }}>Cancel</Button>
           </div>
         </DialogContent>
       </Dialog>
