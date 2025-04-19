@@ -61,6 +61,7 @@ const AthleteManagement = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [coaches, setCoaches] = useState([]);
+  const [assistantCoaches, setAssistantCoaches] = useState([]);
   const [gymTrainers, setGymTrainers] = useState([]);
   const [medicalStaff, setMedicalStaff] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -117,6 +118,7 @@ const [athleteDetails, setAthleteDetails] = useState(null);
     positions: {},
     dominantHand: "",
     headCoachAssigned: "none",
+    assistantCoachAssigned: "none",
     gymTrainerAssigned: "none",
     medicalStaffAssigned: "none",
 
@@ -199,51 +201,77 @@ const [athleteDetails, setAthleteDetails] = useState(null);
     }
   };
 
-  // Fetch staff (coaches, trainers, medical staff)
-  const fetchStaff = async () => {
-    try {
-      // Fetch coaches - use a single API call for all staff types
-      const coachesResponse = await axios.get(
-        "http://localhost:8000/api/v1/admins/coaches",
-        {
-          params: { organizationId },
-          withCredentials: true,
-        }
+  // Replace the current fetchStaff function with this more comprehensive version
+
+const fetchStaff = async () => {
+  try {
+    // Fetch all staff
+    const staffResponse = await axios.get(
+      "http://localhost:8000/api/v1/admins/coaches",
+      {
+        params: { 
+          organizationId,
+          limit: 1000,
+          page: 1
+        },
+        withCredentials: true,
+      }
+    );
+
+    if (staffResponse.data && staffResponse.data.data) {
+      const allStaff = staffResponse.data.data.coaches || [];
+      
+      // Debug all staff
+      console.log("All staff received:", allStaff);
+      
+      // Include ALL coaches in the head coach dropdown
+      // since they all have the same base role of "coach"
+      setCoaches(allStaff.filter(coach => {
+        // Check for a coach (exclude obvious non-coaches like medical staff)
+        return !coach.designation?.toLowerCase().includes('medical') && 
+        !coach.designation?.toLowerCase().includes('trainer')&&
+        !coach.designation?.toLowerCase().includes('assistant')&&
+               !coach.specialization?.toLowerCase().includes('medical') &&
+               !coach.role?.toLowerCase().includes('medical');
+      }));
+      
+      // Filter for assistant coaches
+      setAssistantCoaches(
+        allStaff.filter(coach => 
+          coach.designation?.toLowerCase().includes('assistant') || 
+          coach.specialization?.toLowerCase().includes('assistant') ||
+          coach.role?.toLowerCase().includes('assistant')
+        )
+      );
+      
+      // Filter for gym trainers
+      setGymTrainers(
+        allStaff.filter(coach =>
+          coach.designation?.toLowerCase().includes('trainer') || 
+          coach.specialization?.toLowerCase().includes('fitness') ||
+          coach.specialization?.toLowerCase().includes('gym') ||
+          coach.role?.toLowerCase().includes('trainer')
+        )
       );
 
-      if (coachesResponse.data && coachesResponse.data.data) {
-        // Set all coaches
-        setCoaches(coachesResponse.data.data.coaches || []);
-
-        // Filter for gym trainers - staff with fitness-related roles
-        setGymTrainers(
-          coachesResponse.data.data.coaches.filter(
-            (c) =>
-              c.specialization === "Fitness" ||
-              c.designation === "Gym Trainer" ||
-              c.role === "trainer"
-          ) || []
-        );
-
-        // Filter for medical staff - staff with medical-related roles
-        setMedicalStaff(
-          coachesResponse.data.data.coaches.filter(
-            (c) =>
-              c.specialization === "Medical" ||
-              c.designation === "Team Doctor" ||
-              c.designation === "Physiotherapist" ||
-              c.role === "medical"
-          ) || []
-        );
-      }
-    } catch (error) {
-      console.error("Error fetching staff data:", error);
-      // Set empty arrays as fallback
-      setCoaches([]);
-      setGymTrainers([]);
-      setMedicalStaff([]);
+      // Filter for medical staff
+      setMedicalStaff(
+        allStaff.filter(coach =>
+          coach.designation?.toLowerCase().includes('medical') || 
+          coach.specialization?.toLowerCase().includes('medical') ||
+          coach.specialization?.toLowerCase().includes('physio') ||
+          coach.role?.toLowerCase().includes('medical')
+        )
+      );
     }
-  };
+  } catch (error) {
+    console.error("Error fetching staff data:", error);
+    setCoaches([]);
+    setAssistantCoaches([]);
+    setGymTrainers([]);
+    setMedicalStaff([]);
+  }
+};
 
   // Initial data fetch
   useEffect(() => {
@@ -416,29 +444,58 @@ const [athleteDetails, setAthleteDetails] = useState(null);
           withCredentials: true
         }
       );
+
+      console.log({response})
       
       if (response.data && response.data.data && response.data.data.athlete) {
-        setAthleteDetails(response.data.data.athlete);
+        // Process the data before setting state
+        const athleteData = response.data.data.athlete;
         
-        // Set performance data if available in the response
-        if (response.data.data.athlete.sportsInfo.stats && 
-            response.data.data.athlete.sportsInfo.stats.length) {
-          // Find the primary sport's stats or use the first one
-          const primarySport = response.data.data.athlete.sportsInfo.stats[0];
-          const perfStats = {};
+        // Ensure positions are properly parsed if they're a string
+        if (typeof athleteData.sportsInfo.positions === 'string') {
+          try {
+            athleteData.sportsInfo.positions = JSON.parse(athleteData.sportsInfo.positions);
+          } catch (e) {
+            console.error("Error parsing positions:", e);
+            athleteData.sportsInfo.positions = {};
+          }
+        }
+        
+        // Process staff assignments for consistency
+        if (athleteData.staffAssignments) {
+          // Normalize staff data
+          const normalizeStaff = (staff) => {
+            if (!staff) return null;
+            if (typeof staff === 'string') return { name: staff };
+            return staff;
+          };
           
-          // Map stats to performance metrics
-          primarySport.stats.forEach(stat => {
-            if (stat.statName === 'consistency') perfStats.consistency = stat.value;
-            if (stat.statName === 'technique') perfStats.technique = stat.value;
-            if (stat.statName === 'stamina') perfStats.stamina = stat.value;
-          });
+          athleteData.staffAssignments.headCoach = normalizeStaff(athleteData.staffAssignments.headCoach);
+          athleteData.staffAssignments.gymTrainer = normalizeStaff(athleteData.staffAssignments.gymTrainer);
+          athleteData.staffAssignments.medicalStaff = normalizeStaff(athleteData.staffAssignments.medicalStaff);
+        }
+        
+        setAthleteDetails(athleteData);
+        
+        // Set performance data
+        if (athleteData.sportsInfo.stats && athleteData.sportsInfo.stats.length) {
+          const primarySport = athleteData.sportsInfo.stats[0];
+          const perfStats = {
+            consistency: 70, // Default values
+            technique: 65,
+            stamina: 80
+          };
           
-          setPerformanceData({
-            consistency: perfStats.consistency || 70,
-            technique: perfStats.technique || 65,
-            stamina: perfStats.stamina || 80
-          });
+          // Map stats to performance metrics if available
+          if (primarySport.stats) {
+            primarySport.stats.forEach(stat => {
+              if (stat.statName === 'consistency') perfStats.consistency = parseInt(stat.value);
+              if (stat.statName === 'technique') perfStats.technique = parseInt(stat.value);
+              if (stat.statName === 'stamina') perfStats.stamina = parseInt(stat.value);
+            });
+          }
+          
+          setPerformanceData(perfStats);
         }
       } else {
         throw new Error("Invalid response format");
@@ -564,6 +621,13 @@ const [athleteDetails, setAthleteDetails] = useState(null);
       ) {
         formData.append("headCoachAssigned", newAthlete.headCoachAssigned);
       }
+
+if (
+  newAthlete.assistantCoachAssigned &&
+  newAthlete.assistantCoachAssigned !== "none"
+) {
+  formData.append("assistantCoachAssigned", newAthlete.assistantCoachAssigned);
+}
 
       if (
         newAthlete.gymTrainerAssigned &&
@@ -1528,6 +1592,37 @@ const [athleteDetails, setAthleteDetails] = useState(null);
                             </div>
 
                             <div>
+  <label className="block text-sm font-medium mb-1">
+    Assistant Coach
+  </label>
+  <Select
+    value={newAthlete.assistantCoachAssigned || "none"}
+    onValueChange={(value) =>
+      setNewAthlete({
+        ...newAthlete,
+        assistantCoachAssigned:
+          value === "none" ? null : value,
+      })
+    }
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select Assistant Coach" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="none">None</SelectItem>
+      {assistantCoaches.map((coach) => (
+        <SelectItem
+          key={coach._id || coach.id}
+          value={coach._id || coach.id}
+        >
+          {coach.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
+                            <div>
                               <label className="block text-sm font-medium mb-1">
                                 Gym Trainer
                               </label>
@@ -2190,53 +2285,98 @@ const [athleteDetails, setAthleteDetails] = useState(null);
                   <p className="font-medium">{athleteDetails.sportsInfo.dominantHand}</p>
                 </div>
                 
-                {Object.keys(athleteDetails.sportsInfo.positions).length > 0 && (
-                  <div>
-                    <p className="text-sm text-gray-500">Positions</p>
-                    <div className="mt-1 space-y-1">
-                      {Object.entries(athleteDetails.sportsInfo.positions).map(([sport, position]) => (
-                        <div key={sport} className="flex items-center justify-between">
-                          <span className="text-xs font-medium">{sport}:</span>
-                          <span className="text-xs bg-gray-100 px-2 py-1 rounded">{position}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Positions display component */}
+{athleteDetails.sportsInfo.positions && (
+  <div>
+    <p className="text-sm text-gray-500">Positions</p>
+    <div className="mt-1 space-y-1">
+      {(() => {
+        try {
+          // Get positions data safely
+          let posData = athleteDetails.sportsInfo.positions;
+          let posObj = {};
+          
+          // Handle various formats
+          if (typeof posData === 'string') {
+            try {
+              posObj = JSON.parse(posData);
+            } catch (e) { /* Silent fail */ }
+          } else if (typeof posData === 'object') {
+            // Check if it's the character-by-character format
+            if (Object.keys(posData).every(k => !isNaN(parseInt(k)))) {
+              try {
+                posObj = JSON.parse(Object.values(posData).join(''));
+              } catch (e) { /* Silent fail */ }
+            } else {
+              posObj = posData;
+            }
+          }
+          
+          // Render each position
+          return Object.entries(posObj).map(([sport, position], idx) => (
+            <div key={idx} className="flex items-center justify-between">
+              <span className="text-xs font-medium">{sport}:</span>
+              <span className="text-xs bg-gray-100 px-2 py-1 rounded">{position}</span>
+            </div>
+          ));
+        } catch (err) {
+          console.error("Error displaying positions:", err);
+          return <p className="text-xs text-gray-500">No positions available</p>;
+        }
+      })()}
+    </div>
+  </div>
+)}
               </CardContent>
             </Card>
             
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Staff Assignments</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0 space-y-3">
-                <div>
-                  <p className="text-sm text-gray-500">Head Coach</p>
-                  <p className="font-medium">
-                    {athleteDetails.staffAssignments.headCoach ? 
-                      athleteDetails.staffAssignments.headCoach.name : 
-                      "Not assigned"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Gym Trainer</p>
-                  <p className="font-medium">
-                    {athleteDetails.staffAssignments.gymTrainer ? 
-                      athleteDetails.staffAssignments.gymTrainer.name : 
-                      "Not assigned"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Medical Staff</p>
-                  <p className="font-medium">
-                    {athleteDetails.staffAssignments.medicalStaff ? 
-                      athleteDetails.staffAssignments.medicalStaff.name : 
-                      "Not assigned"}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+  <CardHeader className="pb-2">
+    <CardTitle className="text-lg">Staff Assignments</CardTitle>
+  </CardHeader>
+  <CardContent className="pt-0 space-y-3">
+    <div>
+      <p className="text-sm text-gray-500">Head Coach</p>
+      <p className="font-medium">
+        {athleteDetails.staffAssignments.headCoach ? 
+          (typeof athleteDetails.staffAssignments.headCoach === 'object' 
+            ? athleteDetails.staffAssignments.headCoach.name 
+            : athleteDetails.staffAssignments.headCoach) : 
+          "Not assigned"}
+      </p>
+    </div>
+    <div>
+  <p className="text-sm text-gray-500">Assistant Coach</p>
+  <p className="font-medium">
+    {athleteDetails.staffAssignments.assistantCoach ? 
+      (typeof athleteDetails.staffAssignments.assistantCoach === 'object' 
+        ? athleteDetails.staffAssignments.assistantCoach.name 
+        : athleteDetails.staffAssignments.assistantCoach) : 
+      "Not assigned"}
+  </p>
+</div>
+    <div>
+      <p className="text-sm text-gray-500">Gym Trainer</p>
+      <p className="font-medium">
+        {athleteDetails.staffAssignments.gymTrainer ? 
+          (typeof athleteDetails.staffAssignments.gymTrainer === 'object' 
+            ? athleteDetails.staffAssignments.gymTrainer.name 
+            : athleteDetails.staffAssignments.gymTrainer) : 
+          "Not assigned"}
+      </p>
+    </div>
+    <div>
+      <p className="text-sm text-gray-500">Medical Staff</p>
+      <p className="font-medium">
+        {athleteDetails.staffAssignments.medicalStaff ? 
+          (typeof athleteDetails.staffAssignments.medicalStaff === 'object' 
+            ? athleteDetails.staffAssignments.medicalStaff.name 
+            : athleteDetails.staffAssignments.medicalStaff) : 
+          "Not assigned"}
+      </p>
+    </div>
+  </CardContent>
+</Card>
           </div>
 
           {/* Right column - Medical & Performance */}

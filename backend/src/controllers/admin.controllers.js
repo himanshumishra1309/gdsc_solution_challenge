@@ -38,6 +38,7 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
     dominantHand,
 
     headCoachAssigned,
+    assistantCoachAssigned,
     gymTrainerAssigned,
     medicalStaffAssigned,
 
@@ -194,6 +195,8 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
         dominantHand: dominantHand || null,
         headCoachAssigned:
           headCoachAssigned || existingAthlete.headCoachAssigned,
+        assistantCoachAssigned:
+          assistantCoachAssigned || existingAthlete.assistantCoachAssigned,
         gymTrainerAssigned:
           gymTrainerAssigned || existingAthlete.gymTrainerAssigned,
         medicalStaffAssigned:
@@ -244,6 +247,7 @@ const registerOrganizationAthlete = asyncHandler(async (req, res) => {
       positions: positionsMap,
       dominantHand: dominantHand || null,
       headCoachAssigned: headCoachAssigned || null,
+      assistantCoachAssigned: assistantCoachAssigned || null,
       gymTrainerAssigned: gymTrainerAssigned || null,
       medicalStaffAssigned: medicalStaffAssigned || null,
       height: Number(height),
@@ -691,7 +695,7 @@ const registerCoach = asyncHandler(async (req, res) => {
     state,
     country,
     pincode,
-    sport,
+    sports, // Changed from sport to sports
     experience,
     certifications,
     previousOrganizations,
@@ -715,7 +719,7 @@ const registerCoach = asyncHandler(async (req, res) => {
     !address ||
     !state ||
     !country ||
-    !sport
+    !sports // Changed from sport to sports
   ) {
     throw new ApiError(400, "Please provide all required fields");
   }
@@ -750,6 +754,15 @@ const registerCoach = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Experience must be a valid number");
   }
 
+  // Parse sports array from input
+  const sportsArray = Array.isArray(sports) 
+    ? sports 
+    : (typeof sports === 'string' ? sports.split(',').map(s => s.trim()) : []);
+
+  if (!sportsArray.length) {
+    throw new ApiError(400, "At least one sport is required");
+  }
+
   const certificationsList = certifications
     ? certifications.split(",").map((cert) => cert.trim())
     : [];
@@ -773,7 +786,7 @@ const registerCoach = asyncHandler(async (req, res) => {
       country,
       pincode: pincode || "",
     },
-    sport,
+    sports: sportsArray, // Changed from sport to sports array
     experience: experienceYears,
     certifications: certificationsList.length
       ? certificationsList
@@ -797,7 +810,7 @@ const registerCoach = asyncHandler(async (req, res) => {
       name: coach.name,
       email: coach.email,
       organization: organization.name,
-      sport,
+      sports: sportsArray, // Changed from sport to sports array
       designation,
       contactNumber,
       experience: experienceYears,
@@ -1494,6 +1507,7 @@ const getAthleteFullDetails = asyncHandler(async (req, res) => {
     const populatedData = {
       organization: null,
       headCoachAssigned: null,
+      assistantCoachAssigned: null,
       gymTrainerAssigned: null,
       medicalStaffAssigned: null
     };
@@ -1517,6 +1531,15 @@ const getAthleteFullDetails = asyncHandler(async (req, res) => {
     } catch (err) {
       console.error("Error populating headCoach:", err);
     }
+
+    try {
+      if (athlete.assistantCoachAssigned) {
+        const coach = await Coach.findById(athlete.assistantCoachAssigned).select("name email avatar contactNumber");
+        populatedData.assistantCoachAssigned = coach;
+      }
+    } catch (err) {
+      console.error("Error populating headCoach:", err);
+    }
     
     // Populate gymTrainerAssigned
     try {
@@ -1526,6 +1549,15 @@ const getAthleteFullDetails = asyncHandler(async (req, res) => {
       }
     } catch (err) {
       console.error("Error populating gymTrainer:", err);
+    }
+
+    try {
+      if (athlete.medicalStaffAssigned) {
+        const coach = await Coach.findById(athlete.medicalStaffAssigned).select("name email avatar contactNumber");
+        populatedData.medicalStaffAssigned = coach;
+      }
+    } catch (err) {
+      console.error("Error populating headCoach:", err);
     }
     
     // Don't attempt to populate medicalStaffAssigned if the model doesn't exist
@@ -1538,14 +1570,81 @@ const getAthleteFullDetails = asyncHandler(async (req, res) => {
       console.error("Error fetching athlete stats:", err);
     }
     
-    // Format positions from Map to Object
-    const positions = {};
-    if (athlete.positions && athlete.positions.size > 0) {
-      for (const [sport, position] of athlete.positions.entries()) {
-        positions[sport] = position;
+// Replace the positions conversion code with this much more robust version:
+
+// Format positions - completely rewritten
+const positions = {};
+try {
+  if (athlete.positions) {
+    // Handle the MongoDB Map object directly
+    if (athlete.positions instanceof Map) {
+      // Direct Map instance - convert to simple object
+      athlete.positions.forEach((value, key) => {
+        positions[key] = value;
+      });
+    } 
+    // Handle positions as a string that needs parsing (serialized JSON)
+    else if (typeof athlete.positions === 'string') {
+      try {
+        const parsedObj = JSON.parse(athlete.positions);
+        Object.assign(positions, parsedObj);
+      } catch (parseError) {
+        console.error("Failed to parse positions string:", parseError);
       }
     }
+    // Handle MongoDB serialized map with entries
+    else if (athlete.positions.entries && typeof athlete.positions.entries === 'function') {
+      // Use the entries() method of the map-like object
+      for (const [key, value] of athlete.positions.entries()) {
+        positions[key] = value;
+      }
+    }
+    // Handle the broken numeric index format we're seeing in the responses
+    else if (
+      typeof athlete.positions === 'object' && 
+      !Array.isArray(athlete.positions) &&
+      Object.keys(athlete.positions).every(k => !isNaN(parseInt(k)))
+    ) {
+      // Join all characters to rebuild the original JSON string
+      const positionStr = Object.values(athlete.positions).join('');
+      
+      try {
+        // Try to parse the reconstructed string as JSON
+        const parsed = JSON.parse(positionStr);
+        Object.assign(positions, parsed);
+      } catch (e) {
+        // Manual parsing as fallback
+        const pattern = /"([^"]+)":"([^"]+)"/g;
+        let match;
+        
+        while ((match = pattern.exec(positionStr)) !== null) {
+          if (match[1] && match[2]) {
+            positions[match[1]] = match[2];
+          }
+        }
+      }
+    }
+    // Handle if positions is already an object but not an array
+    else if (typeof athlete.positions === 'object' && !Array.isArray(athlete.positions)) {
+      // Direct assignment if it's already a proper object
+      Object.keys(athlete.positions).forEach(key => {
+        if (isNaN(parseInt(key))) { // Only include non-numeric keys
+          positions[key] = athlete.positions[key];
+        }
+      });
+    }
     
+    // If no positions were extracted, log the issue for debugging
+    if (Object.keys(positions).length === 0 && athlete.positions) {
+      console.log("Warning: Could not extract positions from:", 
+        typeof athlete.positions, 
+        JSON.stringify(athlete.positions).substring(0, 100) + "..."
+      );
+    }
+  }
+} catch (err) {
+  console.error("Error processing positions:", err);
+}    
     // Calculate training duration
     const trainingStartDate = new Date(athlete.trainingStartDate);
     const today = new Date();
@@ -1590,8 +1689,9 @@ const getAthleteFullDetails = asyncHandler(async (req, res) => {
       },
       staffAssignments: {
         headCoach: populatedData.headCoachAssigned || null,
+        assistantCoach: populatedData.assistantCoachAssigned || null, // Add this line
         gymTrainer: populatedData.gymTrainerAssigned || null,
-        medicalStaff: null // We're not attempting to populate this
+        medicalStaff: populatedData.medicalStaffAssigned || null // Change this from null to the populated data
       },
       medicalInfo: {
         height: athlete.height, // in cm

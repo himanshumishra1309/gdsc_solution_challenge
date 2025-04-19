@@ -8,6 +8,8 @@ const skillLevelEnum = ["Beginner", "Intermediate", "Advanced", "Elite"];
 const bloodGroupEnum = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const dominantHandEnum = ["Right", "Left", "Ambidextrous"];
 
+
+
 const athleteSchema = new mongoose.Schema(
   {
     // Basic Information
@@ -106,13 +108,17 @@ const athleteSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Coach"
     },
+    assistantCoachAssigned: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Coach" // You'll need this model
+    },
     gymTrainerAssigned: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Coach" // Assuming trainers are also in Coach model
     },
     medicalStaffAssigned: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "MedicalStaff" // You'll need this model
+      ref: "Coach" // You'll need this model
     },
     
     // Medical Information
@@ -176,6 +182,46 @@ const athleteSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Add this to the athleteSchema after the Schema definition but before creating the model
+
+// Better Map serialization for positions
+athleteSchema.set('toJSON', {
+  virtuals: true,
+  transform: function (doc, ret) {
+    // Convert positions Map to plain object if it exists
+    if (ret.positions instanceof Map) {
+      const positionsObj = {};
+      ret.positions.forEach((val, key) => {
+        positionsObj[key] = val;
+      });
+      ret.positions = positionsObj;
+    }
+    // Handle case where positions was already converted to object with numeric keys
+    else if (ret.positions && typeof ret.positions === 'object') {
+      const keys = Object.keys(ret.positions);
+      // Check if we have the numeric indices problem
+      if (keys.length > 0 && keys.every(k => !isNaN(parseInt(k)))) {
+        const positionStr = Object.values(ret.positions).join('');
+        try {
+          ret.positions = JSON.parse(positionStr);
+        } catch (e) {
+          // If parsing fails, at least make it a regular object
+          const positionsObj = {};
+          const pattern = /"([^"]+)":"([^"]+)"/g;
+          let match;
+          while ((match = pattern.exec(positionStr)) !== null) {
+            if (match[1] && match[2]) {
+              positionsObj[match[1]] = match[2];
+            }
+          }
+          ret.positions = positionsObj;
+        }
+      }
+    }
+    return ret;
+  }
+});
 
 // Position helper methods
 athleteSchema.methods.addPosition = function(sport, position) {

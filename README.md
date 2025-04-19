@@ -2,6 +2,9 @@
 
 Welcome to our complete project repository! This guide will walk you through setting up the **Backend**, **Frontend**, **Flutter Mobile Application**, **Player Tracking System**, **Video Analysis System**, and the **AI-Powered Workout, Diet, and Recovery Plan Generator**.
 
+# Important Notice:
+Before checking the website, please run ```git pull``` to ensure you have the latest updates. Since the website is still under development, some content may change frequently.
+
 ---
 
 ## 📂 Repository Structure

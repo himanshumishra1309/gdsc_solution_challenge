@@ -1,19 +1,54 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Edit } from "lucide-react";
+import {
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Edit,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import axios from "axios";
 
-const sportsList = ["All", "Cricket", "Football", "Badminton", "Basketball", "Tennis", "Hockey", "Other"];
-const designationList = ["All", "Head Coach", "Assistant Coach", "Training and Conditioning Staff"];
+const sportsList = [
+  "All",
+  "Cricket",
+  "Football",
+  "Badminton",
+  "Basketball",
+  "Tennis",
+  "Hockey",
+  "Other",
+];
+const designationList = [
+  "All",
+  "Head Coach",
+  "Assistant Coach",
+  "Trainer",
+  "Medical Staff",
+];
 
 const CoachManagement = () => {
   const navigate = useNavigate();
@@ -33,19 +68,20 @@ const CoachManagement = () => {
   const [limit, setLimit] = useState(10);
 
   // Sorting state
-  const [sortField, setSortField] = useState('name');
-  const [sortOrder, setSortOrder] = useState('asc');
+  const [sortField, setSortField] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
 
   // Filter state
   const [selectedSport, setSelectedSport] = useState("All");
   const [selectedDesignation, setSelectedDesignation] = useState("All");
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Get organization ID from URL params
   const { organizationId } = useParams();
   console.log("Organization ID:", organizationId);
 
   // Initial coach form state
+  // Update the initial coach form state
   const [newCoach, setNewCoach] = useState({
     name: "",
     email: "",
@@ -59,7 +95,7 @@ const CoachManagement = () => {
     state: "",
     country: "India",
     pincode: "",
-    sport: "Cricket",
+    sports: [],
     experience: "",
     certifications: "",
     previousOrganizations: "",
@@ -84,7 +120,16 @@ const CoachManagement = () => {
     } else {
       setLoading(false);
     }
-  }, [organizationId, currentPage, limit, sortField, sortOrder, selectedSport, selectedDesignation, searchQuery]);
+  }, [
+    organizationId,
+    currentPage,
+    limit,
+    sortField,
+    sortOrder,
+    selectedSport,
+    selectedDesignation,
+    searchQuery,
+  ]);
 
   // Fetch coaches with all parameters
   const fetchCoaches = async () => {
@@ -102,12 +147,16 @@ const CoachManagement = () => {
 
       // Add optional filters only if they're not "All"
       if (selectedSport !== "All") params.sport = selectedSport;
-      if (selectedDesignation !== "All") params.designation = selectedDesignation;
+      if (selectedDesignation !== "All")
+        params.designation = selectedDesignation;
 
-      const response = await axios.get("http://localhost:8000/api/v1/admins/coaches", {
-        params,
-        withCredentials: true
-      });
+      const response = await axios.get(
+        "http://localhost:8000/api/v1/admins/coaches",
+        {
+          params,
+          withCredentials: true,
+        }
+      );
 
       console.log("Coach data received:", response.data);
 
@@ -152,12 +201,31 @@ const CoachManagement = () => {
   const handleSortChange = (field) => {
     // If clicking the same field, toggle order
     if (field === sortField) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
       // If new field, set to that field with ascending order
       setSortField(field);
-      setSortOrder('asc');
+      setSortOrder("asc");
     }
+  };
+
+  // Add this function below your existing event handlers
+  const handleSportSelection = (sport) => {
+    setNewCoach((prev) => {
+      if (prev.sports.includes(sport)) {
+        // If sport is already selected, remove it
+        return {
+          ...prev,
+          sports: prev.sports.filter((s) => s !== sport),
+        };
+      } else {
+        // If sport is not selected, add it
+        return {
+          ...prev,
+          sports: [...prev.sports, sport],
+        };
+      }
+    });
   };
 
   // Handle pagination
@@ -180,11 +248,11 @@ const CoachManagement = () => {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewCoach(prev => ({ ...prev, [name]: value }));
+    setNewCoach((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (name, value) => {
-    setNewCoach(prev => ({ ...prev, [name]: value }));
+    setNewCoach((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e, setFileFn) => {
@@ -196,10 +264,19 @@ const CoachManagement = () => {
   // Add new coach
   const handleAddCoach = async () => {
     // Validate required fields
-    if (!newCoach.name || !newCoach.email || !newCoach.password ||
-      !newCoach.dob || !newCoach.gender || !newCoach.contactNumber ||
-      !newCoach.address || !newCoach.state || !newCoach.country ||
-      !newCoach.sport) {
+    if (
+      !newCoach.name ||
+      !newCoach.email ||
+      !newCoach.password ||
+      !newCoach.dob ||
+      !newCoach.gender ||
+      !newCoach.contactNumber ||
+      !newCoach.address ||
+      !newCoach.state ||
+      !newCoach.country ||
+      newCoach.sports.length === 0
+    ) {
+      // Check for at least one sport
       setErrorMessage("Please fill all required fields");
       return;
     }
@@ -218,7 +295,7 @@ const CoachManagement = () => {
       formData.append("organizationId", organizationId);
 
       // Append all text fields
-      Object.keys(newCoach).forEach(key => {
+      Object.keys(newCoach).forEach((key) => {
         formData.append(key, newCoach[key]);
       });
 
@@ -234,10 +311,14 @@ const CoachManagement = () => {
       }
 
       // Submit to API - REMOVE the Content-Type header completely
-      const response = await axios.post('http://localhost:8000/api/v1/admins/register-coach', formData, {
-        withCredentials: true,
-        // Let browser set the content type with correct boundary
-      });
+      const response = await axios.post(
+        "http://localhost:8000/api/v1/admins/register-coach",
+        formData,
+        {
+          withCredentials: true,
+          // Let browser set the content type with correct boundary
+        }
+      );
 
       if (response.data && response.data.success) {
         // Show success message
@@ -257,7 +338,7 @@ const CoachManagement = () => {
           state: "",
           country: "India",
           pincode: "",
-          sport: "Cricket",
+          sport: [],
           experience: "",
           certifications: "",
           previousOrganizations: "",
@@ -284,7 +365,10 @@ const CoachManagement = () => {
         console.error("Response status:", error.response.status);
         console.error("Response data:", error.response.data);
       }
-      setErrorMessage(error.response?.data?.message || "Failed to register coach. Please try again.");
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Failed to register coach. Please try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -301,7 +385,7 @@ const CoachManagement = () => {
   // Handle edit changes in the profile dialog
   const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setEditableCoach(prev => ({ ...prev, [name]: value }));
+    setEditableCoach((prev) => ({ ...prev, [name]: value }));
   };
 
   // Save edited coach details
@@ -345,33 +429,51 @@ const CoachManagement = () => {
             <label className="text-sm font-medium mb-1 block">Sport</label>
             <Select value={selectedSport} onValueChange={handleSportChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Select Sport">{selectedSport}</SelectValue>
+                <SelectValue placeholder="Select Sport">
+                  {selectedSport}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {sportsList.map((sport) => (
-                  <SelectItem key={sport} value={sport}>{sport}</SelectItem>
+                  <SelectItem key={sport} value={sport}>
+                    {sport}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1 block">Designation</label>
-            <Select value={selectedDesignation} onValueChange={handleDesignationChange}>
+            <label className="text-sm font-medium mb-1 block">
+              Designation
+            </label>
+            <Select
+              value={selectedDesignation}
+              onValueChange={handleDesignationChange}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select Designation">{selectedDesignation}</SelectValue>
+                <SelectValue placeholder="Select Designation">
+                  {selectedDesignation}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {designationList.map((designation) => (
-                  <SelectItem key={designation} value={designation}>{designation}</SelectItem>
+                  <SelectItem key={designation} value={designation}>
+                    {designation}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-1 block">Results per page</label>
-            <Select value={limit.toString()} onValueChange={(val) => setLimit(Number(val))}>
+            <label className="text-sm font-medium mb-1 block">
+              Results per page
+            </label>
+            <Select
+              value={limit.toString()}
+              onValueChange={(val) => setLimit(Number(val))}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Per page">{limit}</SelectValue>
               </SelectTrigger>
@@ -398,7 +500,9 @@ const CoachManagement = () => {
             {/* Modal Content */}
             <DialogContent className="max-w-4xl">
               <DialogHeader>
-                <DialogTitle className="text-xl font-semibold">Register New Coach</DialogTitle>
+                <DialogTitle className="text-xl font-semibold">
+                  Register New Coach
+                </DialogTitle>
               </DialogHeader>
 
               {errorMessage && (
@@ -414,258 +518,295 @@ const CoachManagement = () => {
                   <AlertDescription>{successMessage}</AlertDescription>
                 </Alert>
               )}
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
+                {/* Basic Information */}
+                <h3 className="font-medium text-lg">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Full Name *</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      placeholder="Full Name"
+                      value={newCoach.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email">Email Address *</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Email Address"
+                      value={newCoach.email}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
 
-              {/* Form Fields - Basic Information */}
-              // Replace the current form fields section with this complete version           
-<div className="space-y-4 max-h-[60vh] overflow-y-auto p-1">
-  {/* Basic Information */}
-  <h3 className="font-medium text-lg">Basic Information</h3>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="name">Full Name *</Label>
-      <Input 
-        id="name" 
-        name="name" 
-        placeholder="Full Name" 
-        value={newCoach.name} 
-        onChange={handleInputChange}
-      />
-    </div>
-    <div>
-      <Label htmlFor="email">Email Address *</Label>
-      <Input 
-        id="email" 
-        name="email" 
-        type="email" 
-        placeholder="Email Address" 
-        value={newCoach.email} 
-        onChange={handleInputChange}
-      />
-    </div>
-  </div>
-  
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="password">Password *</Label>
-      <Input 
-        id="password" 
-        name="password" 
-        type="password" 
-        placeholder="Password" 
-        value={newCoach.password} 
-        onChange={handleInputChange}
-      />
-    </div>
-    <div>
-      <Label htmlFor="dob">Date of Birth *</Label>
-      <Input 
-        id="dob" 
-        name="dob" 
-        type="date" 
-        value={newCoach.dob} 
-        onChange={handleInputChange}
-      />
-    </div>
-  </div>
-  
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="gender">Gender *</Label>
-      <Select name="gender" value={newCoach.gender} onValueChange={(value) => handleSelectChange("gender", value)}>
-        <SelectTrigger id="gender">
-          <SelectValue placeholder="Select Gender" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="male">Male</SelectItem>
-          <SelectItem value="female">Female</SelectItem>
-          <SelectItem value="other">Other</SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-    <div>
-      <Label htmlFor="nationality">Nationality</Label>
-      <Input 
-        id="nationality" 
-        name="nationality" 
-        placeholder="Nationality" 
-        value={newCoach.nationality} 
-        onChange={handleInputChange}
-      />
-    </div>
-  </div>
-  
-  {/* Contact Information */}
-  <h3 className="font-medium text-lg pt-2">Contact Information</h3>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="contactNumber">Contact Number *</Label>
-      <Input 
-        id="contactNumber" 
-        name="contactNumber" 
-        placeholder="Contact Number" 
-        value={newCoach.contactNumber} 
-        onChange={handleInputChange}
-      />
-    </div>
-    <div>
-      <Label htmlFor="address">Address *</Label>
-      <Input 
-        id="address" 
-        name="address" 
-        placeholder="Address" 
-        value={newCoach.address} 
-        onChange={handleInputChange}
-      />
-    </div>
-  </div>
-  
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-    <div>
-      <Label htmlFor="city">City</Label>
-      <Input 
-        id="city" 
-        name="city" 
-        placeholder="City" 
-        value={newCoach.city} 
-        onChange={handleInputChange}
-      />
-    </div>
-    <div>
-      <Label htmlFor="state">State *</Label>
-      <Input 
-        id="state" 
-        name="state" 
-        placeholder="State" 
-        value={newCoach.state} 
-        onChange={handleInputChange}
-      />
-    </div>
-    <div>
-      <Label htmlFor="pincode">Pincode</Label>
-      <Input 
-        id="pincode" 
-        name="pincode" 
-        placeholder="Pincode" 
-        value={newCoach.pincode} 
-        onChange={handleInputChange}
-      />
-    </div>
-  </div>
-  
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="country">Country *</Label>
-      <Input 
-        id="country" 
-        name="country" 
-        placeholder="Country" 
-        value={newCoach.country} 
-        onChange={handleInputChange}
-      />
-    </div>
-  </div>
-  
-  {/* Professional Information */}
-  <h3 className="font-medium text-lg pt-2">Professional Information</h3>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="sport">Sport *</Label>
-      <Select name="sport" value={newCoach.sport} onValueChange={(value) => handleSelectChange("sport", value)}>
-        <SelectTrigger id="sport">
-          <SelectValue placeholder="Select Sport" />
-        </SelectTrigger>
-        <SelectContent>
-          {sportsList.filter(sport => sport !== "All").map((sport) => (
-            <SelectItem key={sport} value={sport}>{sport}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-    <div>
-      <Label htmlFor="designation">Designation *</Label>
-      <Select name="designation" value={newCoach.designation} onValueChange={(value) => handleSelectChange("designation", value)}>
-        <SelectTrigger id="designation">
-          <SelectValue placeholder="Select Designation" />
-        </SelectTrigger>
-        <SelectContent>
-          {designationList.filter(designation => designation !== "All").map((designation) => (
-            <SelectItem key={designation} value={designation}>{designation}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  </div>
-  
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="experience">Experience (years)</Label>
-      <Input 
-        id="experience" 
-        name="experience" 
-        placeholder="Years of Experience" 
-        value={newCoach.experience} 
-        onChange={handleInputChange}
-      />
-    </div>
-    <div>
-      <Label htmlFor="certifications">Certifications</Label>
-      <Input 
-        id="certifications" 
-        name="certifications" 
-        placeholder="List key certifications" 
-        value={newCoach.certifications} 
-        onChange={handleInputChange}
-      />
-    </div>
-  </div>
-  
-  <div>
-    <Label htmlFor="previousOrganizations">Previous Organizations</Label>
-    <Input 
-      id="previousOrganizations" 
-      name="previousOrganizations" 
-      placeholder="Previous organizations" 
-      value={newCoach.previousOrganizations} 
-      onChange={handleInputChange}
-    />
-  </div>
-  
-  {/* Document Uploads */}
-  <h3 className="font-medium text-lg pt-2">Document Uploads</h3>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-      <Label htmlFor="profilePhoto">Profile Photo</Label>
-      <Input 
-        id="profilePhoto" 
-        name="profilePhoto" 
-        type="file" 
-        onChange={(e) => handleFileChange(e, setProfilePhoto)}
-      />
-      <p className="text-xs text-gray-500 mt-1">Recommended: Square image, max 1MB</p>
-    </div>
-    <div>
-      <Label htmlFor="idProof">ID Proof</Label>
-      <Input 
-        id="idProof" 
-        name="idProof" 
-        type="file" 
-        onChange={(e) => handleFileChange(e, setIdProof)}
-      />
-      <p className="text-xs text-gray-500 mt-1">Acceptable: Passport, Driver's License, Aadhaar</p>
-    </div>
-  </div>
-  
-  <div>
-    <Label htmlFor="certificatesFile">Certificates (PDF)</Label>
-    <Input 
-      id="certificatesFile" 
-      name="certificatesFile" 
-      type="file" 
-      onChange={(e) => handleFileChange(e, setCertificatesFile)}
-    />
-    <p className="text-xs text-gray-500 mt-1">Upload coaching certifications as PDF (optional)</p>
-  </div>
-</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="Password"
+                      value={newCoach.password}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="dob">Date of Birth *</Label>
+                    <Input
+                      id="dob"
+                      name="dob"
+                      type="date"
+                      value={newCoach.dob}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="gender">Gender *</Label>
+                    <Select
+                      name="gender"
+                      value={newCoach.gender}
+                      onValueChange={(value) =>
+                        handleSelectChange("gender", value)
+                      }
+                    >
+                      <SelectTrigger id="gender">
+                        <SelectValue placeholder="Select Gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="nationality">Nationality</Label>
+                    <Input
+                      id="nationality"
+                      name="nationality"
+                      placeholder="Nationality"
+                      value={newCoach.nationality}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <h3 className="font-medium text-lg pt-2">
+                  Contact Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="contactNumber">Contact Number *</Label>
+                    <Input
+                      id="contactNumber"
+                      name="contactNumber"
+                      placeholder="Contact Number"
+                      value={newCoach.contactNumber}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="address">Address *</Label>
+                    <Input
+                      id="address"
+                      name="address"
+                      placeholder="Address"
+                      value={newCoach.address}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      name="city"
+                      placeholder="City"
+                      value={newCoach.city}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="state">State *</Label>
+                    <Input
+                      id="state"
+                      name="state"
+                      placeholder="State"
+                      value={newCoach.state}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="pincode">Pincode</Label>
+                    <Input
+                      id="pincode"
+                      name="pincode"
+                      placeholder="Pincode"
+                      value={newCoach.pincode}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="country">Country *</Label>
+                    <Input
+                      id="country"
+                      name="country"
+                      placeholder="Country"
+                      value={newCoach.country}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Professional Information */}
+                <h3 className="font-medium text-lg pt-2">
+                  Professional Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="sports">Sports (Select multiple) *</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-1">
+                      {sportsList
+                        .filter((sport) => sport !== "All")
+                        .map((sport) => (
+                          <div
+                            key={sport}
+                            onClick={() => handleSportSelection(sport)}
+                            className={`px-3 py-2 rounded-md cursor-pointer text-center border ${
+                              newCoach.sports.includes(sport)
+                                ? "bg-blue-500 text-white border-blue-600"
+                                : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"
+                            }`}
+                          >
+                            {sport}
+                          </div>
+                        ))}
+                    </div>
+                    {newCoach.sports.length === 0 && (
+                      <p className="text-xs text-red-500 mt-1">
+                        Please select at least one sport
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="designation">Designation *</Label>
+                    <Select
+                      name="designation"
+                      value={newCoach.designation}
+                      onValueChange={(value) =>
+                        handleSelectChange("designation", value)
+                      }
+                    >
+                      <SelectTrigger id="designation">
+                        <SelectValue placeholder="Select Designation" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {designationList
+                          .filter((designation) => designation !== "All")
+                          .map((designation) => (
+                            <SelectItem key={designation} value={designation}>
+                              {designation}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="experience">Experience (years)</Label>
+                    <Input
+                      id="experience"
+                      name="experience"
+                      placeholder="Years of Experience"
+                      value={newCoach.experience}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="certifications">Certifications</Label>
+                    <Input
+                      id="certifications"
+                      name="certifications"
+                      placeholder="List key certifications"
+                      value={newCoach.certifications}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="previousOrganizations">
+                    Previous Organizations
+                  </Label>
+                  <Input
+                    id="previousOrganizations"
+                    name="previousOrganizations"
+                    placeholder="Previous organizations"
+                    value={newCoach.previousOrganizations}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                {/* Document Uploads */}
+                <h3 className="font-medium text-lg pt-2">Document Uploads</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="profilePhoto">Profile Photo</Label>
+                    <Input
+                      id="profilePhoto"
+                      name="profilePhoto"
+                      type="file"
+                      onChange={(e) => handleFileChange(e, setProfilePhoto)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Recommended: Square image, max 1MB
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="idProof">ID Proof</Label>
+                    <Input
+                      id="idProof"
+                      name="idProof"
+                      type="file"
+                      onChange={(e) => handleFileChange(e, setIdProof)}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Acceptable: Passport, Driver's License, Aadhaar
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="certificatesFile">Certificates (PDF)</Label>
+                  <Input
+                    id="certificatesFile"
+                    name="certificatesFile"
+                    type="file"
+                    onChange={(e) => handleFileChange(e, setCertificatesFile)}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload coaching certifications as PDF (optional)
+                  </p>
+                </div>
+              </div>
 
               <DialogFooter className="mt-6">
                 <Button
@@ -675,16 +816,15 @@ const CoachManagement = () => {
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={handleAddCoach}
-                  disabled={submitting}
-                >
+                <Button onClick={handleAddCoach} disabled={submitting}>
                   {submitting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Registering...
                     </>
-                  ) : "Register Coach"}
+                  ) : (
+                    "Register Coach"
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -704,19 +844,33 @@ const CoachManagement = () => {
           {coaches.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {coaches.map((coach) => (
-                <Card key={coach._id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={coach._id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardHeader className="pb-2">
                     <CardTitle className="flex items-center">
-                      <span className="cursor-pointer hover:text-blue-600" onClick={() => handleViewProfile(coach)}>
+                      <span
+                        className="cursor-pointer hover:text-blue-600"
+                        onClick={() => handleViewProfile(coach)}
+                      >
                         {coach.name}
                       </span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-gray-600 mb-1">📧 {coach.email}</p>
-                    <p className="text-sm text-gray-600 mb-1">🏅 {coach.sport}</p>
-                    <p className="text-sm text-gray-600 mb-1">💼 {coach.designation}</p>
-                    <p className="text-sm text-gray-600 mb-3">⏱️ {coach.experience} years experience</p>
+                    <p className="text-sm text-gray-600 mb-1">
+                      📧 {coach.email}
+                    </p>
+                    <p className="text-sm text-gray-600 mb-1">
+                      🏅 {coach.sports ? coach.sports.join(", ") : coach.sport}
+                    </p>
+                    <p className="text-sm text-gray-600 mb-1">
+                      💼 {coach.designation}
+                    </p>
+                    <p className="text-sm text-gray-600 mb-3">
+                      ⏱️ {coach.experience} years experience
+                    </p>
 
                     <Button
                       size="sm"
@@ -731,8 +885,12 @@ const CoachManagement = () => {
             </div>
           ) : (
             <div className="text-center py-16 bg-gray-50 rounded-lg">
-              <p className="text-gray-500 mb-4">No coaches found matching your criteria.</p>
-              <Button onClick={() => setDialogOpen(true)}>Register a New Coach</Button>
+              <p className="text-gray-500 mb-4">
+                No coaches found matching your criteria.
+              </p>
+              <Button onClick={() => setDialogOpen(true)}>
+                Register a New Coach
+              </Button>
             </div>
           )}
 
@@ -760,12 +918,16 @@ const CoachManagement = () => {
               <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Showing <span className="font-medium">{coaches.length}</span> of{' '}
+                    Showing{" "}
+                    <span className="font-medium">{coaches.length}</span> of{" "}
                     <span className="font-medium">{totalCoaches}</span> coaches
                   </p>
                 </div>
                 <div>
-                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                  <nav
+                    className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+                    aria-label="Pagination"
+                  >
                     <Button
                       variant="outline"
                       size="icon"
@@ -796,9 +958,15 @@ const CoachManagement = () => {
                       return (
                         <Button
                           key={pageNum}
-                          variant={currentPage === pageNum ? "default" : "outline"}
+                          variant={
+                            currentPage === pageNum ? "default" : "outline"
+                          }
                           size="icon"
-                          className={`${currentPage === pageNum ? 'bg-blue-600 text-white' : ''}`}
+                          className={`${
+                            currentPage === pageNum
+                              ? "bg-blue-600 text-white"
+                              : ""
+                          }`}
                           onClick={() => goToPage(pageNum)}
                         >
                           {pageNum}
@@ -827,7 +995,9 @@ const CoachManagement = () => {
       <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
         <DialogContent className="max-w-4xl h-[80vh] overflow-hidden">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">{selectedCoach?.name}'s Profile</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">
+              {selectedCoach?.name}'s Profile
+            </DialogTitle>
           </DialogHeader>
 
           <Tabs defaultValue="overview" className="w-full h-full">
@@ -839,7 +1009,10 @@ const CoachManagement = () => {
             </TabsList>
 
             {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-4 h-[65vh] overflow-y-auto p-4">
+            <TabsContent
+              value="overview"
+              className="space-y-4 h-[65vh] overflow-y-auto p-4"
+            >
               <div className="flex justify-end">
                 <Button
                   variant="ghost"
@@ -880,16 +1053,46 @@ const CoachManagement = () => {
                       )}
                     </div>
                     <div>
-                      <Label htmlFor="sport">Sport</Label>
+                      <Label htmlFor="sport">Sports</Label>
                       {isEditing ? (
-                        <Input
-                          id="sport"
-                          name="sport"
-                          value={editableCoach?.sport || ""}
-                          onChange={handleEditChange}
-                        />
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-1">
+                          {sportsList
+                            .filter((sport) => sport !== "All")
+                            .map((sport) => (
+                              <div
+                                key={sport}
+                                onClick={() => {
+                                  const updatedSports =
+                                    editableCoach.sports?.includes(sport)
+                                      ? editableCoach.sports.filter(
+                                          (s) => s !== sport
+                                        )
+                                      : [
+                                          ...(editableCoach.sports || []),
+                                          sport,
+                                        ];
+
+                                  setEditableCoach({
+                                    ...editableCoach,
+                                    sports: updatedSports,
+                                  });
+                                }}
+                                className={`px-3 py-2 rounded-md cursor-pointer text-center border ${
+                                  editableCoach.sports?.includes(sport)
+                                    ? "bg-blue-500 text-white border-blue-600"
+                                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"
+                                }`}
+                              >
+                                {sport}
+                              </div>
+                            ))}
+                        </div>
                       ) : (
-                        <p>{editableCoach?.sport}</p>
+                        <p>
+                          {editableCoach?.sports
+                            ? editableCoach.sports.join(", ")
+                            : editableCoach?.sport}
+                        </p>
                       )}
                     </div>
                     <div>
@@ -922,7 +1125,10 @@ const CoachManagement = () => {
                 </div>
                 <div>
                   <h3 className="font-medium text-lg">Training Philosophy</h3>
-                  <p>Focus on teamwork, discipline, and continuous improvement. Every player has potential; it's my job to unlock it.</p>
+                  <p>
+                    Focus on teamwork, discipline, and continuous improvement.
+                    Every player has potential; it's my job to unlock it.
+                  </p>
                 </div>
               </div>
               {isEditing && (
@@ -933,18 +1139,39 @@ const CoachManagement = () => {
             </TabsContent>
 
             {/* Team Tab */}
-            <TabsContent value="team" className="space-y-4 h-[65vh] overflow-y-auto p-4">
+            <TabsContent
+              value="team"
+              className="space-y-4 h-[65vh] overflow-y-auto p-4"
+            >
               <h3 className="font-medium text-lg">Current Teams</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { name: "Team A", size: 15, role: "Head Coach", ageGroup: "12-14" },
-                  { name: "Team B", size: 20, role: "Assistant Coach", ageGroup: "15-17" },
+                  {
+                    name: "Team A",
+                    size: 15,
+                    role: "Head Coach",
+                    ageGroup: "12-14",
+                  },
+                  {
+                    name: "Team B",
+                    size: 20,
+                    role: "Assistant Coach",
+                    ageGroup: "15-17",
+                  },
                 ].map((team, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <p><strong>Team:</strong> {team.name}</p>
-                    <p><strong>Size:</strong> {team.size}</p>
-                    <p><strong>Role:</strong> {team.role}</p>
-                    <p><strong>Age Group:</strong> {team.ageGroup}</p>
+                    <p>
+                      <strong>Team:</strong> {team.name}
+                    </p>
+                    <p>
+                      <strong>Size:</strong> {team.size}
+                    </p>
+                    <p>
+                      <strong>Role:</strong> {team.role}
+                    </p>
+                    <p>
+                      <strong>Age Group:</strong> {team.ageGroup}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -952,21 +1179,42 @@ const CoachManagement = () => {
               <h3 className="font-medium text-lg">Past Teams</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { name: "Team X", size: 18, role: "Head Coach", ageGroup: "10-12" },
-                  { name: "Team Y", size: 22, role: "Assistant Coach", ageGroup: "13-15" },
+                  {
+                    name: "Team X",
+                    size: 18,
+                    role: "Head Coach",
+                    ageGroup: "10-12",
+                  },
+                  {
+                    name: "Team Y",
+                    size: 22,
+                    role: "Assistant Coach",
+                    ageGroup: "13-15",
+                  },
                 ].map((team, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <p><strong>Team:</strong> {team.name}</p>
-                    <p><strong>Size:</strong> {team.size}</p>
-                    <p><strong>Role:</strong> {team.role}</p>
-                    <p><strong>Age Group:</strong> {team.ageGroup}</p>
+                    <p>
+                      <strong>Team:</strong> {team.name}
+                    </p>
+                    <p>
+                      <strong>Size:</strong> {team.size}
+                    </p>
+                    <p>
+                      <strong>Role:</strong> {team.role}
+                    </p>
+                    <p>
+                      <strong>Age Group:</strong> {team.ageGroup}
+                    </p>
                   </div>
                 ))}
               </div>
             </TabsContent>
 
             {/* Schedule Tab */}
-            <TabsContent value="schedule" className="space-y-4 h-[65vh] overflow-y-auto p-4">
+            <TabsContent
+              value="schedule"
+              className="space-y-4 h-[65vh] overflow-y-auto p-4"
+            >
               <h3 className="font-medium text-lg">Today's Sessions</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
@@ -974,9 +1222,15 @@ const CoachManagement = () => {
                   { time: "2:00 PM", location: "Field 2", team: "Team B" },
                 ].map((session, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <p><strong>Time:</strong> {session.time}</p>
-                    <p><strong>Location:</strong> {session.location}</p>
-                    <p><strong>Team:</strong> {session.team}</p>
+                    <p>
+                      <strong>Time:</strong> {session.time}
+                    </p>
+                    <p>
+                      <strong>Location:</strong> {session.location}
+                    </p>
+                    <p>
+                      <strong>Team:</strong> {session.team}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -984,13 +1238,26 @@ const CoachManagement = () => {
               <h3 className="font-medium text-lg">Weekly Schedule</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { day: "Monday", sessions: ["10:00 AM - Team A", "2:00 PM - Team B"] },
-                  { day: "Wednesday", sessions: ["10:00 AM - Team A", "2:00 PM - Team B"] },
-                  { day: "Friday", sessions: ["10:00 AM - Team A", "2:00 PM - Team B"] },
+                  {
+                    day: "Monday",
+                    sessions: ["10:00 AM - Team A", "2:00 PM - Team B"],
+                  },
+                  {
+                    day: "Wednesday",
+                    sessions: ["10:00 AM - Team A", "2:00 PM - Team B"],
+                  },
+                  {
+                    day: "Friday",
+                    sessions: ["10:00 AM - Team A", "2:00 PM - Team B"],
+                  },
                 ].map((day, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <p><strong>Day:</strong> {day.day}</p>
-                    <p><strong>Sessions:</strong> {day.sessions.join(", ")}</p>
+                    <p>
+                      <strong>Day:</strong> {day.day}
+                    </p>
+                    <p>
+                      <strong>Sessions:</strong> {day.sessions.join(", ")}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -1002,20 +1269,34 @@ const CoachManagement = () => {
                   { date: "2023-11-01", event: "Friendly Match vs Team X" },
                 ].map((event, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                    <p><strong>Date:</strong> {event.date}</p>
-                    <p><strong>Event:</strong> {event.event}</p>
+                    <p>
+                      <strong>Date:</strong> {event.date}
+                    </p>
+                    <p>
+                      <strong>Event:</strong> {event.event}
+                    </p>
                   </div>
                 ))}
               </div>
             </TabsContent>
 
             {/* Performance Tab */}
-            <TabsContent value="performance" className="space-y-4 h-[65vh] overflow-y-auto p-4">
+            <TabsContent
+              value="performance"
+              className="space-y-4 h-[65vh] overflow-y-auto p-4"
+            >
               <h3 className="font-medium text-lg">Coach Performance</h3>
               <div className="space-y-2">
-                <p><strong>Success Rate:</strong> <Progress value={85} /> 85%</p>
-                <p><strong>Team Satisfaction:</strong> <Progress value={90} /> 90%</p>
-                <p><strong>Attendance:</strong> <Progress value={95} /> 95%</p>
+                <p>
+                  <strong>Success Rate:</strong> <Progress value={85} /> 85%
+                </p>
+                <p>
+                  <strong>Team Satisfaction:</strong> <Progress value={90} />{" "}
+                  90%
+                </p>
+                <p>
+                  <strong>Attendance:</strong> <Progress value={95} /> 95%
+                </p>
               </div>
 
               <h3 className="font-medium text-lg">Team Performance</h3>
@@ -1025,7 +1306,10 @@ const CoachManagement = () => {
                   { team: "Team B", performance: 90 },
                 ].map((team, index) => (
                   <div key={index}>
-                    <p><strong>{team.team}:</strong> <Progress value={team.performance} /> {team.performance}%</p>
+                    <p>
+                      <strong>{team.team}:</strong>{" "}
+                      <Progress value={team.performance} /> {team.performance}%
+                    </p>
                   </div>
                 ))}
               </div>

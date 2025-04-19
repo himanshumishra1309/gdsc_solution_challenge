@@ -55,10 +55,17 @@ const coachSchema = new mongoose.Schema(
       country: { type: String, required: [true, "Country is required"] },
       pincode: { type: String }
     },
-    sport: { 
-      type: String,
-      required: [true, "Sport is required"],
-      enum: ["Cricket", "Football", "Badminton", "Basketball", "Tennis", "Hockey", "Other"]
+    sports: { 
+      type: [String],
+      required: [true, "At least one sport is required"],
+      validate: {
+        validator: function(v) {
+          return v.length > 0 && v.every(sport => 
+            ["Cricket", "Football", "Badminton", "Basketball", "Tennis", "Hockey", "Other"].includes(sport)
+          );
+        },
+        message: props => `${props.value} contains invalid sports or is empty`
+      }
     },
     experience: { 
       type: Number,
