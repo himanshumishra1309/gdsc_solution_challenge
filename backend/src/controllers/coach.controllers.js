@@ -1,7 +1,7 @@
 import asyncHandler from "../utils/asyncHandler.js";
-import ApiError from "../utils/ApiError.js"
-import jwt from 'jsonwebtoken'
-
+import ApiError from "../utils/ApiError.js";
+import jwt from "jsonwebtoken";
+import { Athlete } from "../models/athlete.model.js";
 
 import { Coach } from "../models/coach.model.js";
 
@@ -28,7 +28,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("coachAccessToken", options)
     .clearCookie("coachRefreshToken", options)
-    .json(new ApiResponse (200, {}, "User Logged Out"));
+    .json(new ApiResponse(200, {}, "User Logged Out"));
 });
 
 const registerUser = asyncHandler(async (req, res) => {
@@ -90,7 +90,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   return res
     .status(201)
-    .json(new ApiResponse (200, createdUser, "User Registered Successfully"));
+    .json(new ApiResponse(200, createdUser, "User Registered Successfully"));
 });
 
 const getCoachProfile = asyncHandler(async (req, res) => {
@@ -104,7 +104,7 @@ const getCoachProfile = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse (200, teacher, "Coah profile fetched successfully"));
+    .json(new ApiResponse(200, teacher, "Coah profile fetched successfully"));
 });
 
 const logRpe = asyncHandler(async (req, res) => {
@@ -173,4 +173,51 @@ const getCoaches = asyncHandler(async (req, res) => {
   });
 });
 
-export { logoutUser, registerUser, getCoachProfile, getCoaches };
+const getAllAssignedAthletes = asyncHandler(async (req, res) => {
+  try {
+    const coachId = req.user._id;
+
+    const coach = await Coach.findById(coachId);
+
+    if (!coach) {
+      throw new ApiError(404, "Coach not found");
+    }
+
+    const assignedAthletes = await Athlete.find({
+      _id: { $in: coach.assignedAthletes },
+    })
+      .select("name email sports skillLevel gender dob avatar athleteId")
+      .populate({
+        path: "schoolInfo",
+        select: "schoolName year",
+      });
+
+    if (!assignedAthletes || assignedAthletes.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No athletes assigned to this coach",
+        data: [],
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Athletes fetched successfully",
+      data: assignedAthletes,
+      count: assignedAthletes.length,
+    });
+  } catch (error) {
+    throw new ApiError(
+      500,
+      error?.message || "Error fetching assigned athletes"
+    );
+  }
+});
+
+export {
+  logoutUser,
+  registerUser,
+  getCoachProfile,
+  getCoaches,
+  getAllAssignedAthletes,
+};

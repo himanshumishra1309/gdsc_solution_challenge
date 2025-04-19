@@ -256,8 +256,8 @@ Enjoy tracking and optimizing performance! 🚀
 | Athlete              | johndoe@example.com           | 1234       |
 | Independent Athlete  | individualathlete@gmail.com   | 1234       |
 | Sponsor              | sponsor@gmail.com             | 1234       |
-| Medical Staff        | deepak@gmail.com              | 123456     |
-| Trainer              | jay@gmail.com                 | 123456     |
+| Medical Staff        | deepakupadhyay@gmail.com      | 123456     |
+| Trainer              | bipinjha@gmail.com            | 123456     |
 
 > **Security Reminder:** Update all passwords for production environments.
 

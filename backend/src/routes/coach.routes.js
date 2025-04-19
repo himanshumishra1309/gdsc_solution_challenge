@@ -3,6 +3,7 @@ import {
     getCoaches,
     getCoachProfile,
     logoutUser,
+    getAllAssignedAthletes,
 } from "../controllers/coach.controllers.js";
 import { addAthleteStats } from "../controllers/admin.controllers.js";
 import { verifyJWTCoach } from "../middlewares/auth.middleware.js";
@@ -26,5 +27,7 @@ router.post("/logout", verifyJWTCoach, logoutUser); //connected
 
 // Coach can add/update athlete stats
 router.post("/athlete-stats", verifyJWTCoach, addAthleteStats);
+
+router.get("/assigned-athletes", verifyJWTCoach, getAllAssignedAthletes);
 
 export default router;
