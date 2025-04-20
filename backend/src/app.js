@@ -72,7 +72,7 @@ import authRouter from "./routes/auth.routes.js";
 import sponsorRouter from "./routes/sponsor.routes.js";
 import financesRouter from "./routes/finance.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
-import { configDotenv } from "dotenv";
+import medicalReportsRouter from "./routes/medicalReports.routes.js";
 import trainingPlanrouter from "./routes/trainingPlan.routes.js";
 import sessionRouter from "./routes/session.routes.js";
 app.get("/api/v1/health", (req, res) => {
@@ -106,6 +106,7 @@ app.use("/api/v1/finances", financesRouter);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/training", trainingPlanrouter);
 app.use("/api/v1/session", sessionRouter);
+app.use("/api/v1/medical-reports", medicalReportsRouter);
 
 
 // ✅ Global Error Handler (Moved to Bottom)

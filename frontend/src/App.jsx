@@ -49,6 +49,7 @@ import InjuryLogs from "./components/MedicalStaffDashboardPages/InjuryLogs";
 import MedicalRecords from "./components/MedicalStaffDashboardPages/MedicalRecords";
 import ViewPlayers from "./components/MedicalStaffDashboardPages/ViewPlayers";
 import MProfile from "./components/MedicalStaffDashboardPages/MProfile";
+import AthleteMedicalRecords from "./components/MedicalStaffDashboardPages/AthleteMedicalRecords";
 
 
 import GymTrainerDashboard from "./components/GymTrainerDashboard";
@@ -150,7 +151,7 @@ function App() {
           <Route path="announcements" element={<Announcements/>} />
           <Route path="medicalrecords" element={<MedicalRecords />} />
           <Route path="mprofile" element={<MProfile />} />
-
+          <Route path="athlete-records/:athleteId" element={<AthleteMedicalRecords />} />
         </Route>
 
         <Route path="/gymtrainer-dashboard/:organizationId/:coachName/*" element={<GymTrainerDashboard />} >

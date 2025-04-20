@@ -2,7 +2,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import jwt from "jsonwebtoken";
 import { Athlete } from "../models/athlete.model.js";
-
+import ApiResponse from "../utils/ApiResponse.js";
 import { Coach } from "../models/coach.model.js";
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -174,44 +174,71 @@ const getCoaches = asyncHandler(async (req, res) => {
 });
 
 const getAllAssignedAthletes = asyncHandler(async (req, res) => {
-  try {
-    const coachId = req.user._id;
+  const coachId = req.coach._id;
 
-    const coach = await Coach.findById(coachId);
+  const coach = await Coach.findById(coachId);
 
-    if (!coach) {
-      throw new ApiError(404, "Coach not found");
-    }
-
-    const assignedAthletes = await Athlete.find({
-      _id: { $in: coach.assignedAthletes },
-    })
-      .select("name email sports skillLevel gender dob avatar athleteId")
-      .populate({
-        path: "schoolInfo",
-        select: "schoolName year",
-      });
-
-    if (!assignedAthletes || assignedAthletes.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: "No athletes assigned to this coach",
-        data: [],
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Athletes fetched successfully",
-      data: assignedAthletes,
-      count: assignedAthletes.length,
-    });
-  } catch (error) {
-    throw new ApiError(
-      500,
-      error?.message || "Error fetching assigned athletes"
-    );
+  if (!coach) {
+    throw new ApiError(404, "Coach not found");
   }
+
+  const assignedAthletes = await Athlete.find({
+    $or: [
+      { _id: { $in: coach.assignedAthletes || [] } },
+      { headCoachAssigned: coachId },
+      { assistantCoachAssigned: coachId },
+      { gymTrainerAssigned: coachId },
+      { medicalStaffAssigned: coachId },
+    ],
+  })
+    .select(
+      "name email sports skillLevel gender dob avatar athleteId height weight schoolName year"
+    )
+    .populate('headCoachAssigned', 'name email designation')
+    .populate('assistantCoachAssigned', 'name email designation')
+    .populate('gymTrainerAssigned', 'name email designation')
+    .populate('medicalStaffAssigned', 'name email designation')
+    .lean();
+
+  const athletesWithSchoolInfo = assignedAthletes.map((athlete) => ({
+    ...athlete,
+    schoolInfo: {
+      schoolName: athlete.schoolName || "",
+      year: athlete.year || "",
+    },
+    // Include coach names as direct properties for easier access
+    headCoachName: athlete.headCoachAssigned?.name || "Not Assigned",
+    assistantCoachName: athlete.assistantCoachAssigned?.name || "Not Assigned",
+    gymTrainerName: athlete.gymTrainerAssigned?.name || "Not Assigned",
+    medicalStaffName: athlete.medicalStaffAssigned?.name || "Not Assigned"
+  }));
+
+  if (!athletesWithSchoolInfo || athletesWithSchoolInfo.length === 0) {
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200, 
+          [], 
+          "No athletes assigned to this coach"
+        )
+      );
+  }
+
+  const responseData = {
+    athletes: athletesWithSchoolInfo,
+    count: athletesWithSchoolInfo.length
+  };
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200, 
+        responseData, 
+        "Athletes fetched successfully"
+      )
+    );
 });
 
 export {
