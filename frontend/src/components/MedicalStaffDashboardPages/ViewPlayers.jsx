@@ -98,7 +98,7 @@ function ViewPlayers() {
     
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/v1/admins/athletes/${athlete._id}/details`,
+        `http://localhost:8000/api/v1/admins/coach-get-athletes/${athlete._id}/details`,
         {
           withCredentials: true
         }

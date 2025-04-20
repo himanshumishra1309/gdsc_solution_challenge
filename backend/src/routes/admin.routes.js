@@ -126,6 +126,12 @@ router.get(
   getAthleteFullDetails
 );
 
+router.get(
+  "/coach-get-athletes/:athleteId/details",
+  verifyJWTCoach,
+  getAthleteFullDetails
+);
+
 router.get("/sponsors", verifyJWTAdmin, getAllSponsors);
 
 export default router;

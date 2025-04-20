@@ -1486,8 +1486,15 @@ const getAthleteFullDetails = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid athlete ID format");
   }
   
-  // Get the admin's organization ID
-  const organizationId = req.admin.organization;
+  let organizationId;
+  
+  if (req.admin) {
+    organizationId = req.admin.organization;
+  } else if (req.coach) {
+    organizationId = req.coach.organization;
+  } else {
+    throw new ApiError(401, "Unauthorized access");
+  }
   
   try {
     // Fetch athlete basic information first

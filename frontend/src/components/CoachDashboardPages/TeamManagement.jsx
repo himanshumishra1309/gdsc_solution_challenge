@@ -28,71 +28,78 @@ const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 const [profileLoading, setProfileLoading] = useState(false);
 const [athleteDetails, setAthleteDetails] = useState(null);
 const [profileError, setProfileError] = useState(null);
+const [performanceData, setPerformanceData] = useState({
+  consistency: 70,
+  technique: 65,
+  stamina: 80
+});
   const navigate = useNavigate();
 
   const handleViewProfile = async (athlete) => {
     setSelectedAthlete(athlete);
     setProfileDialogOpen(true);
     setProfileLoading(true);
-    setAthleteDetails(null);
     setProfileError(null);
     
     try {
-      // Fetch detailed athlete data
       const response = await axios.get(
-        `http://localhost:8000/api/v1/athletes/${athlete._id}/details`,
-        { withCredentials: true }
+        `http://localhost:8000/api/v1/admins/coach-get-athletes/${athlete._id}/details`,
+        {
+          withCredentials: true
+        }
       );
       
-      if (response.data) {
-        // Format the athlete data for display
-        const athleteData = {
-          basicInfo: {
-            name: response.data.name,
-            email: response.data.email,
-            athleteId: response.data.athleteId,
-            age: getAgeFromDob(response.data.dob),
-            gender: response.data.gender,
-            nationality: response.data.nationality,
-            phoneNumber: response.data.phoneNumber,
-            address: response.data.address,
-            avatar: response.data.avatar
-          },
-          schoolInfo: {
-            schoolName: response.data.schoolName,
-            year: response.data.year,
-            studentId: response.data.studentId,
-            schoolEmail: response.data.schoolEmail
-          },
-          sportsInfo: {
-            sports: response.data.sports || [],
-            skillLevel: response.data.skillLevel,
-            trainingDuration: response.data.trainingDuration || "Not specified",
-            dominantHand: response.data.dominantHand,
-            positions: response.data.positions || {}
-          },
-          medicalInfo: {
-            height: response.data.height,
-            weight: response.data.weight,
-            bmi: (response.data.weight / Math.pow(response.data.height / 100, 2)).toFixed(1),
-            bloodGroup: response.data.bloodGroup,
-            allergies: response.data.allergies || [],
-            medicalConditions: response.data.medicalConditions || []
-          },
-          emergencyContact: {
-            name: response.data.emergencyContactName,
-            number: response.data.emergencyContactNumber,
-            relationship: response.data.emergencyContactRelationship
-          },
-          staffAssignments: {
-            headCoach: response.data.headCoachAssigned,
-            assistantCoach: response.data.assistantCoachAssigned,
-            gymTrainer: response.data.gymTrainerAssigned,
-            medicalStaff: response.data.medicalStaffAssigned
+      if (response.data && response.data.data && response.data.data.athlete) {
+        // Process the data before setting state
+        const athleteData = response.data.data.athlete;
+        
+        // Ensure positions are properly parsed if they're a string
+        if (typeof athleteData.sportsInfo?.positions === 'string') {
+          try {
+            athleteData.sportsInfo.positions = JSON.parse(athleteData.sportsInfo.positions);
+          } catch (e) {
+            console.error("Error parsing positions:", e);
+            athleteData.sportsInfo.positions = {};
           }
-        };
+        }
+        
+        // Process staff assignments for consistency
+        if (athleteData.staffAssignments) {
+          // Normalize staff data
+          const normalizeStaff = (staff) => {
+            if (!staff) return null;
+            if (typeof staff === 'string') return { name: staff };
+            return staff;
+          };
+          
+          athleteData.staffAssignments.headCoach = normalizeStaff(athleteData.staffAssignments.headCoach);
+          athleteData.staffAssignments.assistantCoach = normalizeStaff(athleteData.staffAssignments.assistantCoach);
+          athleteData.staffAssignments.gymTrainer = normalizeStaff(athleteData.staffAssignments.gymTrainer);
+          athleteData.staffAssignments.medicalStaff = normalizeStaff(athleteData.staffAssignments.medicalStaff);
+        }
         
         setAthleteDetails(athleteData);
+        
+        // Set performance data
+        if (athleteData.sportsInfo.stats && athleteData.sportsInfo.stats.length) {
+          const primarySport = athleteData.sportsInfo.stats[0];
+          const perfStats = {
+            consistency: 70, // Default values
+            technique: 65,
+            stamina: 80
+          };
+          
+          // Map stats to performance metrics if available
+          if (primarySport.stats) {
+            primarySport.stats.forEach(stat => {
+              if (stat.statName === 'consistency') perfStats.consistency = parseInt(stat.value);
+              if (stat.statName === 'technique') perfStats.technique = parseInt(stat.value);
+              if (stat.statName === 'stamina') perfStats.stamina = parseInt(stat.value);
+            });
+          }
+          
+          setPerformanceData(perfStats);
+        }
       } else {
         throw new Error("Invalid response format");
       }
