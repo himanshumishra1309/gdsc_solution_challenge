@@ -107,14 +107,33 @@ const handleSignIn = async () => {
       setSignInOpen(false);
       navigate(`/admin-dashboard/${organizationId}/admin`);
     } 
-    else if (selectedRole === "Coach") {
-      const organizationId = response.data.data.coach.organization;
-      const coachName = response.data.data.coach.name.replace(/\s+/g, '-').toLowerCase();
-      localStorage.setItem("userData", JSON.stringify(response.data.data.coach));
-      
-      setSignInOpen(false);
-      navigate(`/coach-dashboard/${organizationId}/${coachName}/`);
-    } 
+else if (selectedRole === "Coach") {
+  const organizationId = response.data.data.coach.organization;
+  const coachName = response.data.data.coach.name.replace(/\s+/g, '-').toLowerCase();
+  const coachData = response.data.data.coach;
+  
+  // Store coach data with designation
+  localStorage.setItem("userData", JSON.stringify(coachData));
+  
+  // Navigate based on coach designation
+  const designation = coachData.designation;
+  
+  if (designation === "Medical Staff") {
+    // Navigate to medical staff dashboard
+    setSignInOpen(false);
+    navigate(`/medicalstaff-dashboard/${organizationId}/${coachName}/`);
+  } 
+  else if (designation === "Trainer") {
+    // Navigate to trainer dashboard
+    setSignInOpen(false);
+    navigate(`/gymtrainer-dashboard/${organizationId}/${coachName}/`);
+  }
+  else {
+    // Default for both Head Coach and Assistant Coach
+    setSignInOpen(false);
+    navigate(`/coach-dashboard/${organizationId}/${coachName}/`);
+  }
+}
     else if (selectedRole === "Player") {
       const organizationId = response.data.data.athlete.organization;
       const playerName = response.data.data.athlete.name.replace(/\s+/g, '-').toLowerCase();
