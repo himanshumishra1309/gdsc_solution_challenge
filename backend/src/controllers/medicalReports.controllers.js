@@ -3,6 +3,7 @@ import { Athlete } from "../models/athlete.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
+import mongoose from "mongoose";
 
 const createMedicalReport = asyncHandler(async (req, res) => {
   const {
@@ -603,6 +604,218 @@ const deleteMedicalReport = asyncHandler(async (req, res) => {
     ));
 });
 
+
+const getMyMedicalReports = asyncHandler(async (req, res) => {
+  // Get athlete ID from authenticated user
+  const athleteId = req.athlete?._id;
+  console.log("Athlete ID:", athleteId);
+  
+  if (!athleteId) {
+    throw new ApiError(401, "Authentication as athlete required");
+  }
+  
+  // Parse query parameters for filtering and pagination
+  const { 
+    startDate, 
+    endDate, 
+    limit = 10, 
+    page = 1, 
+    testName, 
+    medicalStatus,
+    sortBy = "reportDate",
+    sortOrder = "desc" 
+  } = req.query;
+  
+  // Build query object
+  const query = { athleteId };
+  
+  // Add date range filter if provided
+  if (startDate && endDate) {
+    query.reportDate = {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate)
+    };
+  }
+  
+  // Add test name filter if provided
+  if (testName) {
+    query.testName = { $regex: testName, $options: 'i' }; // Case-insensitive search
+  }
+  
+  // Add medical status filter if provided
+  if (medicalStatus) {
+    query.medicalStatus = medicalStatus;
+  }
+  
+  // Calculate pagination
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  
+  // Determine sort order
+  const sort = {};
+  sort[sortBy] = sortOrder === "asc" ? 1 : -1;
+  
+  try {
+    // Execute query with pagination
+    const reports = await MedicalReport.find(query)
+      .populate("medicalStaffId", "name avatar email designation specialization")
+      .populate("prescribedMedication", "name dosage frequency")
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit));
+    
+    // Get total count for pagination
+    const totalReports = await MedicalReport.countDocuments(query);
+    
+    // Format reports for list view (simplified version with key information)
+    const formattedReports = reports.map(report => ({
+      id: report._id,
+      testName: report.testName || "General Checkup",
+      reportDate: report.reportDate,
+      testDate: report.testDate,
+      medicalStatus: report.medicalStatus,
+      medicalClearance: report.medicalClearance,
+      doctorInfo: {
+        name: report.medicalStaffId?.name || "Unknown",
+        avatar: report.medicalStaffId?.avatar,
+        specialization: report.medicalStaffId?.specialization
+      },
+      hasAttachments: (report.attachments?.length > 0) || (report.reportFileUrl?.length > 0),
+      nextCheckupDate: report.nextCheckupDate,
+      hasInjuries: report.injuryDetails?.currentInjuries?.length > 0,
+      hasRecommendations: report.recommendations?.length > 0,
+      createdAt: report.createdAt
+    }));
+    
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          reports: formattedReports,
+          pagination: {
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalReports / parseInt(limit)),
+            totalReports,
+            hasMore: skip + reports.length < totalReports
+          }
+        },
+        `Retrieved ${reports.length} medical reports`
+      )
+    );
+  } catch (error) {
+    throw new ApiError(500, `Error retrieving medical reports: ${error.message}`);
+  }
+});
+
+
+const getMyMedicalReportDetails = asyncHandler(async (req, res) => {
+  const { reportId } = req.params;
+  const athleteId = req.athlete?._id;
+  
+  if (!athleteId) {
+    throw new ApiError(401, "Authentication as athlete required");
+  }
+  
+  // Validate report ID
+  if (!mongoose.Types.ObjectId.isValid(reportId)) {
+    throw new ApiError(400, "Invalid report ID");
+  }
+  
+  try {
+    // Find the report with populated references
+    const report = await MedicalReport.findById(reportId)
+      .populate("medicalStaffId", "name avatar email designation specialization contactNumber")
+      .populate("prescribedMedication", "name dosage frequency sideEffects instructions");
+    
+    if (!report) {
+      throw new ApiError(404, "Medical report not found");
+    }
+    
+    // Verify ownership - athlete can only view their own reports
+    if (report.athleteId.toString() !== athleteId.toString()) {
+      throw new ApiError(403, "You don't have permission to view this report");
+    }
+    
+    // Format the report for detailed view with all necessary sections
+    const formattedReport = {
+      id: report._id,
+      
+      // Report metadata
+      testName: report.testName || "General Checkup",
+      testDate: report.testDate,
+      reportDate: report.reportDate,
+      nextCheckupDate: report.nextCheckupDate,
+      
+      // Medical staff info
+      doctorInfo: {
+        name: report.medicalStaffId?.name,
+        avatar: report.medicalStaffId?.avatar,
+        email: report.medicalStaffId?.email,
+        designation: report.medicalStaffId?.designation,
+        specialization: report.medicalStaffId?.specialization,
+        contactNumber: report.medicalStaffId?.contactNumber
+      },
+      
+      // Medical status
+      medicalStatus: report.medicalStatus,
+      medicalClearance: report.medicalClearance,
+      chronicMedicalCondition: report.chronicMedicalCondition,
+      prescribedMedication: report.prescribedMedication,
+      
+      // Detailed sections - only include non-empty sections
+      ...(hasValidData(report.vitals) && { vitals: report.vitals }),
+      ...(hasValidData(report.performanceMetrics) && { performanceMetrics: report.performanceMetrics }),
+      ...(hasValidData(report.injuryDetails) && { injuryDetails: report.injuryDetails }),
+      ...(hasValidData(report.testResults) && { testResults: report.testResults }),
+      ...(hasValidData(report.nutrition) && { nutrition: report.nutrition }),
+      ...(hasValidData(report.mentalHealth) && { mentalHealth: report.mentalHealth }),
+      
+      // Notes and recommendations
+      doctorsNotes: report.doctorsNotes,
+      physicianNotes: report.physicianNotes,
+      recommendations: report.recommendations || [],
+      
+      // Attachments
+      attachments: report.attachments || [],
+      reportFileUrl: report.reportFileUrl || [],
+      
+      // Timestamps
+      createdAt: report.createdAt,
+      updatedAt: report.updatedAt
+    };
+    
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        formattedReport,
+        "Medical report details retrieved successfully"
+      )
+    );
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    throw new ApiError(500, `Error retrieving medical report details: ${error.message}`);
+  }
+});
+
+// Helper function to check if an object has valid data
+const hasValidData = (obj) => {
+  if (!obj) return false;
+  
+  // For arrays, check if they have any elements
+  if (Array.isArray(obj)) return obj.length > 0;
+  
+  // For objects, check if they have any properties with non-null/undefined values
+  if (typeof obj === 'object') {
+    return Object.values(obj).some(val => 
+      val !== null && 
+      val !== undefined && 
+      (typeof val !== 'string' || val.trim() !== '')
+    );
+  }
+  
+  return false;
+};
+
+// Make sure to add these controllers to your exports
 export {
   createMedicalReport,
   getMedicalReportsByDate,
@@ -610,5 +823,7 @@ export {
   updateMedicalReport,
   getAthleteReports,
   getMedicalReportById,
-  deleteMedicalReport
+  deleteMedicalReport,
+  getMyMedicalReports,          // Add this
+  getMyMedicalReportDetails     // Add this
 };

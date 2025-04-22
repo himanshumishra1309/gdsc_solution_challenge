@@ -5,14 +5,21 @@ import {
   getMedicalReportDates,
   updateMedicalReport,
   getAthleteReports,
-  getMedicalReportById,    // Add this function
-  deleteMedicalReport      // Add this function
+  getMedicalReportById,
+  deleteMedicalReport,
+  getMyMedicalReports, 
+  getMyMedicalReportDetails 
 } from "../controllers/medicalReports.controllers.js";
-import { verifyJWTCoach } from "../middlewares/auth.middleware.js";
+import { verifyJWTCoach, verifyJWTAthlete } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
+// ATHLETE ROUTES - These must come BEFORE the wildcard routes!
+router.get("/me", verifyJWTAthlete, getMyMedicalReports);
+router.get("/me/:reportId", verifyJWTAthlete, getMyMedicalReportDetails);
+
+// Apply coach JWT verification for remaining routes
 router.use(verifyJWTCoach);
 
 // Create a new report
@@ -25,19 +32,13 @@ router.get("/by-date", getMedicalReportsByDate);
 router.get("/dates", getMedicalReportDates);
 
 // Update a report
-router.patch(
-  "/:reportId",
-  upload.array("medicalFiles", 5),
-  updateMedicalReport
-);
+router.patch("/:reportId", upload.array("medicalFiles", 5), updateMedicalReport);
 
 // Get all reports for an athlete
 router.get("/athlete/:athleteId", getAthleteReports);
 
-// GET SINGLE REPORT BY ID - Add this route
+// These wildcard routes should come LAST
 router.get("/:reportId", getMedicalReportById);
-
-// DELETE REPORT - Add this route
 router.delete("/:reportId", deleteMedicalReport);
 
 export default router;

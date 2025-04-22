@@ -94,6 +94,14 @@ const handleSignIn = async () => {
     
     // Store user role in localStorage
     localStorage.setItem("userType", selectedRole.toLowerCase());
+
+    if (selectedRole === "Admin") {
+      sessionStorage.setItem("adminAccessToken", response.data.data.adminAccessToken);
+    } else if (selectedRole === "Coach") {
+      sessionStorage.setItem("coachAccessToken", response.data.data.coachAccessToken);
+    } else if (selectedRole === "Player") {
+      sessionStorage.setItem("athleteAccessToken", response.data.data.athleteAccessToken);
+    }
     
     // Handle navigation based on role
     if (selectedRole === "Admin") {

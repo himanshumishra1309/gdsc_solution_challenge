@@ -75,25 +75,7 @@ import notificationRoutes from "./routes/notification.routes.js";
 import medicalReportsRouter from "./routes/medicalReports.routes.js";
 import trainingPlanrouter from "./routes/trainingPlan.routes.js";
 import sessionRouter from "./routes/session.routes.js";
-app.get("/api/v1/health", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Server is running",
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Add this near the top of your route definitions, before all other routes
-app.get("/test", (req, res) => {
-  console.log("Test endpoint hit from:", req.ip);
-  console.log("Basic test endpoint hit!");
-  res.send("Server is working");
-});
-
-app.get("/", (req, res) => {
-  console.log("Root endpoint hit from:", req.ip);
-  res.send("API is running");
-});
+import injuryRouter from "./routes/injury.routes.js";
 
 app.use("/api/v1/admins", adminRouter);
 app.use("/api/v1/athletes", athleteRouter);
@@ -107,6 +89,7 @@ app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/training", trainingPlanrouter);
 app.use("/api/v1/session", sessionRouter);
 app.use("/api/v1/medical-reports", medicalReportsRouter);
+app.use("/api/v1/injuries", injuryRouter);
 
 
 // ✅ Global Error Handler (Moved to Bottom)
