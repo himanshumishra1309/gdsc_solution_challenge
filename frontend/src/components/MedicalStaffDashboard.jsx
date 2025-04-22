@@ -12,7 +12,7 @@ import AthleteMedicalRecords from "./MedicalStaffDashboardPages/AthleteMedicalRe
 const navItems = [
   { label: "View Athletes", icon: Users, path: "viewplayers" },
   { label: "Nutrition", icon: Salad, path: "diet" },
-  { label: "Medical Records", icon: Hospital, path: "medicalrecords" },
+  
   { label: "Injury Records", icon: Clipboard, path: "injurylogs" },
   { label: "Announcements", icon: MessageSquare, path: "announcements" },
   { label: "Profile", icon: Users, path: "mprofile" },
