@@ -713,17 +713,17 @@ const InjuryLogs = () => {
 
       {/* Injury Assessment Dialog */}
       <Dialog open={assessmentDialogOpen} onOpenChange={setAssessmentDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Complete Injury Assessment</DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader  className="border-b pb-4">
+            <DialogTitle className="text-xl">Complete Injury Assessment</DialogTitle>
             <DialogDescription>
               Provide a comprehensive assessment of the athlete's injury.
             </DialogDescription>
           </DialogHeader>
           
           {selectedTicket && (
-            <div className="mb-4 p-4 bg-gray-50 rounded-md">
-              <h4 className="font-medium">Injury Details</h4>
+            <div className="mb-4 p-4 bg-gray-50 rounded-md border">
+              <h4 className="font-medium text-gray-900 mb-2">Injury Details</h4>
               <p><strong>Athlete:</strong> {selectedTicket.ticket.injuryReport_id.athlete.name}</p>
               <p><strong>Injury:</strong> {selectedTicket.ticket.injuryReport_id.title}</p>
               <p><strong>Body Part:</strong> {selectedTicket.ticket.injuryReport_id.bodyPart}</p>
@@ -733,20 +733,21 @@ const InjuryLogs = () => {
           
           <ScrollArea className="h-[500px] pr-4">
             <Form {...assessmentForm}>
-              <form onSubmit={assessmentForm.handleSubmit(handleSubmitAssessment)} className="space-y-4">
+              <form onSubmit={assessmentForm.handleSubmit(handleSubmitAssessment)} className="space-y-6">
                 <FormField
                   control={assessmentForm.control}
                   name="diagnosis"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Diagnosis*</FormLabel>
+                      <FormLabel className="font-medium">Diagnosis*</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="e.g., Grade 2 Ankle Sprain"
                           {...field}
+                          className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -756,15 +757,15 @@ const InjuryLogs = () => {
                   name="diagnosisDetails"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Diagnosis Details</FormLabel>
+                      <FormLabel className="font-medium">Diagnosis Details</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Provide detailed diagnosis information"
-                          className="min-h-[80px]"
+                          className="min-h-[100px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -774,13 +775,13 @@ const InjuryLogs = () => {
                   name="severity"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Severity*</FormLabel>
+                      <FormLabel className="font-medium">Severity*</FormLabel>
                       <Select 
                         onValueChange={field.onChange} 
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                             <SelectValue placeholder="Select severity" />
                           </SelectTrigger>
                         </FormControl>
@@ -791,7 +792,7 @@ const InjuryLogs = () => {
                           <SelectItem value="CRITICAL">Critical</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -801,15 +802,15 @@ const InjuryLogs = () => {
                   name="treatmentPlan"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Treatment Plan*</FormLabel>
+                      <FormLabel className="font-medium">Treatment Plan*</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Detailed treatment plan"
-                          className="min-h-[100px]"
+                          className="min-h-[120px] border-gray-300 focus:border-blue-500 focus:ring-blue-500 "
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm" />
                     </FormItem>
                   )}
                 />
@@ -819,15 +820,15 @@ const InjuryLogs = () => {
                   name="rehabilitationProtocol"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Rehabilitation Protocol</FormLabel>
+                      <FormLabel className="font-medium">Rehabilitation Protocol</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Detailed rehabilitation protocol"
-                          className="min-h-[80px]"
+                          className="min-h-[100px] border-gray-300 focus:border-blue-500 focus:ring-blue-500 "
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm"  />
                     </FormItem>
                   )}
                 />
@@ -837,37 +838,39 @@ const InjuryLogs = () => {
                   name="restrictionsList"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Restrictions (comma-separated)</FormLabel>
+                      <FormLabel className="font-medium">Restrictions (comma-separated)</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="e.g., No running, No weight bearing"
+                          className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
+                      <FormDescription className="text-gray-500 text-sm">
                         Enter restrictions separated by commas
                       </FormDescription>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm"/>
                     </FormItem>
                   )}
                 />
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={assessmentForm.control}
                     name="estimatedRecoveryTime.value"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Recovery Time</FormLabel>
+                        <FormLabel className="font-medium">Recovery Time</FormLabel>
                         <FormControl>
                           <Input 
                             type="number"
                             min="1"
+                            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                             {...field}
                             onChange={(e) => field.onChange(parseInt(e.target.value))}
                           />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-500 text-sm" />
                       </FormItem>
                     )}
                   />
@@ -877,13 +880,13 @@ const InjuryLogs = () => {
                     name="estimatedRecoveryTime.unit"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Time Unit</FormLabel>
+                        <FormLabel className="font-medium">Time Unit</FormLabel>
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                               <SelectValue placeholder="Select time unit" />
                             </SelectTrigger>
                           </FormControl>
@@ -893,7 +896,7 @@ const InjuryLogs = () => {
                             <SelectItem value="MONTHS">Months</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormMessage />
+                        <FormMessage className="text-red-500 text-sm" />
                       </FormItem>
                     )}
                   />
@@ -931,31 +934,33 @@ const InjuryLogs = () => {
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Additional Notes</FormLabel>
+                      <FormLabel className="font-medium">Additional Notes</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Any additional notes"
-                          className="min-h-[80px]"
+                          className="min-h-[80px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-red-500 text-sm"/>
                     </FormItem>
                   )}
                 />
                 
-                <DialogFooter>
+                <DialogFooter className="border-t pt-4">
                   <Button 
                     type="button" 
                     variant="outline" 
                     onClick={() => setAssessmentDialogOpen(false)}
                     disabled={submitting}
+                    className="mr-2"
                   >
                     Cancel
                   </Button>
                   <Button 
                     type="submit"
                     disabled={submitting}
+                    className="bg-green-600 hover:bg-green-700"
                   >
                     {submitting ? (
                       <>
