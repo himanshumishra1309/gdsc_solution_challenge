@@ -104,7 +104,7 @@ const getCoachProfile = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, teacher, "Coah profile fetched successfully"));
+    .json(new ApiResponse(200, coach, "Coah profile fetched successfully"));
 });
 
 const logRpe = asyncHandler(async (req, res) => {

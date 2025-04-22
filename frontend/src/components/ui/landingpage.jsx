@@ -52,7 +52,7 @@ const LandingPage = () => {
     setSignInOpen(true); 
   };
 
-  // Replace this part of your handleSignIn function
+// Replace the relevant part of your handleSignIn function
 const handleSignIn = async () => {
   // Input validation
   if (!email || !password) {
@@ -92,8 +92,8 @@ const handleSignIn = async () => {
     
     console.log("Login successful:", response.data);
     
-    // Store user role in localStorage
-    localStorage.setItem("userType", selectedRole.toLowerCase());
+    // Store user role in sessionStorage instead of localStorage
+    sessionStorage.setItem("userType", selectedRole.toLowerCase());
 
     if (selectedRole === "Admin") {
       sessionStorage.setItem("adminAccessToken", response.data.data.adminAccessToken);
@@ -105,47 +105,51 @@ const handleSignIn = async () => {
     
     // Handle navigation based on role
     if (selectedRole === "Admin") {
-      
       console.log("Admin data:", response.data);
       // Extract organization ID from response
       const organizationId = response.data.data.admin.organization;
-      localStorage.setItem("userData", JSON.stringify(response.data.data.admin));
+      
+      // Store admin data in sessionStorage instead of localStorage
+      sessionStorage.setItem("userData", JSON.stringify(response.data.data.admin));
       
       // Navigate to admin dashboard with organization ID
       setSignInOpen(false);
       navigate(`/admin-dashboard/${organizationId}/admin`);
     } 
-else if (selectedRole === "Coach") {
-  const organizationId = response.data.data.coach.organization;
-  const coachName = response.data.data.coach.name.replace(/\s+/g, '-').toLowerCase();
-  const coachData = response.data.data.coach;
-  
-  // Store coach data with designation
-  localStorage.setItem("userData", JSON.stringify(coachData));
-  
-  // Navigate based on coach designation
-  const designation = coachData.designation;
-  
-  if (designation === "Medical Staff") {
-    // Navigate to medical staff dashboard
-    setSignInOpen(false);
-    navigate(`/medicalstaff-dashboard/${organizationId}/${coachName}/`);
-  } 
-  else if (designation === "Trainer") {
-    // Navigate to trainer dashboard
-    setSignInOpen(false);
-    navigate(`/gymtrainer-dashboard/${organizationId}/${coachName}/`);
-  }
-  else {
-    // Default for both Head Coach and Assistant Coach
-    setSignInOpen(false);
-    navigate(`/coach-dashboard/${organizationId}/${coachName}/`);
-  }
-}
+    else if (selectedRole === "Coach") {
+      const organizationId = response.data.data.coach.organization;
+      const coachName = response.data.data.coach.name.replace(/\s+/g, '-').toLowerCase();
+      const coachData = response.data.data.coach;
+      
+      // Store coach data in sessionStorage instead of localStorage
+      sessionStorage.setItem("userData", JSON.stringify(coachData));
+      
+      // Navigate based on coach designation
+      const designation = coachData.designation;
+      
+      if (designation === "Medical Staff") {
+        // Navigate to medical staff dashboard
+        setSignInOpen(false);
+        navigate(`/medicalstaff-dashboard/${organizationId}/${coachName}/`);
+      } 
+      else if (designation === "Trainer") {
+        // Navigate to trainer dashboard
+        setSignInOpen(false);
+        navigate(`/gymtrainer-dashboard/${organizationId}/${coachName}/`);
+      }
+      else {
+        // Default for both Head Coach and Assistant Coach
+        setSignInOpen(false);
+        navigate(`/coach-dashboard/${organizationId}/${coachName}/`);
+      }
+    }
     else if (selectedRole === "Player") {
       const organizationId = response.data.data.athlete.organization;
       const playerName = response.data.data.athlete.name.replace(/\s+/g, '-').toLowerCase();
-      localStorage.setItem("userData", JSON.stringify(response.data.data.athlete));
+      
+      // Store athlete data in sessionStorage instead of localStorage
+      sessionStorage.setItem("userData", JSON.stringify(response.data.data.athlete));
+      
       setSignInOpen(false);
       navigate(`/player-dashboard/${organizationId}/${playerName}/graphs`);
     }

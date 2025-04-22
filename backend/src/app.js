@@ -76,6 +76,7 @@ import medicalReportsRouter from "./routes/medicalReports.routes.js";
 import trainingPlanrouter from "./routes/trainingPlan.routes.js";
 import sessionRouter from "./routes/session.routes.js";
 import injuryRouter from "./routes/injury.routes.js";
+import announcementRouter from "./routes/announcement.routes.js";
 
 app.use("/api/v1/admins", adminRouter);
 app.use("/api/v1/athletes", athleteRouter);
@@ -90,6 +91,7 @@ app.use("/api/v1/training", trainingPlanrouter);
 app.use("/api/v1/session", sessionRouter);
 app.use("/api/v1/medical-reports", medicalReportsRouter);
 app.use("/api/v1/injuries", injuryRouter);
+app.use("/api/v1/announcements", announcementRouter);
 
 
 // ✅ Global Error Handler (Moved to Bottom)
